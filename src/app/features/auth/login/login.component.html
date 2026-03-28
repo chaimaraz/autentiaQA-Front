@@ -1,0 +1,127 @@
+<div class="auth-screen">
+  <!-- LEFT PANEL -->
+  <div class="auth-panel-left">
+    <div class="auth-orb auth-orb-1"></div>
+    <div class="auth-orb auth-orb-2"></div>
+    <div class="auth-orb auth-orb-3"></div>
+
+    <div class="auth-float-card" style="top:22%;right:32px">
+      <div class="auth-float-icon">🤖</div>
+      <div>
+        <div class="auth-float-val" style="color:var(--accent2)">247</div>
+        <div class="auth-float-lbl">scénarios générés</div>
+      </div>
+    </div>
+    <div class="auth-float-card" style="top:44%;left:32px">
+      <div class="auth-float-icon">✅</div>
+      <div>
+        <div class="auth-float-val" style="color:var(--success)">94%</div>
+        <div class="auth-float-lbl">taux de succès</div>
+      </div>
+    </div>
+    <div class="auth-float-card" style="top:64%;right:48px">
+      <div class="auth-float-icon">⚡</div>
+      <div>
+        <div class="auth-float-val" style="color:var(--warning)">1m 23s</div>
+        <div class="auth-float-lbl">analyse complète</div>
+      </div>
+    </div>
+
+    <div class="auth-panel-bottom">
+      <div class="auth-panel-logo">
+        <div class="auth-panel-logo-icon">
+          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+            <rect width="28" height="28" rx="7" fill="url(#ag1)" />
+            <path d="M7 20L14 8L21 20" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M9.5 16H18.5" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.6" />
+            <defs>
+              <linearGradient id="ag1" x1="0" y1="0" x2="28" y2="28">
+                <stop offset="0%" stop-color="#7c3aed" />
+                <stop offset="100%" stop-color="#00e5ff" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="auth-panel-logo-text">Autentia <span>QA</span></div>
+      </div>
+      <div class="auth-panel-headline">Testez plus vite,<br />livrez avec <em>confiance</em></div>
+      <div class="auth-panel-sub">
+        La plateforme IA qui génère, exécute et analyse vos tests automatiquement. Du crawl DOM à la PR GitHub, tout en un.
+      </div>
+      <div class="auth-testimonial">
+        <div class="auth-testimonial-avatar">MK</div>
+        <div>
+          <div class="auth-testimonial-quote">Nous avons réduit notre temps de test de 80% depuis Autentia QA. L'IA détecte des cas limites que nous aurions manqués.</div>
+          <div class="auth-testimonial-author">Mehdi Karim — Lead QA &#64; TechCorp</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="auth-panel-right">
+    <!-- Theme toggle -->
+    <div class="auth-theme-toggle">
+      <div class="auth-theme-opt" [ngClass]="{ active: currentTheme() === 'dark' }" (click)="setTheme('dark')">🌙</div>
+      <div class="auth-theme-opt" [ngClass]="{ active: currentTheme() === 'light' }" (click)="setTheme('light')">☀️</div>
+    </div>
+
+    <div class="auth-form-wrap">
+      <div class="auth-form-title">Bon retour 👋</div>
+      <div class="auth-form-sub">
+        Pas encore de compte ? <a [routerLink]="'/auth/register'">Créer un compte gratuit</a>
+      </div>
+
+      <!-- Error alert -->
+      <div class="auth-alert error" [ngClass]="{ show: error() }">
+        <span>⚠️</span> {{ error() }}
+      </div>
+
+      <!-- Social -->
+      <div class="auth-social-row">
+        <button class="auth-social-btn" (click)="handleSocialLogin('GitHub')">
+          <span class="auth-social-icon">🐙</span> GitHub
+        </button>
+        <button class="auth-social-btn" (click)="handleSocialLogin('Google')">
+          <span class="auth-social-icon">🔵</span> Google
+        </button>
+      </div>
+
+      <div class="auth-divider">ou avec votre email</div>
+
+      <div class="auth-field">
+        <label class="auth-label">Adresse email</label>
+        <div class="auth-input-wrap">
+          <span class="auth-input-icon">✉️</span>
+          <input class="auth-input" type="email" placeholder="vous@exemple.com" [(ngModel)]="email" />
+        </div>
+      </div>
+
+      <div class="auth-field">
+        <label class="auth-label">Mot de passe</label>
+        <div class="auth-input-wrap">
+          <span class="auth-input-icon">🔒</span>
+          <input
+            class="auth-input"
+            [type]="showPassword() ? 'text' : 'password'"
+            placeholder="Votre mot de passe"
+            [(ngModel)]="password"
+          />
+          <span class="auth-input-toggle" (click)="togglePassword()">
+            {{ showPassword() ? '🙈' : '👁' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="auth-forgot"><a>Mot de passe oublié ?</a></div>
+
+      <button class="auth-submit" (click)="handleLogin()" [disabled]="loading()">
+        {{ loading() ? '⏳ Connexion...' : '🚀 Se connecter' }}
+      </button>
+
+      <div class="auth-cgu">
+        En vous connectant, vous acceptez nos <a>CGU</a>
+      </div>
+    </div>
+  </div>
+</div>

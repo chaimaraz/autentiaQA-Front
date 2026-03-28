@@ -1,0 +1,182 @@
+<div class="auth-screen">
+  <!-- LEFT PANEL -->
+  <div class="auth-panel-left">
+    <div class="auth-orb auth-orb-1"></div>
+    <div class="auth-orb auth-orb-2"></div>
+    <div class="auth-orb auth-orb-3"></div>
+    <div class="auth-float-card" style="top:18%;right:28px">
+      <div class="auth-float-icon">🔐</div>
+      <div><div class="auth-float-val" style="color:var(--danger)">OWASP</div><div class="auth-float-lbl">top 10 couvert</div></div>
+    </div>
+    <div class="auth-float-card" style="top:40%;left:28px">
+      <div class="auth-float-icon">⎇</div>
+      <div><div class="auth-float-val" style="color:var(--accent)">CI/CD</div><div class="auth-float-lbl">GitHub intégré</div></div>
+    </div>
+    <div class="auth-float-card" style="top:62%;right:40px">
+      <div class="auth-float-icon">📊</div>
+      <div><div class="auth-float-val" style="color:var(--accent2)">PDF</div><div class="auth-float-lbl">rapports auto</div></div>
+    </div>
+    <div class="auth-panel-bottom">
+      <div class="auth-panel-logo">
+        <div class="auth-panel-logo-icon">
+          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+            <rect width="28" height="28" rx="7" fill="url(#ag2)" />
+            <path d="M7 20L14 8L21 20" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M9.5 16H18.5" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.6" />
+            <defs>
+              <linearGradient id="ag2" x1="0" y1="0" x2="28" y2="28">
+                <stop offset="0%" stop-color="#7c3aed" /><stop offset="100%" stop-color="#00e5ff" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="auth-panel-logo-text">Autentia <span>QA</span></div>
+      </div>
+      <div class="auth-panel-headline">Rejoignez <em>5 000+</em><br />équipes QA modernes</div>
+      <div class="auth-panel-sub">Déployez votre première suite de tests en moins de 5 minutes.</div>
+      <div class="auth-features">
+        <div class="auth-feature-item"><div class="auth-feature-check">✓</div> Analyse IA de votre application en 1 clic</div>
+        <div class="auth-feature-item"><div class="auth-feature-check">✓</div> Génération automatique de 50+ scénarios</div>
+        <div class="auth-feature-item"><div class="auth-feature-check">✓</div> Tests Playwright, Cypress ou Selenium</div>
+        <div class="auth-feature-item"><div class="auth-feature-check">✓</div> Intégration GitHub Actions incluse</div>
+        <div class="auth-feature-item"><div class="auth-feature-check">✓</div> Rapports PDF et notifications Slack</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="auth-panel-right">
+    <div class="auth-theme-toggle">
+      <div class="auth-theme-opt" [ngClass]="{ active: currentTheme() === 'dark' }" (click)="setTheme('dark')">🌙</div>
+      <div class="auth-theme-opt" [ngClass]="{ active: currentTheme() === 'light' }" (click)="setTheme('light')">☀️</div>
+    </div>
+
+    <div class="auth-form-wrap">
+      <!-- Step indicators -->
+      <div class="auth-steps-indicator">
+        <div class="auth-step-dot" [ngClass]="{ active: currentStep() === 1, done: currentStep() > 1 }"></div>
+        <div class="auth-step-dot" [ngClass]="{ active: currentStep() === 2, done: currentStep() > 2 }"></div>
+        <div class="auth-step-dot" [ngClass]="{ active: currentStep() === 3 }"></div>
+        <span class="step-label-text">Étape {{ currentStep() }}/3</span>
+      </div>
+
+      <div class="auth-form-title">
+        {{ currentStep() === 1 ? 'Créer votre compte' : currentStep() === 2 ? 'Votre équipe' : 'Confirmation' }}
+      </div>
+      <div class="auth-form-sub">
+        Déjà inscrit ? <a [routerLink]="'/auth/login'">Se connecter</a>
+      </div>
+
+      <div class="auth-alert error" [ngClass]="{ show: error() }"><span>⚠️</span> {{ error() }}</div>
+      <div class="auth-alert success" [ngClass]="{ show: success() }"><span>✅</span> Compte créé ! Redirection...</div>
+
+      <!-- STEP 1 -->
+      <div *ngIf="currentStep() === 1">
+        <div class="auth-grid-2">
+          <div class="auth-field">
+            <label class="auth-label">Prénom</label>
+            <div class="auth-input-wrap">
+              <span class="auth-input-icon">👤</span>
+              <input class="auth-input" type="text" placeholder="chaima" [(ngModel)]="firstName" />
+            </div>
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Nom</label>
+            <div class="auth-input-wrap">
+              <span class="auth-input-icon">👤</span>
+              <input class="auth-input" type="text" placeholder="razgui" [(ngModel)]="lastName" />
+            </div>
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Email professionnel</label>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon">✉️</span>
+            <input class="auth-input" type="email" placeholder="vous@entreprise.com" [(ngModel)]="email" />
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Mot de passe</label>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon">🔒</span>
+            <input class="auth-input" [type]="showPassword() ? 'text' : 'password'" placeholder="Min. 12 caractères"
+              [(ngModel)]="password" (input)="checkPasswordStrength(password)" />
+            <span class="auth-input-toggle" (click)="togglePassword()">{{ showPassword() ? '🙈' : '👁' }}</span>
+          </div>
+          <div class="pw-strength">
+            <div class="pw-bar" [ngClass]="{ weak: pwStrength() >= 1, medium: pwStrength() >= 3, strong: pwStrength() >= 4 }"></div>
+            <div class="pw-bar" [ngClass]="{ weak: pwStrength() >= 2, medium: pwStrength() >= 3, strong: pwStrength() >= 4 }"></div>
+            <div class="pw-bar" [ngClass]="{ medium: pwStrength() >= 3, strong: pwStrength() >= 4 }"></div>
+            <div class="pw-bar" [ngClass]="{ strong: pwStrength() >= 4 }"></div>
+            <span class="pw-label">{{ pwLabel() }}</span>
+          </div>
+        </div>
+        <button class="auth-submit" (click)="nextStep(1)">Continuer →</button>
+      </div>
+
+      <!-- STEP 2 -->
+      <div *ngIf="currentStep() === 2">
+        <div class="auth-field">
+          <label class="auth-label">Entreprise</label>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon">🏢</span>
+            <input class="auth-input" type="text" placeholder="Votre entreprise" [(ngModel)]="company" />
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Votre rôle</label>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon">💼</span>
+            <select class="auth-input" style="padding-left:40px" [(ngModel)]="role">
+              <option value="">— Sélectionner —</option>
+              <option>QA Engineer</option>
+              <option>Lead QA</option>
+              <option>Développeur</option>
+              <option>DevOps / SRE</option>
+              <option>CTO / Tech Lead</option>
+              <option>Autre</option>
+            </select>
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Taille d'équipe</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div class="auth-social-btn" [ngClass]="{ selected: teamSize() === '1-5' }" (click)="selectTeamSize('1-5')">1–5</div>
+            <div class="auth-social-btn" [ngClass]="{ selected: teamSize() === '6-20' }" (click)="selectTeamSize('6-20')">6–20</div>
+            <div class="auth-social-btn" [ngClass]="{ selected: teamSize() === '21+' }" (click)="selectTeamSize('21+')">21+</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="auth-social-btn" style="flex:1" (click)="prevStep(2)">← Retour</button>
+          <button class="auth-submit" style="flex:2" (click)="nextStep(2)">Continuer →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div *ngIf="currentStep() === 3">
+        <div class="reg-recap-box">
+          <div class="recap-label">Récapitulatif</div>
+          <div class="recap-line"><b>Nom :</b> {{ firstName }} {{ lastName }}</div>
+          <div class="recap-line"><b>Email :</b> {{ email }}</div>
+          <div class="recap-line"><b>Entreprise :</b> {{ company }}</div>
+          <div class="recap-line"><b>Rôle :</b> {{ role }}</div>
+          <div class="recap-line"><b>Équipe :</b> {{ teamSize() || 'Non renseigné' }}</div>
+        </div>
+        <label class="auth-checkbox-row">
+          <input type="checkbox" [(ngModel)]="acceptCgu" />
+          J'accepte les <a>Conditions Générales</a> et la <a>Politique de confidentialité</a>.
+        </label>
+        <label class="auth-checkbox-row">
+          <input type="checkbox" [(ngModel)]="acceptNewsletter" />
+          Recevoir les mises à jour produit et conseils QA
+        </label>
+        <div style="display:flex;gap:10px">
+          <button class="auth-social-btn" style="flex:1" (click)="prevStep(3)">← Retour</button>
+          <button class="auth-submit" style="flex:2" (click)="handleRegister()" [disabled]="loading()">
+            {{ loading() ? '⏳ Création...' : '🎉 Créer mon compte' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

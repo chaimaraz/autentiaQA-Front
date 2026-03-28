@@ -1,0 +1,53 @@
+// =====================================================
+// AUTENTIA QA — DESIGN TOKENS
+// =====================================================
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  --transition-theme: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+[data-theme='dark'] {
+  --bg: #0a0c10;
+  --surface: #111318;
+  --surface2: #181c24;
+  --border: #1e2330;
+  --border2: #252c3d;
+  --accent: #00e5ff;
+  --accent2: #7c3aed;
+  --accent3: #f59e0b;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --text: #e8eaf0;
+  --text2: #8891a8;
+  --text3: #525d75;
+  --glow: 0 0 20px rgba(0, 229, 255, 0.15);
+  --glow2: 0 0 40px rgba(124, 58, 237, 0.15);
+  --grid-color: rgba(0, 229, 255, 0.03);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --code-bg: #080a0e;
+}
+
+[data-theme='light'] {
+  --bg: #f0f2f7;
+  --surface: #ffffff;
+  --surface2: #f5f7fc;
+  --border: #e2e6ef;
+  --border2: #d1d8e8;
+  --accent: #0284c7;
+  --accent2: #7c3aed;
+  --accent3: #d97706;
+  --success: #059669;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --text: #0f172a;
+  --text2: #475569;
+  --text3: #94a3b8;
+  --glow: 0 0 20px rgba(2, 132, 199, 0.15);
+  --glow2: 0 0 40px rgba(124, 58, 237, 0.15);
+  --grid-color: rgba(2, 132, 199, 0.04);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --code-bg: #f8fafc;
+}

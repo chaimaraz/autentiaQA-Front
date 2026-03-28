@@ -1,0 +1,57 @@
+<div class="section-title">Vue d'ensemble <span class="ai-badge">🤖 IA Active</span></div>
+<div class="section-sub">Vos tests en temps réel — Dernière synchronisation il y a 2 min</div>
+
+<!-- STATS GRID -->
+<div class="stats-grid">
+  <div class="stat-card" [ngClass]="s.color" *ngFor="let s of stats">
+    <div class="stat-label">{{ s.label }}</div>
+    <div class="stat-value" [style.color]="s.valueColor">{{ s.value }}</div>
+    <div class="stat-sub">{{ s.sub }}</div>
+  </div>
+</div>
+
+<!-- PROJECTS + ACTIVITY -->
+<div class="grid-2 mb-24">
+  <!-- Projects -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Projets récents</div>
+      <a [routerLink]="'/projects'" class="btn btn-ghost btn-sm">Voir tout</a>
+    </div>
+    <div class="card-body">
+      <div class="project-item" *ngFor="let p of projects" [routerLink]="p.route">
+        <div class="project-dot" [style.background]="p.dotColor"></div>
+        <div class="project-info">
+          <div class="project-name">{{ p.name }}</div>
+          <div class="project-url">{{ p.url }}</div>
+        </div>
+        <div class="project-meta">
+          <span class="status-badge" [ngClass]="p.status">{{ p.statusLabel }}</span>
+          <span class="tag" *ngFor="let t of p.tags">{{ t }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity -->
+  <div class="card">
+    <div class="card-header"><div class="card-title">Activité récente</div></div>
+    <div class="card-body">
+      <div class="activity-item" *ngFor="let a of activities">
+        <div class="activity-icon">{{ a.icon }}</div>
+        <div class="activity-text">{{ a.text }} <strong>{{ a.bold }}</strong></div>
+        <div class="activity-time">{{ a.time }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI INSIGHT -->
+<div class="ai-insight">
+  <div class="ai-icon">🧠</div>
+  <div class="ai-text">
+    <strong>Recommandation IA :</strong> Le projet <em>Admin Dashboard</em> présente un taux d'échec anormal
+    sur les formulaires d'authentification. L'IA détecte un possible changement de sélecteur CSS après le dernier
+    déploiement. Il est recommandé de relancer l'analyse DOM et de régénérer les scénarios de login.
+  </div>
+</div>

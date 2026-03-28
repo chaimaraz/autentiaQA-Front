@@ -1,0 +1,97 @@
+<div class="section-title">Créer un flux de test</div>
+<div class="section-sub">
+  Choisissez des scénarios IA et ordonnez-les pour former un parcours utilisateur complet.
+  Les données sont partagées automatiquement entre les étapes.
+</div>
+
+<div class="grid-2" style="align-items:start">
+  <!-- LEFT: Available scenarios -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🎯 Scénarios disponibles <span class="ai-badge">🤖 IA</span></div>
+    </div>
+    <div class="card-body scenario-picker">
+      <div class="scenario-chip" *ngFor="let s of availableScenarios">
+        <span class="sc-type" [ngClass]="s.type">{{ s.type.toUpperCase() }}</span>
+        <div style="flex:1">
+          <div class="sc-name">{{ s.name }}</div>
+          <div class="sc-sub">{{ s.desc }}</div>
+        </div>
+        <div class="sc-add-btn" (click)="addStep(s)" title="Ajouter au flux">+</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Flux builder -->
+  <div>
+    <!-- Properties -->
+    <div class="card mb-16">
+      <div class="card-header"><div class="card-title">⚙ Propriétés du flux</div></div>
+      <div class="card-body" style="padding:14px">
+        <div class="form-group" style="margin-bottom:10px">
+          <label class="form-label">Nom du flux</label>
+          <input class="form-input" [(ngModel)]="fluxName" placeholder="Ex: Parcours achat positif" />
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Type</label>
+          <select class="form-input" style="font-size:12px">
+            <option>✅ Positif — tout doit réussir</option>
+            <option>❌ Négatif — vérifier erreurs/blocages</option>
+            <option>🔐 Sécurité — accès interdits</option>
+            <option>🔀 Mixte</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Steps canvas -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📋 Étapes du flux</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" (click)="clearSteps()">✕ Vider</button>
+          <button class="btn btn-primary btn-sm" (click)="saveFlux()">💾 Sauvegarder</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:14px">
+        <!-- Empty state -->
+        <div class="flux-empty" *ngIf="steps().length === 0">
+          <div class="flux-empty-icon">⟶</div>
+          <p>Cliquez sur <strong>+</strong> à gauche<br />pour ajouter un scénario au flux</p>
+        </div>
+
+        <!-- Steps list -->
+        <div class="flux-steps" *ngIf="steps().length > 0">
+          <div class="flux-step-row" *ngFor="let step of steps(); let i = index; let last = last">
+            <div class="flux-step-left">
+              <div class="step-circle" [ngClass]="getStepClass(step.type)">{{ i + 1 }}</div>
+              <div class="step-vline" *ngIf="!last"></div>
+            </div>
+            <div class="flux-step-content">
+              <div class="flux-step-card">
+                <div class="step-main">
+                  <div class="step-name">{{ step.name }}</div>
+                  <div class="step-desc">{{ step.desc }}</div>
+                </div>
+                <button class="step-remove" (click)="removeStep(i)" title="Supprimer">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI data hint -->
+        <div class="ai-insight" *ngIf="steps().length > 0" style="margin-top:12px;margin-bottom:0">
+          <div class="ai-icon">🧠</div>
+          <div class="ai-text">
+            <strong>Données partagées :</strong> L'IA génère un jeu cohérent pour tout le flux.
+            L'email de l'étape Inscription est réutilisé automatiquement au Login.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:16px">
+  <a [routerLink]="'/flux/list'" class="btn btn-ghost">← Retour à la liste</a>
+</div>

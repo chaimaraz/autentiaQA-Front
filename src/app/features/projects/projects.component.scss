@@ -1,0 +1,16 @@
+.project-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+  &:last-child { border-bottom: none; }
+  &:hover { padding-left: 6px; }
+}
+.project-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.project-info { flex: 1; min-width: 0; }
+.project-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.project-url { font-size: 11px; color: var(--text3); font-family: 'Space Mono', monospace; }
+.project-meta { display: flex; align-items: center; gap: 8px; }

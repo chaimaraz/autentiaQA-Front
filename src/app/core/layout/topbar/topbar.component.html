@@ -1,0 +1,12 @@
+<div class="topbar">
+  <div class="topbar-title">{{ (pageTitle$ | async) ?? 'Tableau de bord' }}</div>
+
+  <div class="topbar-actions">
+    <button class="btn btn-ghost btn-sm" style="position:relative">
+      🔔
+      <span class="notif-dot"></span>
+    </button>
+    <button class="btn btn-ghost btn-sm">📖 Docs</button>
+    <a [routerLink]="'/projects'" class="btn btn-primary btn-sm">+ Nouveau projet</a>
+  </div>
+</div>

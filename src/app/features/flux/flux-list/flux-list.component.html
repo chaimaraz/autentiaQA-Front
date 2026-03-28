@@ -1,0 +1,41 @@
+<div class="section-title">Flux de test personnalisés</div>
+<div class="section-sub">
+  Un flux = une suite ordonnée de scénarios IA simulant un parcours utilisateur complet.<br />
+  Créez autant de flux que nécessaire — positif, négatif, sécurité — sauvegardez et relancez à tout moment.
+</div>
+
+<div class="ai-insight" style="margin-bottom:20px">
+  <div class="ai-icon">🧠</div>
+  <div class="ai-text">
+    <strong>Comment ça fonctionne :</strong> L'IA génère d'abord tous les scénarios individuels. Vous composez ensuite
+    des <em>flux</em> en ordonnant ces scénarios. Les données sont partagées entre étapes — l'email de l'inscription est
+    automatiquement réutilisé au login.
+  </div>
+</div>
+
+<div class="flux-saved-item" *ngFor="let f of fluxList">
+  <div class="flux-saved-icon" [ngClass]="f.iconClass">{{ f.icon }}</div>
+  <div class="flux-saved-info">
+    <div class="flux-saved-name">{{ f.name }}</div>
+    <div class="flux-saved-meta">
+      <span>{{ f.meta }}</span>
+      <span>·</span>
+      <span class="status-badge" [ngClass]="f.status">{{ f.statusLabel }}</span>
+    </div>
+    <div class="flux-saved-steps">
+      <ng-container *ngFor="let step of f.steps; let last = last">
+        <span class="tag" [ngClass]="step.color">{{ step.label }}</span>
+        <span *ngIf="!last" class="step-arrow">→</span>
+      </ng-container>
+    </div>
+  </div>
+  <div class="flux-saved-actions">
+    <button class="btn btn-success-soft btn-sm">▷ Relancer</button>
+    <a [routerLink]="'/flux/new'" class="btn btn-ghost btn-sm">✏ Modifier</a>
+    <button class="btn btn-ghost btn-sm">⬇ Script</button>
+  </div>
+</div>
+
+<div style="margin-top:16px">
+  <a [routerLink]="'/flux/new'" class="btn btn-primary">+ Créer un nouveau flux</a>
+</div>

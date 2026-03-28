@@ -1,0 +1,15 @@
+.exec-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+.exec-stat {
+  text-align: center;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+}
+.exec-stat-val { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; }
+.exec-stat-label { font-size: 11px; color: var(--text3); margin-top: 2px; }

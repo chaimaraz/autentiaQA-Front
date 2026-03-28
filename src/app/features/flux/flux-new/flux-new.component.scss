@@ -1,0 +1,98 @@
+.scenario-picker { max-height: 500px; overflow-y: auto; padding: 12px; }
+
+.scenario-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  transition: all 0.15s;
+  margin-bottom: 6px;
+  &:hover { border-color: var(--border2); background: var(--surface); }
+}
+.sc-type {
+  font-size: 9px;
+  font-family: 'Space Mono', monospace;
+  padding: 2px 6px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  font-weight: 700;
+  &.pos { background: rgba(16,185,129,0.12); color: var(--success); border: 1px solid rgba(16,185,129,0.25); }
+  &.neg { background: rgba(239,68,68,0.12); color: var(--danger); border: 1px solid rgba(239,68,68,0.25); }
+  &.sec { background: rgba(245,158,11,0.12); color: var(--warning); border: 1px solid rgba(245,158,11,0.25); }
+}
+.sc-name { font-weight: 500; color: var(--text); }
+.sc-sub { font-size: 10px; color: var(--text3); font-family: 'Space Mono', monospace; }
+.sc-add-btn {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  background: rgba(0,229,255,0.1);
+  border: 1px solid rgba(0,229,255,0.2);
+  color: var(--accent);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  &:hover { background: var(--accent); color: #000; }
+}
+
+// Flux empty
+.flux-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 130px;
+  color: var(--text3);
+  gap: 8px;
+  border: 2px dashed var(--border2);
+  border-radius: 10px;
+}
+.flux-empty-icon { font-size: 28px; opacity: 0.4; }
+
+// Steps
+.flux-steps { display: flex; flex-direction: column; }
+.flux-step-row { display: flex; align-items: stretch; }
+.flux-step-left { display: flex; flex-direction: column; align-items: center; width: 40px; flex-shrink: 0; }
+.step-circle {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  flex-shrink: 0; z-index: 1;
+  &.pos { border-color: var(--success); background: rgba(16,185,129,0.1); color: var(--success); }
+  &.neg { border-color: var(--danger); background: rgba(239,68,68,0.1); color: var(--danger); }
+  &.sec { border-color: var(--warning); background: rgba(245,158,11,0.1); color: var(--warning); }
+}
+.step-vline { width: 2px; flex: 1; background: var(--border); min-height: 20px; margin: 0 auto; }
+.flux-step-content { flex: 1; padding: 0 0 12px 12px; }
+.flux-step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  display: flex; align-items: flex-start; gap: 10px;
+  &:hover { border-color: var(--border2); }
+}
+.step-main { flex: 1; }
+.step-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.step-desc { font-size: 10px; color: var(--text3); font-family: 'Space Mono', monospace; }
+.step-remove {
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  &:hover { background: var(--danger); border-color: var(--danger); color: white; }
+}

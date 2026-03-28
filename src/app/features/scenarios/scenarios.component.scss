@@ -1,0 +1,92 @@
+.page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px; }
+.page-actions { display:flex; gap:8px; margin-top:4px; }
+
+.scenarios-list { display:flex; flex-direction:column; gap:8px; }
+
+.scenario-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+  &:hover { border-color: var(--border2); }
+}
+
+.scenario-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.scenario-type {
+  font-size: 10px;
+  font-family: 'Space Mono', monospace;
+  padding: 3px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  font-weight: 700;
+
+  &.positive { background: rgba(16,185,129,0.1); color: var(--success); border: 1px solid rgba(16,185,129,0.2); }
+  &.negative { background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); }
+  &.security { background: rgba(245,158,11,0.1); color: var(--warning); border: 1px solid rgba(245,158,11,0.2); }
+  &.perf { background: rgba(124,58,237,0.1); color: var(--accent2); border: 1px solid rgba(124,58,237,0.2); }
+}
+
+.scenario-info { flex: 1; min-width: 0; }
+.scenario-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.scenario-page { font-size: 11px; color: var(--text3); font-family: 'Space Mono', monospace; }
+.scenario-actions { display:flex; gap:6px; flex-shrink:0; }
+
+// Data panel
+.scenario-data-panel {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  background: var(--surface2);
+  animation: fadeIn 0.2s ease;
+
+  &.open { display: block; }
+}
+
+.data-header {
+  font-size: 10px;
+  color: var(--accent2);
+  font-family: 'Space Mono', monospace;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.data-fields {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  line-height: 1.9;
+}
+
+.data-field { display:flex; gap:12px; align-items:center; margin-bottom: 4px; }
+.data-key { color: var(--accent2); flex-shrink:0; width: 120px; }
+.data-val {
+  flex: 1;
+  input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border2);
+    color: var(--success);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    width: 100%;
+    outline: none;
+    padding: 1px 3px;
+    &:focus { border-bottom-color: var(--accent); }
+  }
+}
+
+.data-actions { display:flex; gap:8px; margin-top: 10px; }
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }

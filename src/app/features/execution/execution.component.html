@@ -1,0 +1,62 @@
+<div class="section-title">Exécution des tests</div>
+<div class="section-sub">Admin Dashboard — Angular 17 — Playwright — 23 scénarios en file</div>
+
+<!-- PIPELINE -->
+<div class="card mb-16">
+  <div class="card-header"><div class="card-title">Pipeline d'exécution</div></div>
+  <div class="card-body">
+    <div class="pipeline-stages">
+      <ng-container *ngFor="let stage of stages; let i = index; let last = last">
+        <div class="pipeline-stage">
+          <div class="stage-node" [ngClass]="stage.state">{{ stage.icon }}</div>
+          <div class="stage-label" style="white-space:pre-line;text-align:center">{{ stage.label }}</div>
+        </div>
+        <div *ngIf="!last" class="stage-connector"
+          [ngClass]="{ done: stages[i].state === 'done', running: stages[i].state === 'running' }">
+        </div>
+      </ng-container>
+    </div>
+
+    <div class="exec-stats">
+      <div class="exec-stat" *ngFor="let s of stats">
+        <div class="exec-stat-val" [style.color]="s.color">{{ s.value }}</div>
+        <div class="exec-stat-label">{{ s.label }}</div>
+      </div>
+    </div>
+
+    <div class="progress-bar" style="margin-top:16px;height:6px">
+      <div class="progress-fill cyan" [style.width.%]="progress"></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px;text-align:right">
+      21/23 tests · {{ progress }}%
+    </div>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="card mb-16">
+  <div class="card-header">
+    <div class="card-title">Console d'exécution</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span class="status-badge running">EN COURS</span>
+      <button class="btn btn-danger btn-sm">■ Arrêter</button>
+    </div>
+  </div>
+  <div class="execution-log">
+    <div class="log-line" *ngFor="let log of logs">
+      <span class="log-time">{{ log.time }}</span>
+      <span class="log-level" [ngClass]="log.level">{{ log.level.toUpperCase() }}</span>
+      <span class="log-msg">{{ log.msg }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- AI INSIGHT -->
+<div class="ai-insight">
+  <div class="ai-icon">🧠</div>
+  <div class="ai-text">
+    <strong>Analyse IA temps réel :</strong> 3 échecs détectés — 2 probablement causés par des changements de
+    sélecteurs CSS suite au dernier déploiement. L'IA suggère de régénérer les sélecteurs automatiquement.
+    1 échec lié à un timeout réseau.
+  </div>
+</div>
