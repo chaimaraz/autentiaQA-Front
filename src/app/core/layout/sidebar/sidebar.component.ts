@@ -53,7 +53,7 @@ export class SidebarComponent implements OnInit {
     {
       label: 'Workflow Test',
       items: [
-        { label: 'Nouveau projet', icon: '✦', route: '/projects' },
+        { label: 'Nouveau projet', icon: '✦', route: '/projects/new' },
         { label: 'Scénarios IA', icon: '≡', route: '/scenarios', badge: '47' },
         {
           label: 'Flux personnalisés',

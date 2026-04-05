@@ -1,0 +1,415 @@
+<!-- new-project.component.html -->
+<div class="wizard">
+
+  <!-- ==================== WIZARD HEADER ==================== -->
+  <div class="wizard-header">
+    <div>
+      <div class="section-title">Créer un nouveau projet</div>
+      <div class="section-sub">L'IA analysera votre application et générera tous les scénarios de test automatiquement.</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" (click)="cancel()">✕ Annuler</button>
+  </div>
+
+  <!-- ==================== STEP INDICATOR ==================== -->
+  <div class="wizard-steps mb-24">
+    <ng-container *ngFor="let step of steps; let last = last">
+      <div class="wizard-step">
+        <div
+          class="step-num"
+          [ngClass]="{
+            done: getStepState(step.num) === 'done',
+            active: getStepState(step.num) === 'active'
+          }"
+          (click)="goToStep(step.num)"
+          style="cursor:pointer"
+        >
+          {{ getStepState(step.num) === 'done' ? '✓' : step.num }}
+        </div>
+        <div class="step-label" [ngClass]="{ active: getStepState(step.num) !== 'pending' }">
+          {{ step.label }}
+        </div>
+      </div>
+      <div class="step-line" *ngIf="!last"></div>
+    </ng-container>
+  </div>
+
+  <!-- ==================== STEP 1 — CONFIGURATION ==================== -->
+  <div *ngIf="currentStep() === 1">
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title">① Informations du projet</div>
+      </div>
+      <div class="card-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Nom du projet *</label>
+            <input class="form-input" [(ngModel)]="projectName" placeholder="Mon projet QA" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">URL cible *</label>
+            <input class="form-input" [(ngModel)]="projectUrl" placeholder="https://monapp.io" />
+            <div class="form-hint">⚡ L'IA effectuera un crawl automatique depuis cette URL</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Description *</label>
+          <textarea class="form-input" [(ngModel)]="projectDescription" rows="3"
+            placeholder="Décrivez le contexte et les objectifs des tests..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-nav">
+      <button class="btn btn-ghost" (click)="cancel()">Annuler</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" (click)="saveDraft()">💾 Sauvegarder brouillon</button>
+        <button class="btn btn-primary" (click)="next()">Suivant →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 2 — MODE & TYPES ==================== -->
+  <div *ngIf="currentStep() === 2">
+
+    <!-- Generation mode -->
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title">② Mode de génération des scénarios</div>
+      </div>
+      <div class="card-body">
+        <div class="mode-grid mb-16">
+          <div
+            class="mode-card"
+            *ngFor="let mode of generationModes"
+            [ngClass]="[mode.colorClass, mode.selected ? 'selected' : '']"
+            (click)="selectMode(mode)"
+          >
+            <span class="mode-badge" *ngIf="mode.key === 'SPEC_DOCUMENT'">IA</span>
+            <span class="mode-icon">{{ mode.icon }}</span>
+            <div class="mode-title">{{ mode.title }}</div>
+            <div class="mode-desc">{{ mode.desc }}</div>
+          </div>
+        </div>
+
+        <!-- ===== UPLOAD ZONE — visible uniquement si SPEC_DOCUMENT ===== -->
+        <div *ngIf="isSpecMode" class="upload-section">
+          <label class="form-label">Documents de spécification * <span class="form-hint-inline">(PDF, DOCX — max 20 MB / fichier)</span></label>
+
+          <!-- Drop zone -->
+          <div
+            class="drop-zone"
+            [ngClass]="{ 'drag-over': isDragOver, 'has-files': uploadedFiles.length > 0 }"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave()"
+            (drop)="onDrop($event)"
+            (click)="fileInput.click()"
+          >
+            <input
+              #fileInput
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              style="display:none"
+              (change)="onFilesSelected($event)"
+            />
+            <div *ngIf="uploadedFiles.length === 0" class="drop-zone-empty">
+              <span class="drop-icon">📁</span>
+              <div class="drop-title">Glissez vos fichiers ici</div>
+              <div class="drop-sub">ou <span class="drop-link">cliquez pour parcourir</span></div>
+              <div class="drop-hint">PDF, DOCX — jusqu'à 10 fichiers, 20 MB chacun</div>
+            </div>
+            <div *ngIf="uploadedFiles.length > 0" class="drop-zone-has-files" (click)="$event.stopPropagation()">
+              <div class="file-list">
+                <div class="file-item" *ngFor="let item of uploadedFiles; let i = index">
+                  <span class="file-icon">{{ item.mimeType === 'application/pdf' ? '📕' : '📘' }}</span>
+                  <div class="file-info">
+                    <div class="file-name">{{ item.name }}</div>
+                    <div class="file-size">{{ item.sizeLabel }}</div>
+                  </div>
+                  <button class="file-remove" (click)="removeFile(i)" title="Supprimer">✕</button>
+                </div>
+              </div>
+              <button class="btn btn-ghost btn-sm add-more-btn" (click)="fileInput.click()">
+                + Ajouter d'autres fichiers
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detected framework tags (URL mode) -->
+        <div class="form-group" style="margin-bottom:0" *ngIf="!isSpecMode">
+          <label class="form-label">Framework détecté</label>
+          <div class="chip-row">
+            <span *ngFor="let tag of detectedTags; let i = index"
+              class="tag" [ngClass]="i === 0 ? 'cyan' : ''">
+              {{ i === 0 ? '✓ ' : '' }}{{ tag }}
+            </span>
+          </div>
+          <div class="form-hint">🤖 Détection IA via analyse DOM</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test types -->
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title">③ Types de tests à générer</div>
+      </div>
+      <div class="card-body">
+        <div class="test-types-grid">
+          <div
+            class="test-type-toggle"
+            *ngFor="let type of testTypes"
+            [ngClass]="{ selected: type.selected }"
+            (click)="toggleTestType(type)"
+          >
+            <div class="toggle-check">{{ type.selected ? '✓' : '' }}</div>
+            <span>{{ type.label }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Framework -->
+    <div class="card mb-24">
+      <div class="card-header">
+        <div class="card-title">④ Framework de test cible</div>
+      </div>
+      <div class="card-body">
+        <div class="grid-3">
+          <div
+            class="mode-card"
+            *ngFor="let fw of frameworks"
+            [ngClass]="{ 'cyan selected': fw.selected }"
+            style="padding:14px"
+            (click)="selectFramework(fw)"
+          >
+            <div class="mode-title" style="font-size:13px">{{ fw.name }}</div>
+            <div class="mode-desc">{{ fw.desc }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-nav">
+      <button class="btn btn-ghost" (click)="prev()">← Précédent</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" (click)="saveDraft()">💾 Sauvegarder brouillon</button>
+        <button class="btn btn-primary" (click)="next()">Suivant →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 3 — INTÉGRATION ==================== -->
+  <div *ngIf="currentStep() === 3">
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title">⑤ Intégration CI/CD <span class="ai-badge">🤖 Auto</span></div>
+      </div>
+      <div class="card-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Dépôt GitHub</label>
+            <input class="form-input" [(ngModel)]="repoUrl"
+              placeholder="https://github.com/company/repo"
+              style="font-family:'Space Mono',monospace;font-size:12px" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Branche surveillée</label>
+            <input class="form-input" [(ngModel)]="branch" />
+            <div class="form-hint">Chaque push/merge sur cette branche déclenchera les tests.</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Événements déclencheurs</label>
+          <div class="git-events-grid">
+            <div class="git-event-toggle" [ngClass]="{ selected: onPush }" (click)="onPush = !onPush">
+              {{ onPush ? '✓' : '○' }} Push sur main
+            </div>
+            <div class="git-event-toggle" [ngClass]="{ selected: onPr }" (click)="onPr = !onPr">
+              {{ onPr ? '✓' : '○' }} Merge Pull Request
+            </div>
+            <div class="git-event-toggle" [ngClass]="{ selected: onTag }" (click)="onTag = !onTag">
+              {{ onTag ? '✓' : '○' }} Nouveau tag
+            </div>
+            <div class="git-event-toggle" [ngClass]="{ selected: onSchedule }" (click)="onSchedule = !onSchedule">
+              {{ onSchedule ? '✓' : '○' }} Planifié (cron)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title">⑥ Notifications</div>
+      </div>
+      <div class="card-body">
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">Email en cas d'échec</div>
+            <div class="switch-sub">qa company.com</div>
+          </div>
+          <div class="toggle-switch" [ngClass]="{ on: notifyEmail }" (click)="notifyEmail = !notifyEmail"></div>
+        </div>
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">Slack — canal #tests-ci</div>
+            <div class="switch-sub">Message avec lien vers rapport</div>
+          </div>
+          <div class="toggle-switch" [ngClass]="{ on: notifySlack }" (click)="notifySlack = !notifySlack"></div>
+        </div>
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">Créer bug Jira si test échoue</div>
+            <div class="switch-sub">PROJ — priorité Auto</div>
+          </div>
+          <div class="toggle-switch" [ngClass]="{ on: createJiraBug }" (click)="createJiraBug = !createJiraBug"></div>
+        </div>
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">Bloquer le merge si tests échouent</div>
+            <div class="switch-sub">Required status check GitHub</div>
+          </div>
+          <div class="toggle-switch" [ngClass]="{ on: blockMerge }" (click)="blockMerge = !blockMerge"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-nav">
+      <button class="btn btn-ghost" (click)="prev()">← Précédent</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" (click)="saveDraft()">💾 Sauvegarder brouillon</button>
+        <button class="btn btn-primary" (click)="next()">Suivant →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 4 — LANCEMENT ==================== -->
+  <div *ngIf="currentStep() === 4">
+
+    <!-- Summary -->
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title">⑦ Récapitulatif du projet</div>
+      </div>
+      <div class="card-body">
+        <div class="recap-grid">
+          <div class="recap-item">
+            <div class="recap-label">Nom du projet</div>
+            <div class="recap-value">{{ projectName }}</div>
+          </div>
+          <div class="recap-item">
+            <div class="recap-label">URL cible</div>
+            <div class="recap-value" style="font-family:'Space Mono',monospace;font-size:12px">{{ projectUrl }}</div>
+          </div>
+          <div class="recap-item">
+            <div class="recap-label">Mode de génération</div>
+            <div class="recap-value">{{ selectedMode?.title }}</div>
+          </div>
+          <div class="recap-item">
+            <div class="recap-label">Framework</div>
+            <div class="recap-value">
+              <span class="tag cyan">{{ selectedFramework?.name }}</span>
+            </div>
+          </div>
+          <!-- Documents uploadés (si SPEC_DOCUMENT) -->
+          <div class="recap-item" style="grid-column: 1 / -1" *ngIf="isSpecMode && uploadedFiles.length > 0">
+            <div class="recap-label">Documents de spécification</div>
+            <div class="recap-value">
+              <div class="chip-row" style="margin-top:6px">
+                <span class="tag purple" *ngFor="let f of uploadedFiles">📄 {{ f.name }} ({{ f.sizeLabel }})</span>
+              </div>
+            </div>
+          </div>
+          <div class="recap-item" style="grid-column: 1 / -1">
+            <div class="recap-label">Types de tests sélectionnés</div>
+            <div class="recap-value">
+              <div class="chip-row" style="margin-top:6px">
+                <span class="tag green" *ngFor="let t of selectedTestTypes">✓ {{ t.label }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="recap-item" style="grid-column: 1 / -1">
+            <div class="recap-label">Description</div>
+            <div class="recap-value" style="color:var(--text2);font-size:13px;line-height:1.6">{{ projectDescription }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI estimate -->
+    <div class="ai-insight mb-16">
+      <div class="ai-icon">🧠</div>
+      <div class="ai-text">
+        <strong>Estimation IA :</strong> Basé sur la configuration choisie, l'IA devrait générer entre
+        <strong>35 et 60 scénarios</strong> en <strong>~2 minutes</strong>.
+        Le crawl démarrera automatiquement dès que vous cliquerez sur <em>Lancer l'analyse</em>.
+      </div>
+    </div>
+
+    <!-- Error banner -->
+    <div class="error-banner mb-16" *ngIf="submitError()">
+      ⚠️ {{ submitError() }}
+    </div>
+
+    <!-- Timeline -->
+    <div class="card mb-24">
+      <div class="card-header">
+        <div class="card-title">Ce qui va se passer</div>
+      </div>
+      <div class="card-body">
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-icon done">{{ isSpecMode ? '📄' : '🕸️' }}</div>
+            <div class="timeline-content">
+              <div class="timeline-title">{{ isSpecMode ? 'Analyse des documents' : 'Crawl DOM automatique' }}</div>
+              <div class="timeline-desc">
+                {{ isSpecMode
+                  ? "L'IA extrait les règles métier et les flux depuis vos " + uploadedFiles.length + " document(s)."
+                  : "L'IA parcourt toutes les pages de " + projectUrl + " et détecte les formulaires, boutons et états."
+                }}
+              </div>
+            </div>
+            <div class="timeline-time">~30s</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-icon">🧠</div>
+            <div class="timeline-content">
+              <div class="timeline-title">Analyse intelligente</div>
+              <div class="timeline-desc">Détection du framework, des patterns d'authentification, des API REST et des flux métier.</div>
+            </div>
+            <div class="timeline-time">~20s</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-icon">✦</div>
+            <div class="timeline-content">
+              <div class="timeline-title">Génération des scénarios</div>
+              <div class="timeline-desc">Création automatique des cas de test positifs, négatifs, de sécurité et de performance.</div>
+            </div>
+            <div class="timeline-time">~30s</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-icon">▷</div>
+            <div class="timeline-content">
+              <div class="timeline-title">Première exécution</div>
+              <div class="timeline-desc">Lancement immédiat des tests sur {{ selectedFramework?.name }} avec rapport IA en temps réel.</div>
+            </div>
+            <div class="timeline-time">~2min</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-nav">
+      <button class="btn btn-ghost" (click)="prev()" [disabled]="isSubmitting()">← Précédent</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" (click)="saveDraft()" [disabled]="isSubmitting()">💾 Sauvegarder brouillon</button>
+        <button class="btn btn-primary launch-btn" (click)="launch()" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? '⏳ Création en cours...' : '🚀 Lancer l\'analyse IA' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

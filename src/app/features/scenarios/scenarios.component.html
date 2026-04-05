@@ -1,11 +1,20 @@
+<!-- ==================== MODAL ==================== -->
+<app-add-scenario-modal (saved)="onScenarioSaved($event)" />
+
+<!-- ==================== PAGE ==================== -->
 <div class="page-header">
   <div>
-    <div class="section-title">Scénarios générés par l'IA <span class="ai-badge">🤖 {{ counts.all() }} scénarios</span></div>
-    <div class="section-sub" style="margin-bottom:0">shop.example.com — Analyse terminée en 1m 23s — Angular 17 + JWT</div>
+    <div class="section-title">
+      Scénarios générés par l'IA
+      <span class="ai-badge">🤖 {{ counts.all() }} scénarios</span>
+    </div>
+    <div class="section-sub" style="margin-bottom:0">
+      shop.example.com — Analyse terminée en 1m 23s — Angular 17 + JWT
+    </div>
   </div>
   <div class="page-actions">
     <button class="btn btn-ghost btn-sm">⬇ Exporter JSON</button>
-    <button class="btn btn-purple btn-sm">✦ Ajouter un scénario</button>
+    <button class="btn btn-purple btn-sm" (click)="openAddModal()">✦ Ajouter un scénario</button>
     <a [routerLink]="'/execution'" class="btn btn-primary btn-sm">▷ Exécuter tous</a>
   </div>
 </div>
@@ -18,19 +27,16 @@
   </div>
 </div>
 
-<!-- TABS -->
 <div class="tabs">
-  <div class="tab" [ngClass]="{ active: activeTab() === 'all' }" (click)="setTab('all')">Tous ({{ counts.all() }})</div>
-  <div class="tab" [ngClass]="{ active: activeTab() === 'pos' }" (click)="setTab('pos')">Positifs ({{ counts.pos() }})</div>
-  <div class="tab" [ngClass]="{ active: activeTab() === 'neg' }" (click)="setTab('neg')">Négatifs ({{ counts.neg() }})</div>
-  <div class="tab" [ngClass]="{ active: activeTab() === 'sec' }" (click)="setTab('sec')">Sécurité ({{ counts.sec() }})</div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'all' }"  (click)="setTab('all')">Tous ({{ counts.all() }})</div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'pos' }"  (click)="setTab('pos')">Positifs ({{ counts.pos() }})</div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'neg' }"  (click)="setTab('neg')">Négatifs ({{ counts.neg() }})</div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'sec' }"  (click)="setTab('sec')">Sécurité ({{ counts.sec() }})</div>
   <div class="tab" [ngClass]="{ active: activeTab() === 'perf' }" (click)="setTab('perf')">Performance ({{ counts.perf() }})</div>
 </div>
 
-<!-- SCENARIOS LIST -->
 <div class="scenarios-list">
   <div class="scenario-item" *ngFor="let s of filtered">
-    <!-- HEADER ROW -->
     <div class="scenario-row">
       <span class="scenario-type" [ngClass]="s.typeClass">{{ s.typeLabel }}</span>
       <div class="scenario-info">
@@ -38,23 +44,19 @@
         <div class="scenario-page">{{ s.page }}</div>
       </div>
       <div class="scenario-actions">
-        <button class="btn btn-ghost btn-sm" (click)="toggleData(s)">⚙ Données</button>
-        <button class="btn btn-ghost btn-sm">✏ Modifier</button>
+        <button class="btn btn-ghost btn-sm" (click)="toggleData(s)">
+          {{ s.dataOpen ? '▴ Données' : '⚙ Données' }}
+        </button>
+        <button class="btn btn-ghost btn-sm" (click)="openAddModal()">✏ Modifier</button>
         <a [routerLink]="'/execution'" class="btn btn-ghost btn-sm">▷ Exécuter</a>
       </div>
     </div>
-
-    <!-- DATA PANEL -->
     <div class="scenario-data-panel" [ngClass]="{ open: s.dataOpen }">
-      <div class="data-header">
-        <span>🤖 DONNÉES DE TEST GÉNÉRÉES AUTOMATIQUEMENT</span>
-      </div>
+      <div class="data-header"><span>🤖 DONNÉES DE TEST GÉNÉRÉES AUTOMATIQUEMENT</span></div>
       <div class="data-fields">
         <div class="data-field" *ngFor="let d of s.data">
           <span class="data-key">{{ d.k }}</span>
-          <span class="data-val">
-            <input [(ngModel)]="d.v" [placeholder]="d.v ? '' : '(vide)'" />
-          </span>
+          <span class="data-val"><input [(ngModel)]="d.v" [placeholder]="!d.v ? '(vide)' : ''" /></span>
         </div>
       </div>
       <div class="data-actions">

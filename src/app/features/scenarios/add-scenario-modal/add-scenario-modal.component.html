@@ -1,0 +1,249 @@
+<!-- BACKDROP -->
+<div class="modal-backdrop" *ngIf="isOpen()" (click)="close()">
+
+  <!-- MODAL PANEL -->
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+
+    <!-- ==================== HEADER ==================== -->
+    <div class="modal-header">
+      <div class="modal-header-icon">✦</div>
+      <div>
+        <div class="modal-title">Ajouter un scénario</div>
+        <div class="modal-subtitle">Choisissez votre méthode de création</div>
+      </div>
+      <button class="btn btn-ghost btn-sm close-btn" (click)="close()">✕</button>
+    </div>
+
+    <!-- ==================== BODY ==================== -->
+    <div class="modal-body">
+
+      <!-- MODE TABS -->
+      <div class="mode-tabs">
+        <div
+          class="mode-tab"
+          [ngClass]="{ active: activeMode() === 'nlp' }"
+          (click)="setMode('nlp')"
+        >
+          <span class="mode-tab-icon">🗣️</span>
+          <div class="mode-tab-title">Langage naturel</div>
+          <div class="mode-tab-desc">Décrivez en français, l'IA génère les étapes et le script</div>
+        </div>
+        <div
+          class="mode-tab purple"
+          [ngClass]="{ active: activeMode() === 'record' }"
+          (click)="setMode('record')"
+        >
+          <span class="mode-tab-icon">🔴</span>
+          <div class="mode-tab-title">Enregistrement en direct</div>
+          <div class="mode-tab-desc">Naviguez dans le navigateur, le système capture vos actions</div>
+        </div>
+      </div>
+
+      <!-- ==================== NLP SECTION ==================== -->
+      <div class="nlp-section" *ngIf="activeMode() === 'nlp'">
+
+        <!-- Name + Type row -->
+        <div class="field-row">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Nom du scénario</label>
+            <input
+              class="form-input"
+              [(ngModel)]="nlpName"
+              placeholder="Ex: Connexion avec 2FA activée"
+            />
+          </div>
+          <div class="form-group" style="flex:0 0 auto">
+            <label class="form-label">Type</label>
+            <div class="type-row">
+              <div
+                class="type-btn"
+                *ngFor="let t of [
+                  { val: 'pos', label: 'Positif', cls: 'pos' },
+                  { val: 'neg', label: 'Négatif', cls: 'neg' },
+                  { val: 'sec', label: 'Sécurité', cls: 'sec' },
+                  { val: 'perf', label: 'Perf', cls: 'perf' }
+                ]"
+                [ngClass]="[t.cls, selectedType() === t.val ? 'selected' : '']"
+                (click)="setType($any(t.val))">
+                <span class="type-check">{{ selectedType() === t.val ? '✓' : '' }}</span>
+                {{ t.label }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NLP Textarea -->
+        <div class="form-group">
+          <label class="form-label">Décrivez le scénario en langage naturel</label>
+          <textarea
+            class="nlp-textarea"
+            [(ngModel)]="nlpText"
+            placeholder="Ex: L'utilisateur va sur la page de login, entre son email 'test@example.com' et son mot de passe 'Pass123!', clique sur Se connecter, puis vérifie qu'il est bien redirigé vers le dashboard et que son nom apparaît dans le header.
+
+Ou encore: Vérifier qu'un utilisateur non connecté qui tente d'accéder à /admin est redirigé vers /login avec un message d'erreur 401."
+          ></textarea>
+          <div class="nlp-footer-row">
+            <span class="form-hint">💡 Plus vous êtes précis, plus l'IA générera un script fiable</span>
+            <button
+              class="btn btn-primary btn-sm"
+              (click)="parseNLP()"
+              [disabled]="parsing() || !nlpText.trim()"
+            >
+              <span *ngIf="parsing()">⏳ Analyse en cours...</span>
+              <span *ngIf="!parsing()">🧠 Analyser avec l'IA</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- PARSED PREVIEW -->
+        <div class="parsed-preview" [ngClass]="{ show: parsedPreviewVisible() }">
+
+          <!-- Steps -->
+          <div class="preview-section-label">
+            🤖 Étapes détectées
+            <span class="steps-count">{{ parsedSteps().length }} étapes</span>
+          </div>
+
+          <div class="parsed-steps">
+            <div class="parsed-step" *ngFor="let step of parsedSteps()">
+              <div class="parsed-step-num">{{ step.num }}</div>
+              <div class="parsed-step-action">{{ step.action }}</div>
+              <div class="parsed-step-selector">{{ step.selector }}</div>
+              <span class="parsed-step-type" [ngClass]="step.type">{{ step.type.toUpperCase() }}</span>
+            </div>
+          </div>
+
+          <!-- Data fields -->
+          <div class="preview-data-box">
+            <div class="preview-data-label">DONNÉES DE TEST GÉNÉRÉES</div>
+            <div class="data-field-row" *ngFor="let d of parsedData()">
+              <span class="data-key">{{ d.k }}</span>
+              <span class="data-val">
+                <input [(ngModel)]="d.v" [placeholder]="!d.v ? '(vide)' : ''" />
+              </span>
+            </div>
+          </div>
+
+          <!-- Script preview -->
+          <div class="preview-script-box">
+            <div class="preview-script-header">
+              <span>SCRIPT PLAYWRIGHT GÉNÉRÉ</span>
+              <button class="btn btn-ghost btn-xs" (click)="copyScript()">📋 Copier</button>
+            </div>
+            <pre class="script-block">{{ parsedScript() }}</pre>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ==================== RECORD SECTION ==================== -->
+      <div class="record-section" *ngIf="activeMode() === 'record'">
+
+        <!-- AI Info banner -->
+        <div class="ai-insight" style="margin-bottom:16px">
+          <div class="ai-icon">💡</div>
+          <div class="ai-text">
+            <strong>Comment ça fonctionne :</strong> Cliquez sur <em>Démarrer l'enregistrement</em>,
+            puis exécutez votre scénario dans le navigateur. Chaque action est capturée et convertie
+            en script Playwright automatiquement.
+          </div>
+        </div>
+
+        <!-- Scenario name -->
+        <div class="form-group">
+          <label class="form-label">Nom du scénario</label>
+          <input
+            class="form-input"
+            [(ngModel)]="recName"
+            placeholder="Ex: Parcours achat — carte Visa"
+          />
+        </div>
+
+        <!-- Browser mockup -->
+        <div class="browser-mockup">
+          <div class="browser-bar">
+            <div class="browser-dots">
+              <div class="b-dot red"></div>
+              <div class="b-dot yellow"></div>
+              <div class="b-dot green"></div>
+            </div>
+            <div class="browser-url">
+              🔒 <span>shop.example.com/login</span>
+            </div>
+            <div class="rec-badge" *ngIf="isRecording()">
+              <div class="rec-dot"></div> REC
+            </div>
+          </div>
+          <div class="browser-content">
+            <div class="browser-idle" *ngIf="!isRecording()">
+              <div class="browser-idle-icon">🖥️</div>
+              <div class="browser-idle-title">Démarrez l'enregistrement</div>
+              <div class="browser-idle-sub">Le système capturera chaque clic, saisie et navigation</div>
+            </div>
+            <div class="browser-recording" *ngIf="isRecording()">
+              <div style="font-size:11px;color:var(--text3)">Simulation en cours...</div>
+              <div class="rec-indicator">
+                <div class="rec-dot"></div>
+                Enregistrement actif — <strong>{{ recEvents().length }}</strong> actions capturées
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Record controls -->
+        <div class="rec-controls">
+          <button
+            class="btn btn-danger btn-sm"
+            *ngIf="!isRecording()"
+            (click)="startRecording()"
+          >⏺ Démarrer l'enregistrement</button>
+
+          <button
+            class="btn btn-ghost btn-sm"
+            *ngIf="isRecording()"
+            (click)="stopRecording()"
+          >⏹ Arrêter</button>
+
+          <div class="rec-timer" *ngIf="isRecording()">{{ recTimerLabel }}</div>
+          <div style="flex:1"></div>
+          <button class="btn btn-ghost btn-sm" (click)="clearRecording()">🗑 Réinitialiser</button>
+        </div>
+
+        <!-- Events log -->
+        <div class="rec-events-container" *ngIf="recEvents().length > 0">
+          <div class="rec-events-title">
+            Actions enregistrées
+            <span class="ai-badge">🤖 Script généré en temps réel</span>
+          </div>
+          <div class="rec-events-log">
+            <div class="rec-event-row" *ngFor="let evt of recEvents()">
+              <span class="rec-time">{{ evt.time }}</span>
+              <span class="rec-action-badge" [ngClass]="evt.actionClass">{{ evt.actionLabel }}</span>
+              <span class="rec-desc" [innerHTML]="evt.desc"></span>
+            </div>
+          </div>
+
+          <!-- Script -->
+          <div class="preview-script-box" style="margin-top:12px" *ngIf="recScript()">
+            <div class="preview-script-header">
+              <span>SCRIPT PLAYWRIGHT GÉNÉRÉ</span>
+              <button class="btn btn-ghost btn-xs">📋 Copier</button>
+            </div>
+            <pre class="script-block">{{ recScript() }}</pre>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== FOOTER ==================== -->
+    <div class="modal-footer">
+      <button class="btn btn-ghost" (click)="close()">Annuler</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" (click)="saveDraft()">💾 Sauvegarder brouillon</button>
+        <button class="btn btn-primary" (click)="save()">✓ Ajouter le scénario</button>
+      </div>
+    </div>
+
+  </div>
+</div>

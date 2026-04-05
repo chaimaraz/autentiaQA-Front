@@ -1,7 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ViewChild } from '@angular/core';
 import { NgFor, NgClass, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { AddScenarioModalComponent, NewScenario } from './add-scenario-modal/add-scenario-modal.component';
 
 export interface ScenarioData { k: string; v: string; }
 export interface Scenario {
@@ -18,11 +19,13 @@ export interface Scenario {
 @Component({
   selector: 'app-scenarios',
   standalone: true,
-  imports: [NgFor, NgClass, NgIf, FormsModule, RouterLink],
+  imports: [NgFor, NgClass, NgIf, FormsModule, RouterLink, AddScenarioModalComponent],
   templateUrl: './scenarios.component.html',
   styleUrl: './scenarios.component.scss',
 })
 export class ScenariosComponent {
+  @ViewChild(AddScenarioModalComponent) addModal!: AddScenarioModalComponent;
+
   activeTab = signal<'all' | 'pos' | 'neg' | 'sec' | 'perf'>('all');
 
   scenarios: Scenario[] = [
@@ -40,7 +43,7 @@ export class ScenariosComponent {
     {
       id: '2', type: 'neg', typeLabel: 'NÉGATIF', typeClass: 'negative',
       name: 'Tentative login avec mot de passe vide',
-      page: '/login → message d\'erreur attendu · TC-002',
+      page: "/login → message d'erreur attendu · TC-002",
       dataOpen: false,
       data: [
         { k: 'email', v: 'test.qa+2847@mail.io' },
@@ -65,12 +68,11 @@ export class ScenariosComponent {
     {
       id: '4', type: 'sec', typeLabel: 'SÉCURITÉ', typeClass: 'security',
       name: 'Injection SQL sur champ de recherche',
-      page: '/search — payload: \' OR 1=1 -- · TC-004',
+      page: "/search — payload: ' OR 1=1 -- · TC-004",
       dataOpen: false,
       data: [
         { k: 'payload_1', v: "' OR 1=1 --" },
         { k: 'payload_2', v: "'; DROP TABLE users; --" },
-        { k: 'payload_3', v: "1' AND '1'='1" },
         { k: 'expected', v: '400 ou message sécurisé' },
       ],
     },
@@ -95,7 +97,6 @@ export class ScenariosComponent {
         { k: 'ramp_up_sec', v: '60' },
         { k: 'duration', v: '300s' },
         { k: 'p95_threshold', v: '2000ms' },
-        { k: 'error_rate_max', v: '1%' },
       ],
     },
   ];
@@ -105,19 +106,39 @@ export class ScenariosComponent {
     return t === 'all' ? this.scenarios : this.scenarios.filter(s => s.type === t);
   }
 
-  setTab(tab: typeof this.activeTab extends ReturnType<infer F> ? ReturnType<F> : never): void {
-    this.activeTab.set(tab as any);
+  setTab(tab: 'all' | 'pos' | 'neg' | 'sec' | 'perf'): void {
+    this.activeTab.set(tab);
   }
 
   toggleData(s: Scenario): void {
     s.dataOpen = !s.dataOpen;
   }
 
+  openAddModal(): void {
+    this.addModal.open();
+  }
+
+  onScenarioSaved(scenario: NewScenario): void {
+    const typeLabels: Record<string, string> = { pos: 'POSITIF', neg: 'NÉGATIF', sec: 'SÉCURITÉ', perf: 'PERF' };
+    const typeClasses: Record<string, string> = { pos: 'positive', neg: 'negative', sec: 'security', perf: 'perf' };
+
+    this.scenarios.unshift({
+      id: String(Date.now()),
+      type: scenario.type,
+      typeLabel: typeLabels[scenario.type],
+      typeClass: typeClasses[scenario.type],
+      name: scenario.name,
+      page: `Nouveau scénario · TC-${String(this.scenarios.length + 1).padStart(3, '0')}`,
+      dataOpen: false,
+      data: scenario.data,
+    });
+  }
+
   counts = {
-    all: () => this.scenarios.length,
-    pos: () => this.scenarios.filter(s => s.type === 'pos').length,
-    neg: () => this.scenarios.filter(s => s.type === 'neg').length,
-    sec: () => this.scenarios.filter(s => s.type === 'sec').length,
+    all:  () => this.scenarios.length,
+    pos:  () => this.scenarios.filter(s => s.type === 'pos').length,
+    neg:  () => this.scenarios.filter(s => s.type === 'neg').length,
+    sec:  () => this.scenarios.filter(s => s.type === 'sec').length,
     perf: () => this.scenarios.filter(s => s.type === 'perf').length,
   };
 }
