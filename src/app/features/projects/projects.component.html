@@ -1,22 +1,77 @@
 <div class="section-title">Tous les projets</div>
-<div class="section-sub">3 projets actifs</div>
+
+<div class="section-sub">
+  {{ projects.length }} projets actifs
+</div>
+
 <div class="card">
+
   <div class="card-header">
     <div class="card-title">Projets de test</div>
-    <a [routerLink]="'/projects/new'" class="btn btn-primary btn-sm">+ Nouveau</a>
+
+    <a [routerLink]="'/projects/new'" class="btn btn-primary btn-sm">
+      + Nouveau
+    </a>
   </div>
+
   <div class="card-body">
-    <div class="project-item" *ngFor="let p of projects" [routerLink]="p.route">
-      <div class="project-dot" [style.background]="p.dotColor"></div>
+
+    <!-- Loading -->
+    <div *ngIf="loading">
+      Chargement des projets...
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="errorMessage" class="error">
+      {{ errorMessage }}
+    </div>
+
+    <!-- Liste projets -->
+    <div
+      class="project-item"
+      *ngFor="let p of projects"
+      [routerLink]="p.route"
+    >
+      <div
+        class="project-dot"
+        [style.background]="p.dotColor"
+      ></div>
+
       <div class="project-info">
-        <div class="project-name">{{ p.name }}</div>
-        <div class="project-url">{{ p.url }}</div>
+        <div class="project-name">
+          {{ p.name }}
+        </div>
+
+        <div class="project-url">
+          {{ p.url }}
+        </div>
       </div>
+
       <div class="project-meta">
-        <span class="tag cyan">{{ p.scenarios }} scénarios</span>
-        <span class="status-badge" [ngClass]="p.status">{{ p.statusLabel }}</span>
-        <button class="btn btn-ghost btn-sm">⟶</button>
+
+        <!-- 0 affiché par défaut -->
+        <span class="tag cyan">
+          {{ p.scenarios || 0 }} scénarios
+        </span>
+
+        <span
+          class="status-badge"
+          [ngClass]="p.status"
+        >
+          {{ p.statusLabel }}
+        </span>
+
+        <button class="btn btn-ghost btn-sm">
+          ⟶
+        </button>
+
       </div>
     </div>
+
+    <!-- Aucun projet -->
+    <div *ngIf="!loading && projects.length === 0">
+      Aucun projet trouvé.
+    </div>
+
   </div>
 </div>

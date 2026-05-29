@@ -17,7 +17,7 @@
     <!-- ==================== BODY ==================== -->
     <div class="modal-body">
 
-      <!-- MODE TABS -->
+      <!-- MODE TABS — INCHANGÉ -->
       <div class="mode-tabs">
         <div
           class="mode-tab"
@@ -42,7 +42,7 @@
       <!-- ==================== NLP SECTION ==================== -->
       <div class="nlp-section" *ngIf="activeMode() === 'nlp'">
 
-        <!-- Name + Type row -->
+        <!-- Name + Type row — INCHANGÉ -->
         <div class="field-row">
           <div class="form-group" style="flex:1">
             <label class="form-label">Nom du scénario</label>
@@ -72,15 +72,13 @@
           </div>
         </div>
 
-        <!-- NLP Textarea -->
+        <!-- NLP Textarea — INCHANGÉ -->
         <div class="form-group">
           <label class="form-label">Décrivez le scénario en langage naturel</label>
           <textarea
             class="nlp-textarea"
             [(ngModel)]="nlpText"
-            placeholder="Ex: L'utilisateur va sur la page de login, entre son email 'test@example.com' et son mot de passe 'Pass123!', clique sur Se connecter, puis vérifie qu'il est bien redirigé vers le dashboard et que son nom apparaît dans le header.
-
-Ou encore: Vérifier qu'un utilisateur non connecté qui tente d'accéder à /admin est redirigé vers /login avec un message d'erreur 401."
+            placeholder="Ex: L'utilisateur va sur la page de login, entre son email 'test@example.com' et son mot de passe 'Pass123!', clique sur Se connecter, puis vérifie qu'il est bien redirigé vers le dashboard."
           ></textarea>
           <div class="nlp-footer-row">
             <span class="form-hint">💡 Plus vous êtes précis, plus l'IA générera un script fiable</span>
@@ -98,7 +96,7 @@ Ou encore: Vérifier qu'un utilisateur non connecté qui tente d'accéder à /ad
         <!-- PARSED PREVIEW -->
         <div class="parsed-preview" [ngClass]="{ show: parsedPreviewVisible() }">
 
-          <!-- Steps -->
+          <!-- Steps — INCHANGÉ -->
           <div class="preview-section-label">
             🤖 Étapes détectées
             <span class="steps-count">{{ parsedSteps().length }} étapes</span>
@@ -113,18 +111,27 @@ Ou encore: Vérifier qu'un utilisateur non connecté qui tente d'accéder à /ad
             </div>
           </div>
 
-          <!-- Data fields -->
+          <!-- Data fields — CHANGÉ : ajout badge secret + placeholder visible -->
           <div class="preview-data-box">
             <div class="preview-data-label">DONNÉES DE TEST GÉNÉRÉES</div>
             <div class="data-field-row" *ngFor="let d of parsedData()">
-              <span class="data-key">{{ d.k }}</span>
+              <span class="data-key">
+                {{ d.k }}
+                <!-- AJOUT : badge secret si isSecret -->
+                <span class="secret-badge" *ngIf="d.isSecret">🔒</span>
+              </span>
               <span class="data-val">
-                <input [(ngModel)]="d.v" [placeholder]="!d.v ? '(vide)' : ''" />
+                <!-- CHANGÉ : type password si isSecret -->
+                <input
+                  [(ngModel)]="d.v"
+                  [type]="d.isSecret ? 'password' : 'text'"
+                  [placeholder]="!d.v ? '(vide)' : ''"
+                />
               </span>
             </div>
           </div>
 
-          <!-- Script preview -->
+          <!-- Script preview — INCHANGÉ -->
           <div class="preview-script-box">
             <div class="preview-script-header">
               <span>SCRIPT PLAYWRIGHT GÉNÉRÉ</span>
@@ -132,14 +139,13 @@ Ou encore: Vérifier qu'un utilisateur non connecté qui tente d'accéder à /ad
             </div>
             <pre class="script-block">{{ parsedScript() }}</pre>
           </div>
-        </div>
 
+        </div>
       </div>
 
-      <!-- ==================== RECORD SECTION ==================== -->
+      <!-- ==================== RECORD SECTION — INCHANGÉ ==================== -->
       <div class="record-section" *ngIf="activeMode() === 'record'">
 
-        <!-- AI Info banner -->
         <div class="ai-insight" style="margin-bottom:16px">
           <div class="ai-icon">💡</div>
           <div class="ai-text">
@@ -149,7 +155,6 @@ Ou encore: Vérifier qu'un utilisateur non connecté qui tente d'accéder à /ad
           </div>
         </div>
 
-        <!-- Scenario name -->
         <div class="form-group">
           <label class="form-label">Nom du scénario</label>
           <input
@@ -159,7 +164,6 @@ Ou encore: Vérifier qu'un utilisateur non connecté qui tente d'accéder à /ad
           />
         </div>
 
-        <!-- Browser mockup -->
         <div class="browser-mockup">
           <div class="browser-bar">
             <div class="browser-dots">
@@ -167,9 +171,7 @@ Ou encore: Vérifier qu'un utilisateur non connecté qui tente d'accéder à /ad
               <div class="b-dot yellow"></div>
               <div class="b-dot green"></div>
             </div>
-            <div class="browser-url">
-              🔒 <span>shop.example.com/login</span>
-            </div>
+            <div class="browser-url">🔒 <span>shop.example.com/login</span></div>
             <div class="rec-badge" *ngIf="isRecording()">
               <div class="rec-dot"></div> REC
             </div>
@@ -190,26 +192,18 @@ Ou encore: Vérifier qu'un utilisateur non connecté qui tente d'accéder à /ad
           </div>
         </div>
 
-        <!-- Record controls -->
         <div class="rec-controls">
-          <button
-            class="btn btn-danger btn-sm"
-            *ngIf="!isRecording()"
-            (click)="startRecording()"
-          >⏺ Démarrer l'enregistrement</button>
-
-          <button
-            class="btn btn-ghost btn-sm"
-            *ngIf="isRecording()"
-            (click)="stopRecording()"
-          >⏹ Arrêter</button>
-
+          <button class="btn btn-danger btn-sm" *ngIf="!isRecording()" (click)="startRecording()">
+            ⏺ Démarrer l'enregistrement
+          </button>
+          <button class="btn btn-ghost btn-sm" *ngIf="isRecording()" (click)="stopRecording()">
+            ⏹ Arrêter
+          </button>
           <div class="rec-timer" *ngIf="isRecording()">{{ recTimerLabel }}</div>
           <div style="flex:1"></div>
           <button class="btn btn-ghost btn-sm" (click)="clearRecording()">🗑 Réinitialiser</button>
         </div>
 
-        <!-- Events log -->
         <div class="rec-events-container" *ngIf="recEvents().length > 0">
           <div class="rec-events-title">
             Actions enregistrées
@@ -223,25 +217,47 @@ Ou encore: Vérifier qu'un utilisateur non connecté qui tente d'accéder à /ad
             </div>
           </div>
 
-          <!-- Script -->
           <div class="preview-script-box" style="margin-top:12px" *ngIf="recScript()">
             <div class="preview-script-header">
               <span>SCRIPT PLAYWRIGHT GÉNÉRÉ</span>
-              <button class="btn btn-ghost btn-xs">📋 Copier</button>
+              <button class="btn btn-ghost btn-xs" (click)="copyScript()">📋 Copier</button>
             </div>
             <pre class="script-block">{{ recScript() }}</pre>
           </div>
         </div>
 
       </div>
+
+      <!-- AJOUT : message d'erreur API -->
+      <div class="error-banner" *ngIf="errorMessage()">
+        ⚠️ {{ errorMessage() }}
+      </div>
+
     </div>
 
     <!-- ==================== FOOTER ==================== -->
     <div class="modal-footer">
-      <button class="btn btn-ghost" (click)="close()">Annuler</button>
+      <button class="btn btn-ghost" (click)="close()" [disabled]="saving()">Annuler</button>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary btn-sm" (click)="saveDraft()">💾 Sauvegarder brouillon</button>
-        <button class="btn btn-primary" (click)="save()">✓ Ajouter le scénario</button>
+        <!-- CHANGÉ : disabled pendant le saving -->
+        <button
+          class="btn btn-secondary btn-sm"
+          (click)="saveDraft()"
+          [disabled]="saving()"
+        >
+          <!-- CHANGÉ : spinner pendant sauvegarde -->
+          <span *ngIf="saving()">⏳ Sauvegarde...</span>
+          <span *ngIf="!saving()">💾 Sauvegarder brouillon</span>
+        </button>
+
+        <button
+          class="btn btn-primary"
+          (click)="save()"
+          [disabled]="saving()"
+        >
+          <span *ngIf="saving()">⏳ En cours...</span>
+          <span *ngIf="!saving()">✓ Ajouter le scénario</span>
+        </button>
       </div>
     </div>
 

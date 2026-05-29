@@ -1,11 +1,14 @@
-import { Component, signal, ViewChild } from '@angular/core';
+import { Component, signal, ViewChild, Input, inject } from '@angular/core';
 import { NgFor, NgClass, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { AddScenarioModalComponent, NewScenario } from './add-scenario-modal/add-scenario-modal.component';
+import { RouterLink , ActivatedRoute } from '@angular/router';
+import { AddScenarioModalComponent } from './add-scenario-modal/add-scenario-modal.component';
+// FIX 1 : NewScenario supprimé — on importe Scenario depuis le service backend
+import { Scenario as BackendScenario } from '../../services/scenario.service';
 
+// --- Types locaux pour l'affichage (liste des scénarios) ---
 export interface ScenarioData { k: string; v: string; }
-export interface Scenario {
+export interface ScenarioDisplay {
   id: string;
   type: 'pos' | 'neg' | 'sec' | 'perf';
   typeLabel: string;
@@ -16,27 +19,42 @@ export interface Scenario {
   dataOpen: boolean;
 }
 
+// Mapping backend → front pour affichage
+const TYPE_LABEL: Record<string, string> = {
+  POSITIVE: 'POSITIF', NEGATIVE: 'NÉGATIF', SECURITY: 'SÉCURITÉ', PERFORMANCE: 'PERF'
+};
+const TYPE_CLASS: Record<string, string> = {
+  POSITIVE: 'positive', NEGATIVE: 'negative', SECURITY: 'security', PERFORMANCE: 'perf'
+};
+const TYPE_SHORT: Record<string, 'pos' | 'neg' | 'sec' | 'perf'> = {
+  POSITIVE: 'pos', NEGATIVE: 'neg', SECURITY: 'sec', PERFORMANCE: 'perf'
+};
+
 @Component({
   selector: 'app-scenarios',
   standalone: true,
-  imports: [NgFor, NgClass, NgIf, FormsModule, RouterLink, AddScenarioModalComponent],
+  // FIX 2 : NgIf retiré (plus utilisé), RouterLink conservé pour les liens
+  imports: [NgFor, NgClass, FormsModule, RouterLink, AddScenarioModalComponent],
   templateUrl: './scenarios.component.html',
   styleUrl: './scenarios.component.scss',
 })
 export class ScenariosComponent {
+  projectId!: string;
+  private route = inject(ActivatedRoute);
+
   @ViewChild(AddScenarioModalComponent) addModal!: AddScenarioModalComponent;
 
   activeTab = signal<'all' | 'pos' | 'neg' | 'sec' | 'perf'>('all');
 
-  scenarios: Scenario[] = [
+  scenarios: ScenarioDisplay[] = [
     {
       id: '1', type: 'pos', typeLabel: 'POSITIF', typeClass: 'positive',
       name: 'Connexion avec identifiants valides',
       page: '/login → /dashboard · TC-001',
       dataOpen: false,
       data: [
-        { k: 'email', v: 'test.qa+2847@mail.io' },
-        { k: 'password', v: 'S3cur3P@ss!' },
+        { k: 'email',        v: 'test.qa+2847@mail.io' },
+        { k: 'password',     v: 'S3cur3P@ss!' },
         { k: 'expected_url', v: '/dashboard' },
       ],
     },
@@ -46,8 +64,8 @@ export class ScenariosComponent {
       page: "/login → message d'erreur attendu · TC-002",
       dataOpen: false,
       data: [
-        { k: 'email', v: 'test.qa+2847@mail.io' },
-        { k: 'password', v: '' },
+        { k: 'email',          v: 'test.qa+2847@mail.io' },
+        { k: 'password',       v: '' },
         { k: 'expected_error', v: 'Le mot de passe est requis' },
       ],
     },
@@ -57,11 +75,11 @@ export class ScenariosComponent {
       page: '/products → /cart → /checkout → /confirmation · TC-003',
       dataOpen: false,
       data: [
-        { k: 'product_id', v: '42' },
-        { k: 'quantity', v: '2' },
-        { k: 'card_number', v: '4111111111111111' },
-        { k: 'card_expiry', v: '12/28' },
-        { k: 'card_cvv', v: '123' },
+        { k: 'product_id',     v: '42' },
+        { k: 'quantity',       v: '2' },
+        { k: 'card_number',    v: '4111111111111111' },
+        { k: 'card_expiry',    v: '12/28' },
+        { k: 'card_cvv',       v: '123' },
         { k: 'expected_total', v: '59.98€' },
       ],
     },
@@ -73,7 +91,7 @@ export class ScenariosComponent {
       data: [
         { k: 'payload_1', v: "' OR 1=1 --" },
         { k: 'payload_2', v: "'; DROP TABLE users; --" },
-        { k: 'expected', v: '400 ou message sécurisé' },
+        { k: 'expected',  v: '400 ou message sécurisé' },
       ],
     },
     {
@@ -82,9 +100,9 @@ export class ScenariosComponent {
       page: '/admin → redirection /login attendue (401) · TC-005',
       dataOpen: false,
       data: [
-        { k: 'target_url', v: '/admin' },
+        { k: 'target_url',       v: '/admin' },
         { k: 'expected_redirect', v: '/login' },
-        { k: 'expected_code', v: '401' },
+        { k: 'expected_code',    v: '401' },
       ],
     },
     {
@@ -94,14 +112,18 @@ export class ScenariosComponent {
       dataOpen: false,
       data: [
         { k: 'virtual_users', v: '200' },
-        { k: 'ramp_up_sec', v: '60' },
-        { k: 'duration', v: '300s' },
+        { k: 'ramp_up_sec',   v: '60' },
+        { k: 'duration',      v: '300s' },
         { k: 'p95_threshold', v: '2000ms' },
       ],
     },
   ];
 
-  get filtered(): Scenario[] {
+   ngOnInit(): void {
+    this.projectId = this.route.snapshot.params['id'];
+  }
+
+  get filtered(): ScenarioDisplay[] {
     const t = this.activeTab();
     return t === 'all' ? this.scenarios : this.scenarios.filter(s => s.type === t);
   }
@@ -110,7 +132,7 @@ export class ScenariosComponent {
     this.activeTab.set(tab);
   }
 
-  toggleData(s: Scenario): void {
+  toggleData(s: ScenarioDisplay): void {
     s.dataOpen = !s.dataOpen;
   }
 
@@ -118,20 +140,23 @@ export class ScenariosComponent {
     this.addModal.open();
   }
 
-  onScenarioSaved(scenario: NewScenario): void {
-    const typeLabels: Record<string, string> = { pos: 'POSITIF', neg: 'NÉGATIF', sec: 'SÉCURITÉ', perf: 'PERF' };
-    const typeClasses: Record<string, string> = { pos: 'positive', neg: 'negative', sec: 'security', perf: 'perf' };
+  // FIX 4 : reçoit BackendScenario (réponse réelle du backend) au lieu de NewScenario
+  onScenarioSaved(scenario: BackendScenario): void {
+    const typeShort = TYPE_SHORT[scenario.type] ?? 'pos';
 
-    this.scenarios.unshift({
-      id: String(Date.now()),
-      type: scenario.type,
-      typeLabel: typeLabels[scenario.type],
-      typeClass: typeClasses[scenario.type],
-      name: scenario.name,
-      page: `Nouveau scénario · TC-${String(this.scenarios.length + 1).padStart(3, '0')}`,
-      dataOpen: false,
-      data: scenario.data,
-    });
+    const display: ScenarioDisplay = {
+      id:        scenario.id,
+      type:      typeShort,
+      typeLabel: TYPE_LABEL[scenario.type] ?? scenario.type,
+      typeClass: TYPE_CLASS[scenario.type] ?? 'positive',
+      name:      scenario.name,
+      page:      `Nouveau scénario · TC-${String(this.scenarios.length + 1).padStart(3, '0')}`,
+      dataOpen:  false,
+      // Convertit les ScenarioVariable backend → ScenarioData affichage
+      data: (scenario.variables ?? []).map(v => ({ k: v.key, v: v.value })),
+    };
+
+    this.scenarios.unshift(display);
   }
 
   counts = {

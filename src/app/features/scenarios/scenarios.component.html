@@ -1,5 +1,9 @@
 <!-- ==================== MODAL ==================== -->
-<app-add-scenario-modal (saved)="onScenarioSaved($event)" />
+<!-- FIX : projectId passé au modal (obligatoire depuis @Input required) -->
+<app-add-scenario-modal
+  [projectId]="projectId"
+  (saved)="onScenarioSaved($event)"
+/>
 
 <!-- ==================== PAGE ==================== -->
 <div class="page-header">
@@ -47,7 +51,7 @@
         <button class="btn btn-ghost btn-sm" (click)="toggleData(s)">
           {{ s.dataOpen ? '▴ Données' : '⚙ Données' }}
         </button>
-        <button class="btn btn-ghost btn-sm" (click)="openAddModal()">✏ Modifier</button>
+        <button class="btn btn-ghost btn-sm">✏ Modifier</button>
         <a [routerLink]="'/execution'" class="btn btn-ghost btn-sm">▷ Exécuter</a>
       </div>
     </div>
@@ -56,7 +60,9 @@
       <div class="data-fields">
         <div class="data-field" *ngFor="let d of s.data">
           <span class="data-key">{{ d.k }}</span>
-          <span class="data-val"><input [(ngModel)]="d.v" [placeholder]="!d.v ? '(vide)' : ''" /></span>
+          <span class="data-val">
+            <input [(ngModel)]="d.v" [placeholder]="!d.v ? '(vide)' : ''" />
+          </span>
         </div>
       </div>
       <div class="data-actions">

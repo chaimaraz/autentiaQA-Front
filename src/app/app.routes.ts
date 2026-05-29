@@ -25,7 +25,7 @@ export const APP_ROUTES: Routes = [
   title: 'Nouveau projet',
 },
       {
-        path: 'scenarios',
+        path: 'projects/:id',
         loadComponent: () =>
           import('./features/scenarios/scenarios.component').then(m => m.ScenariosComponent),
       },

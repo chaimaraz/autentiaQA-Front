@@ -1,18 +1,57 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { NgFor, CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { ProjectApiService } from '../../services/project-api.service';
 
 @Component({
   selector: 'app-projects',
   standalone: true,
-  imports: [NgFor,CommonModule, RouterLink],
+  imports: [NgFor, CommonModule, RouterLink],
   templateUrl: './projects.component.html',
-  styleUrl:'./projects.component.scss',
+  styleUrl: './projects.component.scss',
 })
-export class ProjectsComponent {
-  projects = [
-    { name: 'E-Commerce Frontend', url: 'shop.example.com · React 18 · Playwright', dotColor: 'var(--success)', scenarios: 47, status: 'passed', statusLabel: '94% passé', route: '/scenarios' },
-    { name: 'Admin Dashboard', url: 'admin.myapp.io · Angular 17 · Playwright', dotColor: 'var(--accent)', scenarios: 23, status: 'running', statusLabel: 'En cours', route: '/execution' },
-    { name: 'API Gateway Tests', url: 'api.platform.dev · Vue 3 · Cypress', dotColor: 'var(--warning)', scenarios: 31, status: 'failed', statusLabel: '2 échecs', route: '/history' },
-  ];
+export class ProjectsComponent implements OnInit {
+
+  projects: any[] = [];
+  loading = false;
+  errorMessage = '';
+
+  constructor(private projectService: ProjectApiService) {}
+
+  ngOnInit(): void {
+    this.loadProjects();
+  }
+
+  loadProjects(): void {
+    this.loading = true;
+
+    this.projectService.listProjects().subscribe({
+      next: (response) => {
+        this.projects = response.data.map((project: any) => ({
+          id: project.id,
+          name: project.name,
+          url: `${project.url} · ${project.framework.frameworkName}`,
+
+          // 0 par défaut
+          scenarios: project.scenariosCount || 0,
+
+          // couleur par défaut
+          dotColor: 'var(--success)',
+
+          // status par défaut
+          status: 'passed',
+          statusLabel: 'Actif',
+
+          route: `/projects/${project.id}`
+        }));
+
+        this.loading = false;
+      },
+
+      error: (err) => {
+        this.errorMessage = err.message;
+        this.loading = false;
+      }
+    });
+  }
 }
