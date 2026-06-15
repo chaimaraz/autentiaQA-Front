@@ -1,136 +1,297 @@
-import { Component, signal, ViewChild, Input, inject } from '@angular/core';
-import { NgFor, NgClass, NgIf } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { RouterLink , ActivatedRoute } from '@angular/router';
-import { AddScenarioModalComponent } from './add-scenario-modal/add-scenario-modal.component';
-// FIX 1 : NewScenario supprimé — on importe Scenario depuis le service backend
-import { Scenario as BackendScenario } from '../../services/scenario.service';
+// src/app/features/scenarios/scenarios.component.ts
+import {
+  Component,
+  signal,
+  ViewChild,
+  inject,
+  OnInit,
+  OnDestroy,
+} from '@angular/core';
+import { NgFor, NgClass, NgIf }       from '@angular/common';
+import { FormsModule }                from '@angular/forms';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
+import {
+  Subject,
+  debounceTime,
+  distinctUntilChanged,
+  takeUntil,
+} from 'rxjs';
+import { AddScenarioModalComponent }  from './add-scenario-modal/add-scenario-modal.component';
+import {
+  ScenarioService,
+  Scenario as BackendScenario,
+} from '../../services/scenario.service';
 
-// --- Types locaux pour l'affichage (liste des scénarios) ---
-export interface ScenarioData { k: string; v: string; }
-export interface ScenarioDisplay {
-  id: string;
-  type: 'pos' | 'neg' | 'sec' | 'perf';
-  typeLabel: string;
-  typeClass: string;
-  name: string;
-  page: string;
-  data: ScenarioData[];
-  dataOpen: boolean;
+// ─── Interfaces locales ────────────────────────────────────────────────────────
+
+export interface ScenarioData {
+  k: string;
+  v: string;
 }
 
-// Mapping backend → front pour affichage
+export interface ScenarioDisplay {
+  id:        string;
+  type:      'pos' | 'neg' | 'sec' | 'perf';
+  typeLabel: string;
+  typeClass: string;
+  name:      string;
+  status:    'DRAFT' | 'ACTIVE';
+  mode:      'NLP' | 'RECORD';
+  createdAt: string;
+  page:      string;
+  data:      ScenarioData[];
+  dataOpen:  boolean;
+  execCount: number;
+}
+
+// ─── Maps ──────────────────────────────────────────────────────────────────────
+
 const TYPE_LABEL: Record<string, string> = {
-  POSITIVE: 'POSITIF', NEGATIVE: 'NÉGATIF', SECURITY: 'SÉCURITÉ', PERFORMANCE: 'PERF'
+  POSITIVE:    'POSITIF',
+  NEGATIVE:    'NÉGATIF',
+  SECURITY:    'SÉCURITÉ',
+  PERFORMANCE: 'PERF',
 };
 const TYPE_CLASS: Record<string, string> = {
-  POSITIVE: 'positive', NEGATIVE: 'negative', SECURITY: 'security', PERFORMANCE: 'perf'
+  POSITIVE:    'positive',
+  NEGATIVE:    'negative',
+  SECURITY:    'security',
+  PERFORMANCE: 'perf',
 };
 const TYPE_SHORT: Record<string, 'pos' | 'neg' | 'sec' | 'perf'> = {
-  POSITIVE: 'pos', NEGATIVE: 'neg', SECURITY: 'sec', PERFORMANCE: 'perf'
+  POSITIVE:    'pos',
+  NEGATIVE:    'neg',
+  SECURITY:    'sec',
+  PERFORMANCE: 'perf',
+};
+const TYPE_BACKEND: Record<string, string> = {
+  all:  '',
+  pos:  'POSITIVE',
+  neg:  'NEGATIVE',
+  sec:  'SECURITY',
+  perf: 'PERFORMANCE',
 };
 
-@Component({
-  selector: 'app-scenarios',
-  standalone: true,
-  // FIX 2 : NgIf retiré (plus utilisé), RouterLink conservé pour les liens
-  imports: [NgFor, NgClass, FormsModule, RouterLink, AddScenarioModalComponent],
-  templateUrl: './scenarios.component.html',
-  styleUrl: './scenarios.component.scss',
-})
-export class ScenariosComponent {
-  projectId!: string;
-  private route = inject(ActivatedRoute);
+// ─── Component ─────────────────────────────────────────────────────────────────
 
+@Component({
+  selector:    'app-scenarios',
+  standalone:  true,
+  imports:     [NgFor, NgClass, NgIf, FormsModule, RouterLink, AddScenarioModalComponent],
+  templateUrl: './scenarios.component.html',
+  styleUrl:    './scenarios.component.scss',
+})
+export class ScenariosComponent implements OnInit, OnDestroy {
+
+  projectId!: string;
+
+  private route    = inject(ActivatedRoute);
+  private svc      = inject(ScenarioService);
+  private destroy$ = new Subject<void>();
+  private search$  = new Subject<string>();
+  private router = inject(Router)
   @ViewChild(AddScenarioModalComponent) addModal!: AddScenarioModalComponent;
 
+  // ── State ──────────────────────────────────────────────────────────────────
+  scenarios:  ScenarioDisplay[] = [];
+  loading     = false;
+  deleteError = '';
+
+  // Recherche
+  searchQuery = '';
+
+  // Tabs
   activeTab = signal<'all' | 'pos' | 'neg' | 'sec' | 'perf'>('all');
 
-  scenarios: ScenarioDisplay[] = [
-    {
-      id: '1', type: 'pos', typeLabel: 'POSITIF', typeClass: 'positive',
-      name: 'Connexion avec identifiants valides',
-      page: '/login → /dashboard · TC-001',
-      dataOpen: false,
-      data: [
-        { k: 'email',        v: 'test.qa+2847@mail.io' },
-        { k: 'password',     v: 'S3cur3P@ss!' },
-        { k: 'expected_url', v: '/dashboard' },
-      ],
-    },
-    {
-      id: '2', type: 'neg', typeLabel: 'NÉGATIF', typeClass: 'negative',
-      name: 'Tentative login avec mot de passe vide',
-      page: "/login → message d'erreur attendu · TC-002",
-      dataOpen: false,
-      data: [
-        { k: 'email',          v: 'test.qa+2847@mail.io' },
-        { k: 'password',       v: '' },
-        { k: 'expected_error', v: 'Le mot de passe est requis' },
-      ],
-    },
-    {
-      id: '3', type: 'pos', typeLabel: 'POSITIF', typeClass: 'positive',
-      name: 'Ajout produit au panier et validation commande',
-      page: '/products → /cart → /checkout → /confirmation · TC-003',
-      dataOpen: false,
-      data: [
-        { k: 'product_id',     v: '42' },
-        { k: 'quantity',       v: '2' },
-        { k: 'card_number',    v: '4111111111111111' },
-        { k: 'card_expiry',    v: '12/28' },
-        { k: 'card_cvv',       v: '123' },
-        { k: 'expected_total', v: '59.98€' },
-      ],
-    },
-    {
-      id: '4', type: 'sec', typeLabel: 'SÉCURITÉ', typeClass: 'security',
-      name: 'Injection SQL sur champ de recherche',
-      page: "/search — payload: ' OR 1=1 -- · TC-004",
-      dataOpen: false,
-      data: [
-        { k: 'payload_1', v: "' OR 1=1 --" },
-        { k: 'payload_2', v: "'; DROP TABLE users; --" },
-        { k: 'expected',  v: '400 ou message sécurisé' },
-      ],
-    },
-    {
-      id: '5', type: 'neg', typeLabel: 'NÉGATIF', typeClass: 'negative',
-      name: 'Accès page admin sans authentification',
-      page: '/admin → redirection /login attendue (401) · TC-005',
-      dataOpen: false,
-      data: [
-        { k: 'target_url',       v: '/admin' },
-        { k: 'expected_redirect', v: '/login' },
-        { k: 'expected_code',    v: '401' },
-      ],
-    },
-    {
-      id: '6', type: 'perf', typeLabel: 'PERF', typeClass: 'perf',
-      name: 'Charge 200 utilisateurs simultanés',
-      page: '/home — ramp-up 60s, seuil: <2s réponse · TC-006',
-      dataOpen: false,
-      data: [
-        { k: 'virtual_users', v: '200' },
-        { k: 'ramp_up_sec',   v: '60' },
-        { k: 'duration',      v: '300s' },
-        { k: 'p95_threshold', v: '2000ms' },
-      ],
-    },
-  ];
+  // Pagination
+  currentPage  = 1;
+  totalPages   = 1;
+  total        = 0;
+  pageSizeOptions = [5, 10, 25, 50];
+  pageSize     = signal<number>(10);
 
-   ngOnInit(): void {
+  // Filtres avancés
+  filtersOpen   = false;
+  filterStatus  = signal<'' | 'DRAFT' | 'ACTIVE'>('');
+  filterMode    = signal<'' | 'NLP' | 'RECORD'>('');
+  filterDateFrom = '';
+  filterDateTo   = '';
+
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
+
+  ngOnInit(): void {
     this.projectId = this.route.snapshot.params['id'];
+
+    // Debounce recherche 350 ms
+    this.search$.pipe(
+      debounceTime(350),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$),
+    ).subscribe(() => {
+      this.currentPage = 1;
+      this.loadScenarios();
+    });
+
+    this.loadScenarios();
   }
 
-  get filtered(): ScenarioDisplay[] {
-    const t = this.activeTab();
-    return t === 'all' ? this.scenarios : this.scenarios.filter(s => s.type === t);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
+
+  // ── Chargement ─────────────────────────────────────────────────────────────
+
+  loadScenarios(): void {
+    this.loading    = true;
+    this.deleteError = '';
+
+    this.svc.getAll(this.projectId, {
+      page:     this.currentPage,
+      limit:    this.pageSize(),
+      search:   this.searchQuery,
+      type:     TYPE_BACKEND[this.activeTab()],
+      status:   this.filterStatus(),
+      mode:     this.filterMode(),
+      dateFrom: this.filterDateFrom,
+      dateTo:   this.filterDateTo,
+    })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: res => {
+        this.scenarios  = res.data.map(s => this.toDisplay(s));
+        this.total      = res.total;
+        this.totalPages = res.totalPages;
+        this.loading    = false;
+      },
+      error: () => {
+        this.loading = false;
+      },
+    });
+  }
+
+  // ── Mapping backend → affichage ───────────────────────────────────────────
+
+  private toDisplay(s: BackendScenario): ScenarioDisplay {
+    const date = new Date(s.createdAt).toLocaleDateString('fr-FR', {
+      day:   '2-digit',
+      month: '2-digit',
+      year:  'numeric',
+    });
+    return {
+      id:        s.id,
+      type:      TYPE_SHORT[s.type] ?? 'pos',
+      typeLabel: TYPE_LABEL[s.type] ?? s.type,
+      typeClass: TYPE_CLASS[s.type] ?? 'positive',
+      name:      s.name,
+      status:    s.status as 'DRAFT' | 'ACTIVE',
+      mode:      s.creationMode,
+      createdAt: date,
+      page:      `${s.creationMode === 'NLP' ? '🤖 NLP' : '⏺ RECORD'} · ${date}`,
+      dataOpen:  false,
+      data:      (s.variables ?? []).map(v => ({ k: v.key, v: v.value })),
+      execCount: s._count?.executions ?? 0,
+    };
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────────────────────
 
   setTab(tab: 'all' | 'pos' | 'neg' | 'sec' | 'perf'): void {
     this.activeTab.set(tab);
+    this.currentPage = 1;
+    this.loadScenarios();
   }
+
+  // ── Recherche ──────────────────────────────────────────────────────────────
+
+  onSearch(value: string): void {
+    this.searchQuery = value;
+    this.search$.next(value);
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.currentPage = 1;
+    this.loadScenarios();
+  }
+
+  // ── Pagination ─────────────────────────────────────────────────────────────
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) return;
+    this.currentPage = page;
+    this.loadScenarios();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(Number(size));
+    this.currentPage = 1;
+    this.loadScenarios();
+  }
+
+  get pageEnd(): number {
+    return Math.min(this.currentPage * this.pageSize(), this.total);
+  }
+
+  get pageStart(): number {
+    return this.total === 0 ? 0 : (this.currentPage - 1) * this.pageSize() + 1;
+  }
+
+  /** Numéros de pages à afficher avec ellipsis */
+  get pages(): (number | '...')[] {
+    const total  = this.totalPages;
+    const cur    = this.currentPage;
+    const delta  = 1; // pages autour de la courante
+    const result: (number | '...')[] = [];
+
+    const range = new Set<number>();
+    range.add(1);
+    range.add(total);
+    for (let i = Math.max(2, cur - delta); i <= Math.min(total - 1, cur + delta); i++) {
+      range.add(i);
+    }
+
+    let prev = 0;
+    for (const p of Array.from(range).sort((a, b) => a - b)) {
+      if (p - prev > 1) result.push('...');
+      result.push(p);
+      prev = p;
+    }
+    return result;
+  }
+
+  // ── Filtres avancés ────────────────────────────────────────────────────────
+
+  toggleFilters(): void {
+    this.filtersOpen = !this.filtersOpen;
+  }
+
+  applyFilters(): void {
+    this.currentPage = 1;
+    this.loadScenarios();
+  }
+
+  resetFilters(): void {
+    this.filterStatus.set('');
+    this.filterMode.set('');
+    this.filterDateFrom = '';
+    this.filterDateTo   = '';
+    this.searchQuery    = '';
+    this.currentPage    = 1;
+    this.loadScenarios();
+  }
+
+  get activeFiltersCount(): number {
+    return [
+      this.filterStatus()   !== '',
+      this.filterMode()     !== '',
+      this.filterDateFrom   !== '',
+      this.filterDateTo     !== '',
+      this.searchQuery      !== '',
+    ].filter(Boolean).length;
+  }
+
+  // ── Actions ────────────────────────────────────────────────────────────────
 
   toggleData(s: ScenarioDisplay): void {
     s.dataOpen = !s.dataOpen;
@@ -140,30 +301,75 @@ export class ScenariosComponent {
     this.addModal.open();
   }
 
-  // FIX 4 : reçoit BackendScenario (réponse réelle du backend) au lieu de NewScenario
-  onScenarioSaved(scenario: BackendScenario): void {
-    const typeShort = TYPE_SHORT[scenario.type] ?? 'pos';
-
-    const display: ScenarioDisplay = {
-      id:        scenario.id,
-      type:      typeShort,
-      typeLabel: TYPE_LABEL[scenario.type] ?? scenario.type,
-      typeClass: TYPE_CLASS[scenario.type] ?? 'positive',
-      name:      scenario.name,
-      page:      `Nouveau scénario · TC-${String(this.scenarios.length + 1).padStart(3, '0')}`,
-      dataOpen:  false,
-      // Convertit les ScenarioVariable backend → ScenarioData affichage
-      data: (scenario.variables ?? []).map(v => ({ k: v.key, v: v.value })),
-    };
-
-    this.scenarios.unshift(display);
+  onScenarioSaved(_scenario: BackendScenario): void {
+    this.currentPage = 1;
+    this.loadScenarios();
   }
 
-  counts = {
-    all:  () => this.scenarios.length,
-    pos:  () => this.scenarios.filter(s => s.type === 'pos').length,
-    neg:  () => this.scenarios.filter(s => s.type === 'neg').length,
-    sec:  () => this.scenarios.filter(s => s.type === 'sec').length,
-    perf: () => this.scenarios.filter(s => s.type === 'perf').length,
-  };
+  executeScenario(s: ScenarioDisplay): void {
+  this.svc.execute(this.projectId, s.id).subscribe({
+    next: (exec) => {
+      this.router.navigate(['/execution'], {
+        queryParams: {
+          executionId:  exec.id,
+          scenarioName: s.name,
+          projectId:    this.projectId,
+        },
+      });
+    },
+    error: () => alert('Erreur lors du lancement de l\'exécution.'),
+  });
+}
+
+  deleteScenario(s: ScenarioDisplay): void {
+    if (!confirm(`Supprimer le scénario "${s.name}" ?\nCette action est irréversible.`)) return;
+
+    this.svc.remove(this.projectId, s.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          // Si on supprime le dernier élément d'une page > 1, reculer d'une page
+          if (this.scenarios.length === 1 && this.currentPage > 1) {
+            this.currentPage--;
+          }
+          this.loadScenarios();
+        },
+        error: () => {
+          this.deleteError = `Impossible de supprimer "${s.name}". Veuillez réessayer.`;
+        },
+      });
+  }
+
+  isEllipsis(p: number | '...'): p is '...' {
+    return p === '...';
+  }
+
+  // Ajoutez dans ScenariosComponent :
+
+captureMode = signal<'screenshot' | 'video' | 'none'>('screenshot');
+executingAll = signal(false);
+
+executeAllScenarios(): void {
+  if (!confirm(`Exécuter tous les scénarios ACTIFS du projet ?\nMode de capture: ${this.captureMode()}`)) return;
+
+  this.executingAll.set(true);
+
+  this.svc.executeAll(this.projectId, this.captureMode()).subscribe({
+    next: (res) => {
+      this.executingAll.set(false);
+
+      this.router.navigate(['/execution'], {
+        queryParams: {
+          batchId: res.id,
+          projectId: this.projectId,
+          captureMode: this.captureMode(),
+        },
+      });
+    },
+    error: () => {
+      this.executingAll.set(false);
+      alert("Erreur lors de l'exécution groupée.");
+    }
+  });
+}
 }

@@ -1,19 +1,18 @@
 <!-- ==================== MODAL ==================== -->
-<!-- FIX : projectId passé au modal (obligatoire depuis @Input required) -->
 <app-add-scenario-modal
   [projectId]="projectId"
   (saved)="onScenarioSaved($event)"
 />
 
-<!-- ==================== PAGE ==================== -->
+<!-- ==================== HEADER ==================== -->
 <div class="page-header">
   <div>
     <div class="section-title">
       Scénarios générés par l'IA
-      <span class="ai-badge">🤖 {{ counts.all() }} scénarios</span>
+      <span class="ai-badge">🤖 {{ total }} scénario{{ total > 1 ? 's' : '' }}</span>
     </div>
     <div class="section-sub" style="margin-bottom:0">
-      shop.example.com — Analyse terminée en 1m 23s — Angular 17 + JWT
+      Projet · {{ projectId }}
     </div>
   </div>
   <div class="page-actions">
@@ -23,41 +22,191 @@
   </div>
 </div>
 
-<div class="ai-insight" style="margin-top:16px;margin-bottom:20px">
-  <div class="ai-icon">🧠</div>
-  <div class="ai-text">
-    <strong>Analyse IA complète :</strong> 8 pages détectées · 23 formulaires · 67 boutons · 14 états conditionnels.
-    Couverture 94% des chemins critiques. 3 cas limites identifiés sur le formulaire de paiement.
+<!-- ==================== TOOLBAR ==================== -->
+<div class="toolbar">
+
+  <!-- Recherche -->
+  <div class="search-bar">
+    <span class="search-icon">🔍</span>
+    <input
+      class="search-input"
+      type="text"
+      placeholder="Rechercher un scénario..."
+      [value]="searchQuery"
+      (input)="onSearch($any($event.target).value)"
+    />
+    <button *ngIf="searchQuery" class="search-clear" (click)="clearSearch()" title="Effacer">✕</button>
+  </div>
+
+  <!-- Filtres avancés toggle -->
+  <button class="btn btn-ghost btn-sm filter-toggle" (click)="toggleFilters()">
+    <span>⚙ Filtres</span>
+    <span *ngIf="activeFiltersCount > 0" class="filter-badge">{{ activeFiltersCount }}</span>
+    <span class="filter-arrow">{{ filtersOpen ? '▴' : '▾' }}</span>
+  </button>
+
+  <!-- Sélecteur de taille de page -->
+  <div class="page-size-selector">
+    <span class="page-size-label">Afficher</span>
+    <select [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)">
+      <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+    </select>
+    <span class="page-size-label">/ page</span>
+  </div>
+
+</div>
+
+<!-- ==================== FILTRES AVANCÉS ==================== -->
+<div class="filters-panel" [ngClass]="{ open: filtersOpen }">
+  <div class="filters-grid">
+
+    <!-- Statut -->
+    <div class="filter-group">
+      <label class="filter-label">Statut</label>
+      <div class="filter-pills">
+        <button class="pill" [ngClass]="{ active: filterStatus() === '' }"
+          (click)="filterStatus.set(''); applyFilters()">Tous</button>
+        <button class="pill" [ngClass]="{ active: filterStatus() === 'ACTIVE' }"
+          (click)="filterStatus.set('ACTIVE'); applyFilters()">● Actif</button>
+        <button class="pill" [ngClass]="{ active: filterStatus() === 'DRAFT' }"
+          (click)="filterStatus.set('DRAFT'); applyFilters()">○ Brouillon</button>
+      </div>
+    </div>
+
+    <!-- Mode de création -->
+    <div class="filter-group">
+      <label class="filter-label">Mode de création</label>
+      <div class="filter-pills">
+        <button class="pill" [ngClass]="{ active: filterMode() === '' }"
+          (click)="filterMode.set(''); applyFilters()">Tous</button>
+        <button class="pill" [ngClass]="{ active: filterMode() === 'NLP' }"
+          (click)="filterMode.set('NLP'); applyFilters()">🤖 NLP</button>
+        <button class="pill" [ngClass]="{ active: filterMode() === 'RECORD' }"
+          (click)="filterMode.set('RECORD'); applyFilters()">⏺ Enregistrement</button>
+      </div>
+    </div>
+
+    <!-- Plage de dates -->
+    <div class="filter-group">
+      <label class="filter-label">Date de création</label>
+      <div class="filter-dates">
+        <input
+          type="date"
+          class="date-input"
+          [(ngModel)]="filterDateFrom"
+          (change)="applyFilters()"
+        />
+        <span class="date-sep">→</span>
+        <input
+          type="date"
+          class="date-input"
+          [(ngModel)]="filterDateTo"
+          (change)="applyFilters()"
+        />
+      </div>
+    </div>
+
+  </div>
+
+  <div class="filters-footer">
+    <span class="filters-summary">
+      {{ activeFiltersCount === 0 ? 'Aucun filtre actif' : activeFiltersCount + ' filtre(s) actif(s)' }}
+    </span>
+    <button class="btn btn-ghost btn-xs" (click)="resetFilters()">✕ Réinitialiser tout</button>
   </div>
 </div>
 
-<div class="tabs">
-  <div class="tab" [ngClass]="{ active: activeTab() === 'all' }"  (click)="setTab('all')">Tous ({{ counts.all() }})</div>
-  <div class="tab" [ngClass]="{ active: activeTab() === 'pos' }"  (click)="setTab('pos')">Positifs ({{ counts.pos() }})</div>
-  <div class="tab" [ngClass]="{ active: activeTab() === 'neg' }"  (click)="setTab('neg')">Négatifs ({{ counts.neg() }})</div>
-  <div class="tab" [ngClass]="{ active: activeTab() === 'sec' }"  (click)="setTab('sec')">Sécurité ({{ counts.sec() }})</div>
-  <div class="tab" [ngClass]="{ active: activeTab() === 'perf' }" (click)="setTab('perf')">Performance ({{ counts.perf() }})</div>
+<!-- ==================== ERREUR SUPPRESSION ==================== -->
+<div *ngIf="deleteError" class="alert-error">
+  ⚠ {{ deleteError }}
+  <button class="alert-close" (click)="deleteError = ''">✕</button>
 </div>
 
+<!-- ==================== TABS ==================== -->
+<div class="tabs">
+  <div class="tab" [ngClass]="{ active: activeTab() === 'all' }"  (click)="setTab('all')">
+    Tous{{ activeTab() === 'all' ? ' (' + total + ')' : '' }}
+  </div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'pos' }"  (click)="setTab('pos')">
+    Positifs{{ activeTab() === 'pos' ? ' (' + total + ')' : '' }}
+  </div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'neg' }"  (click)="setTab('neg')">
+    Négatifs{{ activeTab() === 'neg' ? ' (' + total + ')' : '' }}
+  </div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'sec' }"  (click)="setTab('sec')">
+    Sécurité{{ activeTab() === 'sec' ? ' (' + total + ')' : '' }}
+  </div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'perf' }" (click)="setTab('perf')">
+    Performance{{ activeTab() === 'perf' ? ' (' + total + ')' : '' }}
+  </div>
+</div>
+
+<!-- ==================== LISTE ==================== -->
 <div class="scenarios-list">
-  <div class="scenario-item" *ngFor="let s of filtered">
+
+  <!-- Chargement -->
+  <div *ngIf="loading" class="empty-state">
+    <span class="loading-spinner">⟳</span>&nbsp;Chargement...
+  </div>
+
+  <!-- Vide -->
+  <div *ngIf="!loading && scenarios.length === 0" class="empty-state">
+    <div class="empty-icon">🔍</div>
+    <div>Aucun scénario trouvé.</div>
+    <div class="empty-sub" *ngIf="activeFiltersCount > 0 || searchQuery">
+      <button class="btn btn-ghost btn-xs" (click)="resetFilters()">
+        Réinitialiser les filtres
+      </button>
+    </div>
+  </div>
+
+  <!-- Items -->
+  <div class="scenario-item" *ngFor="let s of scenarios">
     <div class="scenario-row">
+
+      <!-- Badge type -->
       <span class="scenario-type" [ngClass]="s.typeClass">{{ s.typeLabel }}</span>
+
+      <!-- Infos -->
       <div class="scenario-info">
-        <div class="scenario-name">{{ s.name }}</div>
-        <div class="scenario-page">{{ s.page }}</div>
+        <div class="scenario-name">
+          {{ s.name }}
+          <span class="status-badge" [ngClass]="'status-' + s.status.toLowerCase()">
+            {{ s.status === 'ACTIVE' ? '● Actif' : '○ Brouillon' }}
+          </span>
+        </div>
+        <div class="scenario-meta">
+          <span class="scenario-page">{{ s.page }}</span>
+          <span class="exec-count" *ngIf="s.execCount > 0">
+            ▷ {{ s.execCount }} exécution{{ s.execCount > 1 ? 's' : '' }}
+          </span>
+        </div>
       </div>
+
+      <!-- Actions -->
       <div class="scenario-actions">
         <button class="btn btn-ghost btn-sm" (click)="toggleData(s)">
           {{ s.dataOpen ? '▴ Données' : '⚙ Données' }}
         </button>
         <button class="btn btn-ghost btn-sm">✏ Modifier</button>
-        <a [routerLink]="'/execution'" class="btn btn-ghost btn-sm">▷ Exécuter</a>
+        <a  (click)="executeScenario(s)" class="btn btn-ghost btn-sm">▷ Exécuter</a>
+        <button
+          class="btn btn-danger btn-sm"
+          (click)="deleteScenario(s)"
+          title="Supprimer ce scénario"
+        >🗑</button>
       </div>
     </div>
+
+    <!-- Panel données -->
     <div class="scenario-data-panel" [ngClass]="{ open: s.dataOpen }">
-      <div class="data-header"><span>🤖 DONNÉES DE TEST GÉNÉRÉES AUTOMATIQUEMENT</span></div>
+      <div class="data-header">
+        <span>🤖 DONNÉES DE TEST GÉNÉRÉES AUTOMATIQUEMENT</span>
+      </div>
       <div class="data-fields">
+        <div *ngIf="s.data.length === 0" class="no-data">
+          Aucune variable définie pour ce scénario.
+        </div>
         <div class="data-field" *ngFor="let d of s.data">
           <span class="data-key">{{ d.k }}</span>
           <span class="data-val">
@@ -70,5 +219,63 @@
         <button class="btn btn-ghost btn-xs">+ Ajouter un champ</button>
       </div>
     </div>
+  </div>
+
+</div>
+
+<!-- ==================== BARRE PAGINATION ==================== -->
+<div class="pagination-bar" *ngIf="!loading && total > 0">
+
+  <!-- Info -->
+  <span class="pagination-info">
+    {{ pageStart }}–{{ pageEnd }} sur <strong>{{ total }}</strong> scénario{{ total > 1 ? 's' : '' }}
+  </span>
+
+  <!-- Contrôles -->
+  <div class="pagination-controls">
+
+    <!-- Première page -->
+    <button
+      class="page-btn page-btn-nav"
+      [disabled]="currentPage === 1"
+      (click)="goToPage(1)"
+      title="Première page"
+    >«</button>
+
+    <!-- Page précédente -->
+    <button
+      class="page-btn page-btn-nav"
+      [disabled]="currentPage === 1"
+      (click)="goToPage(currentPage - 1)"
+      title="Page précédente"
+    >‹</button>
+
+    <!-- Numéros de pages avec ellipsis -->
+    <ng-container *ngFor="let p of pages">
+      <span *ngIf="isEllipsis(p)" class="page-ellipsis">…</span>
+      <button
+        *ngIf="!isEllipsis(p)"
+        class="page-btn"
+        [ngClass]="{ active: p === currentPage }"
+        (click)="goToPage(+p)"
+      >{{ p }}</button>
+    </ng-container>
+
+    <!-- Page suivante -->
+    <button
+      class="page-btn page-btn-nav"
+      [disabled]="currentPage === totalPages"
+      (click)="goToPage(currentPage + 1)"
+      title="Page suivante"
+    >›</button>
+
+    <!-- Dernière page -->
+    <button
+      class="page-btn page-btn-nav"
+      [disabled]="currentPage === totalPages"
+      (click)="goToPage(totalPages)"
+      title="Dernière page"
+    >»</button>
+
   </div>
 </div>

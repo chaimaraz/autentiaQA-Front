@@ -1,14 +1,16 @@
-import { Injectable }              from '@angular/core';
-import { HttpClient }              from '@angular/common/http';
-import { Observable }              from 'rxjs';
-import { map }                     from 'rxjs/operators';
+// src/app/services/scenario.service.ts
+import { Injectable }   from '@angular/core';
+import { HttpClient }   from '@angular/common/http';
+import { Observable }   from 'rxjs';
+import { map }          from 'rxjs/operators';
 
-// ---------- Interfaces ----------
+// ─── Interfaces ────────────────────────────────────────────────────────────────
+
 export interface ScenarioVariable {
-  id:        string;
-  key:       string;
-  value:     string;
-  isSecret:  boolean;
+  id:       string;
+  key:      string;
+  value:    string;
+  isSecret: boolean;
 }
 
 export interface Scenario {
@@ -19,10 +21,20 @@ export interface Scenario {
   creationMode:   'NLP' | 'RECORD';
   nlpText?:       string;
   scriptTemplate: string;
-  status:         'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+  status:         'DRAFT' | 'ACTIVE';
   createdAt:      string;
+  updatedAt:      string;
   variables?:     ScenarioVariable[];
   _count?:        { executions: number };
+}
+
+export interface PaginatedScenarios {
+  success:    boolean;
+  data:       Scenario[];
+  total:      number;
+  page:       number;
+  limit:      number;
+  totalPages: number;
 }
 
 export interface ScenarioExecution {
@@ -44,6 +56,17 @@ export interface CreateScenarioPayload {
   variables?:     Omit<ScenarioVariable, 'id'>[];
 }
 
+export interface ScenarioFilterParams {
+  page?:     number;
+  limit?:    number;
+  search?:   string;
+  type?:     string;
+  status?:   string;
+  mode?:     string;
+  dateFrom?: string;
+  dateTo?:   string;
+}
+
 export interface ProjectEnvVar {
   id:        string;
   key:       string;
@@ -52,19 +75,42 @@ export interface ProjectEnvVar {
   createdAt: string;
 }
 
-// ---------- Service ----------
+// ─── Service ───────────────────────────────────────────────────────────────────
+
 @Injectable({ providedIn: 'root' })
 export class ScenarioService {
   private readonly base = 'http://localhost:3000/api';
 
   constructor(private http: HttpClient) {}
 
-  // ---- CRUD Scénarios ----
+  // ── CRUD Scénarios ──────────────────────────────────────────────────────────
 
-  getAll(projectId: string): Observable<Scenario[]> {
-    return this.http
-      .get<{ data: Scenario[] }>(`${this.base}/projects/${projectId}/scenarios`)
-      .pipe(map(r => r.data));
+  getAll(projectId: string, params: ScenarioFilterParams = {}): Observable<PaginatedScenarios> {
+    const {
+      page     = 1,
+      limit    = 10,
+      search   = '',
+      type     = '',
+      status   = '',
+      mode     = '',
+      dateFrom = '',
+      dateTo   = '',
+    } = params;
+
+    const query = new URLSearchParams({
+      page:     String(page),
+      limit:    String(limit),
+      search,
+      type,
+      status,
+      mode,
+      dateFrom,
+      dateTo,
+    });
+
+    return this.http.get<PaginatedScenarios>(
+      `${this.base}/projects/${projectId}/scenarios?${query}`
+    );
   }
 
   getOne(projectId: string, scenarioId: string): Observable<Scenario> {
@@ -86,10 +132,12 @@ export class ScenarioService {
   }
 
   remove(projectId: string, scenarioId: string): Observable<void> {
-    return this.http.delete<void>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}`);
+    return this.http.delete<void>(
+      `${this.base}/projects/${projectId}/scenarios/${scenarioId}`
+    );
   }
 
-  // ---- Variables ----
+  // ── Variables ───────────────────────────────────────────────────────────────
 
   getVariables(projectId: string, scenarioId: string): Observable<ScenarioVariable[]> {
     return this.http
@@ -97,7 +145,6 @@ export class ScenarioService {
       .pipe(map(r => r.data));
   }
 
-  // Régénération — remplace toutes les variables
   regenerateVariables(
     projectId:  string,
     scenarioId: string,
@@ -111,7 +158,6 @@ export class ScenarioService {
       .pipe(map(r => r.data));
   }
 
-  // Copier les variables depuis un autre scénario (ex: inscription → login)
   copyVariablesFrom(
     projectId:        string,
     targetScenarioId: string,
@@ -125,7 +171,7 @@ export class ScenarioService {
       .pipe(map(r => r.data));
   }
 
-  // ---- Script ----
+  // ── Script ──────────────────────────────────────────────────────────────────
 
   updateScript(projectId: string, scenarioId: string, scriptTemplate: string): Observable<Scenario> {
     return this.http
@@ -136,7 +182,7 @@ export class ScenarioService {
       .pipe(map(r => r.data));
   }
 
-  // ---- Exécutions ----
+  // ── Exécutions ──────────────────────────────────────────────────────────────
 
   execute(projectId: string, scenarioId: string): Observable<ScenarioExecution> {
     return this.http
@@ -155,7 +201,7 @@ export class ScenarioService {
       .pipe(map(r => r.data));
   }
 
-  // ---- ProjectEnvVar ----
+  // ── ProjectEnvVar ───────────────────────────────────────────────────────────
 
   getEnvVars(projectId: string): Observable<ProjectEnvVar[]> {
     return this.http
@@ -178,4 +224,10 @@ export class ScenarioService {
   removeEnvVar(projectId: string, envVarId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/projects/${projectId}/env-vars/${envVarId}`);
   }
+  executeAll(projectId: string, captureMode: string): Observable<any> {
+  return this.http.post<any>(
+    `${this.base}/projects/${projectId}/scenarios/execute-all`,
+    { captureMode }
+  ).pipe(map(r => r.data));
+}
 }

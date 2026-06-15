@@ -1,169 +1,200 @@
 <!-- BACKDROP -->
 <div class="modal-backdrop" *ngIf="isOpen()" (click)="close()">
+<div class="modal-panel" (click)="$event.stopPropagation()">
 
-  <!-- MODAL PANEL -->
-  <div class="modal-panel" (click)="$event.stopPropagation()">
+  <!-- ══ HEADER ══ -->
+  <div class="modal-header">
+    <div class="modal-header-icon">✦</div>
+    <div>
+      <div class="modal-title">Ajouter un scénario</div>
+      <div class="modal-subtitle">Choisissez votre méthode de création</div>
+    </div>
+    <button class="btn btn-ghost btn-sm close-btn" (click)="close()">✕</button>
+  </div>
 
-    <!-- ==================== HEADER ==================== -->
-    <div class="modal-header">
-      <div class="modal-header-icon">✦</div>
-      <div>
-        <div class="modal-title">Ajouter un scénario</div>
-        <div class="modal-subtitle">Choisissez votre méthode de création</div>
+  <!-- ══ BODY ══ -->
+  <div class="modal-body">
+
+    <!-- MODE TABS -->
+    <div class="mode-tabs">
+      <div class="mode-tab" [ngClass]="{active:activeMode()==='nlp'}" (click)="setMode('nlp')">
+        <span class="mode-tab-icon">🗣️</span>
+        <div class="mode-tab-title">Langage naturel</div>
+        <div class="mode-tab-desc">Décrivez en français, l'IA génère les étapes et le script</div>
       </div>
-      <button class="btn btn-ghost btn-sm close-btn" (click)="close()">✕</button>
+      <div class="mode-tab purple" [ngClass]="{active:activeMode()==='record'}" (click)="setMode('record')">
+        <span class="mode-tab-icon">🔴</span>
+        <div class="mode-tab-title">Enregistrement en direct</div>
+        <div class="mode-tab-desc">Naviguez dans votre navigateur, Playwright capture tout</div>
+      </div>
     </div>
 
-    <!-- ==================== BODY ==================== -->
-    <div class="modal-body">
-
-      <!-- MODE TABS — INCHANGÉ -->
-      <div class="mode-tabs">
-        <div
-          class="mode-tab"
-          [ngClass]="{ active: activeMode() === 'nlp' }"
-          (click)="setMode('nlp')"
-        >
-          <span class="mode-tab-icon">🗣️</span>
-          <div class="mode-tab-title">Langage naturel</div>
-          <div class="mode-tab-desc">Décrivez en français, l'IA génère les étapes et le script</div>
+    <!-- ══ NLP SECTION ══ -->
+    <div class="nlp-section" *ngIf="activeMode()==='nlp'">
+      <div class="field-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Nom du scénario</label>
+          <input class="form-input" [(ngModel)]="nlpName" placeholder="Ex: Connexion avec 2FA activée"/>
         </div>
-        <div
-          class="mode-tab purple"
-          [ngClass]="{ active: activeMode() === 'record' }"
-          (click)="setMode('record')"
-        >
-          <span class="mode-tab-icon">🔴</span>
-          <div class="mode-tab-title">Enregistrement en direct</div>
-          <div class="mode-tab-desc">Naviguez dans le navigateur, le système capture vos actions</div>
+        <div class="form-group" style="flex:0 0 auto">
+          <label class="form-label">Type</label>
+          <div class="type-row">
+            <div class="type-btn"
+              *ngFor="let t of [{val:'pos',label:'Positif',cls:'pos'},{val:'neg',label:'Négatif',cls:'neg'},{val:'sec',label:'Sécurité',cls:'sec'},{val:'perf',label:'Perf',cls:'perf'}]"
+              [ngClass]="[t.cls, selectedType()===t.val?'selected':'']"
+              (click)="setType($any(t.val))">
+              <span class="type-check">{{ selectedType()===t.val?'✓':'' }}</span>{{ t.label }}
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- ==================== NLP SECTION ==================== -->
-      <div class="nlp-section" *ngIf="activeMode() === 'nlp'">
+      <div class="form-group">
+        <label class="form-label">Décrivez le scénario en langage naturel</label>
+        <textarea class="nlp-textarea" [(ngModel)]="nlpText"
+          placeholder="Ex: L'utilisateur va sur la page de login, entre son email et mot de passe, clique sur Se connecter, puis vérifie qu'il est redirigé vers le dashboard.">
+        </textarea>
+        <div class="nlp-footer-row">
+          <span class="form-hint">💡 Plus vous êtes précis, meilleur sera le script</span>
+          <button class="btn btn-primary btn-sm" (click)="parseNLP()" [disabled]="parsing()||!nlpText.trim()">
+            <span *ngIf="parsing()">⏳ Analyse...</span>
+            <span *ngIf="!parsing()">🧠 Analyser avec l'IA</span>
+          </button>
+        </div>
+      </div>
 
-        <!-- Name + Type row — INCHANGÉ -->
-        <div class="field-row">
+      <div class="parsed-preview" [ngClass]="{show:parsedPreviewVisible()}">
+        <div class="preview-section-label">
+          🤖 Étapes détectées
+          <span class="steps-count">{{ parsedSteps().length }} étapes</span>
+        </div>
+        <div class="parsed-steps">
+          <div class="parsed-step" *ngFor="let step of parsedSteps()">
+            <div class="parsed-step-num">{{ step.num }}</div>
+            <div class="parsed-step-action">{{ step.action }}</div>
+            <div class="parsed-step-selector">{{ step.selector }}</div>
+            <span class="parsed-step-type" [ngClass]="step.type">{{ step.type.toUpperCase() }}</span>
+          </div>
+        </div>
+        <div class="preview-data-box">
+          <div class="preview-data-label">DONNÉES DE TEST</div>
+          <div class="data-field-row" *ngFor="let d of parsedData()">
+            <span class="data-key">{{ d.k }}<span class="secret-badge" *ngIf="d.isSecret">🔒</span></span>
+            <span class="data-val">
+              <input [(ngModel)]="d.v" [type]="d.isSecret?'password':'text'" [placeholder]="!d.v?'(vide)':''"/>
+            </span>
+          </div>
+        </div>
+        <div class="preview-script-box">
+          <div class="preview-script-header">
+            <span>SCRIPT PLAYWRIGHT GÉNÉRÉ</span>
+            <button class="btn btn-ghost btn-xs" (click)="copyScript()">📋 Copier</button>
+          </div>
+          <pre class="script-block">{{ parsedScript() }}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ RECORD SECTION ══ -->
+    <div class="record-section" *ngIf="activeMode()==='record'">
+
+      <!-- ÉTAPE 1: Agent -->
+      <div class="rec-setup-card">
+        <div class="rec-setup-title">
+          <span class="rec-step-badge">1</span>
+          Connecter l'agent local
+          <span class="agent-status-pill" [ngClass]="agentConnected()?'ok':'off'">
+            <span class="agent-dot"></span>
+            {{ agentConnected() ? 'Agent connecté' : 'Agent non connecté' }}
+          </span>
+        </div>
+
+        <div class="install-block" *ngIf="!agentConnected()">
+          <div class="install-hint">Installez et lancez l'agent sur votre machine (une seule fois) :</div>
+          <div class="install-code">
+            <code>npm install -g autentia-recorder && npx playwright install chromium</code>
+            <button class="btn btn-ghost btn-xs" (click)="copyCode()">📋</button>
+          </div>
+          <div class="install-code" style="margin-top:6px">
+            <code>autentia-recorder start --server http://localhost:3000 --token <strong>MON_TOKEN</strong></code>
+          </div>
+        </div>
+
+        <div class="agent-token-row">
+          <div class="form-group" style="flex:1;margin:0">
+            <label class="form-label">Token agent</label>
+            <input class="form-input form-input-mono"
+              [(ngModel)]="recAgentToken"
+              placeholder="ex: autentia_abc123xyz"
+              [disabled]="agentConnected() || recStatus()==='checking'"/>
+          </div>
+          <button class="btn btn-secondary btn-sm agent-check-btn"
+            (click)="checkAgent()"
+            [disabled]="agentConnected() || recStatus()==='checking' || !recAgentToken.trim()">
+            <span *ngIf="recStatus()==='checking'">⏳ Vérification...</span>
+            <span *ngIf="recStatus()!=='checking' && !agentConnected()">🔌 Vérifier</span>
+            <span *ngIf="agentConnected()">✅ Connecté</span>
+          </button>
+        </div>
+
+        <div class="rec-error-msg" *ngIf="recError() && (recStatus()==='no_agent'||recStatus()==='idle')">
+          ⚠️ {{ recError() }}
+        </div>
+      </div>
+
+      <!-- ÉTAPE 2: Config -->
+      <div class="rec-setup-card" [ngClass]="{disabled:!agentConnected()}">
+        <div class="rec-setup-title"><span class="rec-step-badge">2</span> Configurer l'enregistrement</div>
+
+        <div class="field-row" style="gap:12px">
           <div class="form-group" style="flex:1">
-            <label class="form-label">Nom du scénario</label>
-            <input
-              class="form-input"
-              [(ngModel)]="nlpName"
-              placeholder="Ex: Connexion avec 2FA activée"
-            />
+            <label class="form-label">Nom du scénario <span class="required">*</span></label>
+            <input class="form-input" [(ngModel)]="recName"
+              placeholder="Ex: Test ajout produit panier"
+              [disabled]="!agentConnected() || recStatus()==='recording'"/>
           </div>
           <div class="form-group" style="flex:0 0 auto">
             <label class="form-label">Type</label>
             <div class="type-row">
-              <div
-                class="type-btn"
-                *ngFor="let t of [
-                  { val: 'pos', label: 'Positif', cls: 'pos' },
-                  { val: 'neg', label: 'Négatif', cls: 'neg' },
-                  { val: 'sec', label: 'Sécurité', cls: 'sec' },
-                  { val: 'perf', label: 'Perf', cls: 'perf' }
-                ]"
-                [ngClass]="[t.cls, selectedType() === t.val ? 'selected' : '']"
+              <div class="type-btn"
+                *ngFor="let t of [{val:'pos',label:'Positif',cls:'pos'},{val:'neg',label:'Négatif',cls:'neg'},{val:'sec',label:'Sécurité',cls:'sec'},{val:'perf',label:'Perf',cls:'perf'}]"
+                [ngClass]="[t.cls, selectedType()===t.val?'selected':'']"
                 (click)="setType($any(t.val))">
-                <span class="type-check">{{ selectedType() === t.val ? '✓' : '' }}</span>
-                {{ t.label }}
+                <span class="type-check">{{ selectedType()===t.val?'✓':'' }}</span>{{ t.label }}
               </div>
             </div>
           </div>
         </div>
 
-        <!-- NLP Textarea — INCHANGÉ -->
-        <div class="form-group">
-          <label class="form-label">Décrivez le scénario en langage naturel</label>
-          <textarea
-            class="nlp-textarea"
-            [(ngModel)]="nlpText"
-            placeholder="Ex: L'utilisateur va sur la page de login, entre son email 'test@example.com' et son mot de passe 'Pass123!', clique sur Se connecter, puis vérifie qu'il est bien redirigé vers le dashboard."
-          ></textarea>
-          <div class="nlp-footer-row">
-            <span class="form-hint">💡 Plus vous êtes précis, plus l'IA générera un script fiable</span>
-            <button
-              class="btn btn-primary btn-sm"
-              (click)="parseNLP()"
-              [disabled]="parsing() || !nlpText.trim()"
-            >
-              <span *ngIf="parsing()">⏳ Analyse en cours...</span>
-              <span *ngIf="!parsing()">🧠 Analyser avec l'IA</span>
-            </button>
+        <div class="field-row" style="gap:12px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">URL de départ <span class="required">*</span></label>
+            <input class="form-input form-input-mono"
+              [(ngModel)]="recStartUrl"
+              placeholder="https://mon-app.com/login"
+              [disabled]="!agentConnected() || recStatus()==='recording'"/>
+            <span class="form-hint">Playwright ouvrira automatiquement cette URL dans une nouvelle fenêtre</span>
           </div>
-        </div>
-
-        <!-- PARSED PREVIEW -->
-        <div class="parsed-preview" [ngClass]="{ show: parsedPreviewVisible() }">
-
-          <!-- Steps — INCHANGÉ -->
-          <div class="preview-section-label">
-            🤖 Étapes détectées
-            <span class="steps-count">{{ parsedSteps().length }} étapes</span>
-          </div>
-
-          <div class="parsed-steps">
-            <div class="parsed-step" *ngFor="let step of parsedSteps()">
-              <div class="parsed-step-num">{{ step.num }}</div>
-              <div class="parsed-step-action">{{ step.action }}</div>
-              <div class="parsed-step-selector">{{ step.selector }}</div>
-              <span class="parsed-step-type" [ngClass]="step.type">{{ step.type.toUpperCase() }}</span>
+          <div class="form-group" style="flex:0 0 180px">
+            <label class="form-label">Navigateur</label>
+            <div class="browser-selector">
+              <div class="browser-opt"
+                *ngFor="let b of browserOptions"
+                [ngClass]="{selected:recBrowser()===b}"
+                (click)="setBrowser(b)"
+                [class.disabled]="!agentConnected() || recStatus()==='recording'">
+                {{ browserLabels[b] }}
+              </div>
             </div>
           </div>
-
-          <!-- Data fields — CHANGÉ : ajout badge secret + placeholder visible -->
-          <div class="preview-data-box">
-            <div class="preview-data-label">DONNÉES DE TEST GÉNÉRÉES</div>
-            <div class="data-field-row" *ngFor="let d of parsedData()">
-              <span class="data-key">
-                {{ d.k }}
-                <!-- AJOUT : badge secret si isSecret -->
-                <span class="secret-badge" *ngIf="d.isSecret">🔒</span>
-              </span>
-              <span class="data-val">
-                <!-- CHANGÉ : type password si isSecret -->
-                <input
-                  [(ngModel)]="d.v"
-                  [type]="d.isSecret ? 'password' : 'text'"
-                  [placeholder]="!d.v ? '(vide)' : ''"
-                />
-              </span>
-            </div>
-          </div>
-
-          <!-- Script preview — INCHANGÉ -->
-          <div class="preview-script-box">
-            <div class="preview-script-header">
-              <span>SCRIPT PLAYWRIGHT GÉNÉRÉ</span>
-              <button class="btn btn-ghost btn-xs" (click)="copyScript()">📋 Copier</button>
-            </div>
-            <pre class="script-block">{{ parsedScript() }}</pre>
-          </div>
-
         </div>
       </div>
 
-      <!-- ==================== RECORD SECTION — INCHANGÉ ==================== -->
-      <div class="record-section" *ngIf="activeMode() === 'record'">
+      <!-- ÉTAPE 3: Enregistrement -->
+      <div class="rec-setup-card" [ngClass]="{disabled:!agentConnected()}">
+        <div class="rec-setup-title"><span class="rec-step-badge">3</span> Enregistrement en direct</div>
 
-        <div class="ai-insight" style="margin-bottom:16px">
-          <div class="ai-icon">💡</div>
-          <div class="ai-text">
-            <strong>Comment ça fonctionne :</strong> Cliquez sur <em>Démarrer l'enregistrement</em>,
-            puis exécutez votre scénario dans le navigateur. Chaque action est capturée et convertie
-            en script Playwright automatiquement.
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Nom du scénario</label>
-          <input
-            class="form-input"
-            [(ngModel)]="recName"
-            placeholder="Ex: Parcours achat — carte Visa"
-          />
-        </div>
-
+        <!-- Browser mockup -->
         <div class="browser-mockup">
           <div class="browser-bar">
             <div class="browser-dots">
@@ -171,95 +202,144 @@
               <div class="b-dot yellow"></div>
               <div class="b-dot green"></div>
             </div>
-            <div class="browser-url">🔒 <span>shop.example.com/login</span></div>
-            <div class="rec-badge" *ngIf="isRecording()">
-              <div class="rec-dot"></div> REC
+            <div class="browser-url">
+              🔒 <span>{{
+                recStatus()==='recording' ? recStartUrl :
+                recStatus()==='connecting' ? 'Ouverture de '+recBrowser()+'...' :
+                recStatus()==='stopped' ? recStartUrl+' (terminé)' :
+                'En attente — configurez les champs ci-dessus'
+              }}</span>
+            </div>
+            <div class="rec-badge" *ngIf="recStatus()==='recording'">
+              <div class="rec-dot"></div> REC {{ recTimerLabel }}
             </div>
           </div>
+
           <div class="browser-content">
-            <div class="browser-idle" *ngIf="!isRecording()">
+            <!-- IDLE / NO_AGENT / AGENT_OK -->
+            <div class="browser-idle"
+              *ngIf="recStatus()==='idle'||recStatus()==='no_agent'||recStatus()==='checking'||recStatus()==='agent_ok'">
               <div class="browser-idle-icon">🖥️</div>
-              <div class="browser-idle-title">Démarrez l'enregistrement</div>
-              <div class="browser-idle-sub">Le système capturera chaque clic, saisie et navigation</div>
-            </div>
-            <div class="browser-recording" *ngIf="isRecording()">
-              <div style="font-size:11px;color:var(--text3)">Simulation en cours...</div>
-              <div class="rec-indicator">
-                <div class="rec-dot"></div>
-                Enregistrement actif — <strong>{{ recEvents().length }}</strong> actions capturées
+              <div class="browser-idle-title" *ngIf="recStatus()==='agent_ok'">Prêt — cliquez Démarrer</div>
+              <div class="browser-idle-title" *ngIf="recStatus()!=='agent_ok'">En attente de l'agent</div>
+              <div class="browser-idle-sub">
+                {{ agentConnected()
+                  ? 'Playwright va ouvrir '+recBrowser()+' sur l\'URL configurée'
+                  : 'Connectez l\'agent pour continuer' }}
               </div>
             </div>
+
+            <!-- CONNECTING -->
+            <div class="browser-idle" *ngIf="recStatus()==='connecting'">
+              <div class="browser-idle-icon">⏳</div>
+              <div class="browser-idle-title">Ouverture de {{ recBrowser() }}...</div>
+              <div class="browser-idle-sub">La fenêtre va s'ouvrir sur votre machine dans quelques secondes</div>
+            </div>
+
+            <!-- RECORDING — script live -->
+            <div class="browser-recording-live" *ngIf="recStatus()==='recording'">
+              <div class="rec-indicator">
+                <div class="rec-dot"></div>
+                Enregistrement actif —
+                <strong>{{ recEvents().length }}</strong> actions •
+                <strong>{{ recScriptLines().length }}</strong> lignes
+              </div>
+
+              <div class="live-script-preview" *ngIf="recScriptLines().length > 0">
+                <div class="live-script-header">
+                  <span class="live-dot"></span> Script Playwright — temps réel
+                </div>
+                <pre class="live-script-block" #liveScriptEl>{{ liveScript }}</pre>
+              </div>
+
+              <div class="rec-hint" *ngIf="recScriptLines().length === 0">
+                🖱️ Naviguez dans la fenêtre {{ recBrowser() }} — les actions s'afficheront ici
+              </div>
+            </div>
+
+            <!-- STOPPED -->
+            <div class="browser-stopped" *ngIf="recStatus()==='stopped'">
+              <div class="stopped-icon">✅</div>
+              <div class="stopped-title">Enregistrement terminé</div>
+              <div class="stopped-sub">{{ recEvents().length }} actions capturées — script prêt</div>
+            </div>
           </div>
         </div>
 
+        <!-- Contrôles -->
         <div class="rec-controls">
-          <button class="btn btn-danger btn-sm" *ngIf="!isRecording()" (click)="startRecording()">
+          <button class="btn btn-danger btn-sm"
+            *ngIf="recStatus()==='agent_ok' || recStatus()==='stopped'"
+            [disabled]="!agentConnected()"
+            (click)="startRecording()">
             ⏺ Démarrer l'enregistrement
           </button>
-          <button class="btn btn-ghost btn-sm" *ngIf="isRecording()" (click)="stopRecording()">
-            ⏹ Arrêter
+          <button class="btn btn-ghost btn-sm" *ngIf="recStatus()==='connecting'" disabled>
+            ⏳ Connexion...
           </button>
-          <div class="rec-timer" *ngIf="isRecording()">{{ recTimerLabel }}</div>
+          <button class="btn btn-warning btn-sm" *ngIf="recStatus()==='recording'" (click)="stopRecording()">
+            ⏹ Arrêter l'enregistrement
+          </button>
+          <div class="rec-timer" *ngIf="recStatus()==='recording'">{{ recTimerLabel }}</div>
           <div style="flex:1"></div>
-          <button class="btn btn-ghost btn-sm" (click)="clearRecording()">🗑 Réinitialiser</button>
+          <button class="btn btn-ghost btn-sm"
+            (click)="clearRecording()"
+            [disabled]="recStatus()==='connecting'||recStatus()==='checking'">
+            🗑 Réinitialiser
+          </button>
         </div>
 
-        <div class="rec-events-container" *ngIf="recEvents().length > 0">
-          <div class="rec-events-title">
-            Actions enregistrées
-            <span class="ai-badge">🤖 Script généré en temps réel</span>
-          </div>
-          <div class="rec-events-log">
-            <div class="rec-event-row" *ngFor="let evt of recEvents()">
-              <span class="rec-time">{{ evt.time }}</span>
-              <span class="rec-action-badge" [ngClass]="evt.actionClass">{{ evt.actionLabel }}</span>
-              <span class="rec-desc" [innerHTML]="evt.desc"></span>
-            </div>
-          </div>
-
-          <div class="preview-script-box" style="margin-top:12px" *ngIf="recScript()">
-            <div class="preview-script-header">
-              <span>SCRIPT PLAYWRIGHT GÉNÉRÉ</span>
-              <button class="btn btn-ghost btn-xs" (click)="copyScript()">📋 Copier</button>
-            </div>
-            <pre class="script-block">{{ recScript() }}</pre>
-          </div>
+        <div class="rec-error-msg" *ngIf="recError() && recStatus()==='agent_ok'">
+          ⚠️ {{ recError() }}
         </div>
-
       </div>
 
-      <!-- AJOUT : message d'erreur API -->
-      <div class="error-banner" *ngIf="errorMessage()">
-        ⚠️ {{ errorMessage() }}
+      <!-- Journal des actions -->
+      <div class="rec-events-container" *ngIf="recEvents().length > 0">
+        <div class="rec-events-title">
+          Actions enregistrées
+          <span class="ai-badge">🤖 Capturées par Playwright</span>
+        </div>
+        <div class="rec-events-log">
+          <div class="rec-event-row" *ngFor="let evt of recEvents()">
+            <span class="rec-time">{{ evt.time }}</span>
+            <span class="rec-action-badge" [ngClass]="evt.actionClass">{{ evt.actionLabel }}</span>
+            <span class="rec-desc" [innerHTML]="evt.desc"></span>
+          </div>
+        </div>
+
+        <!-- Script final (après arrêt) -->
+        <div class="preview-script-box" style="margin-top:12px"
+             *ngIf="recScript() && recStatus()==='stopped'">
+          <div class="preview-script-header">
+            <span>SCRIPT PLAYWRIGHT FINAL</span>
+            <button class="btn btn-ghost btn-xs" (click)="copyScript()">📋 Copier</button>
+          </div>
+          <pre class="script-block">{{ recScript() }}</pre>
+        </div>
       </div>
 
     </div>
 
-    <!-- ==================== FOOTER ==================== -->
-    <div class="modal-footer">
-      <button class="btn btn-ghost" (click)="close()" [disabled]="saving()">Annuler</button>
-      <div style="display:flex;gap:8px">
-        <!-- CHANGÉ : disabled pendant le saving -->
-        <button
-          class="btn btn-secondary btn-sm"
-          (click)="saveDraft()"
-          [disabled]="saving()"
-        >
-          <!-- CHANGÉ : spinner pendant sauvegarde -->
-          <span *ngIf="saving()">⏳ Sauvegarde...</span>
-          <span *ngIf="!saving()">💾 Sauvegarder brouillon</span>
-        </button>
-
-        <button
-          class="btn btn-primary"
-          (click)="save()"
-          [disabled]="saving()"
-        >
-          <span *ngIf="saving()">⏳ En cours...</span>
-          <span *ngIf="!saving()">✓ Ajouter le scénario</span>
-        </button>
-      </div>
-    </div>
+    <!-- Erreur API -->
+    <div class="error-banner" *ngIf="errorMessage()">⚠️ {{ errorMessage() }}</div>
 
   </div>
+
+  <!-- ══ FOOTER ══ -->
+  <div class="modal-footer">
+    <button class="btn btn-ghost" (click)="close()" [disabled]="saving()">Annuler</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary btn-sm" (click)="saveDraft()" [disabled]="saving()">
+        <span *ngIf="saving()">⏳ Sauvegarde...</span>
+        <span *ngIf="!saving()">💾 Brouillon</span>
+      </button>
+      <button class="btn btn-primary" (click)="save()" [disabled]="saving()">
+        <span *ngIf="saving()">⏳ En cours...</span>
+        <span *ngIf="!saving()">✓ Ajouter le scénario</span>
+      </button>
+    </div>
+  </div>
+
+</div>
 </div>

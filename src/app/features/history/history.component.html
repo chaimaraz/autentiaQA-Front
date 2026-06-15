@@ -1,1 +1,322 @@
-<p>history works!</p>
+<!-- src/app/features/history/history.component.html -->
+
+<div class="page-header">
+  <div>
+    <div class="section-title">
+      Historique des exécutions
+      <span class="ai-badge">🤖 Analyse IA</span>
+    </div>
+    <div class="section-sub" style="margin-bottom:0">
+      Tous les runs avec rapport détaillé, screenshots et étapes
+    </div>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-ghost btn-sm" (click)="loadHistory()">↻ Rafraîchir</button>
+    <button class="btn btn-ghost btn-sm">⬇ Exporter CSV</button>
+  </div>
+</div>
+
+<!-- ═══════════════ STATS GLOBALES ═══════════════ -->
+<div class="run-stats-header">
+  <div class="run-stat-card cyan">
+    <div class="run-stat-label">Total Runs</div>
+    <div class="run-stat-value" style="color:var(--accent)">{{ globalStats().totalRuns }}</div>
+  </div>
+  <div class="run-stat-card green">
+    <div class="run-stat-label">Taux moyen</div>
+    <div class="run-stat-value" style="color:var(--success)">{{ globalStats().passRate }}%</div>
+  </div>
+  <div class="run-stat-card red">
+    <div class="run-stat-label">Runs échoués</div>
+    <div class="run-stat-value" style="color:var(--danger)">{{ globalStats().failedRuns }}</div>
+  </div>
+  <div class="run-stat-card orange">
+    <div class="run-stat-label">Durée moyenne</div>
+    <div class="run-stat-value" style="color:var(--warning)">{{ globalStats().avgDuration }}s</div>
+  </div>
+  <div class="run-stat-card purple">
+    <div class="run-stat-label">Bugs Jira</div>
+    <div class="run-stat-value" style="color:var(--accent2)">{{ globalStats().jiraBugs }}</div>
+  </div>
+</div>
+
+<!-- ═══════════════ FILTRES ═══════════════ -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="filter-search" placeholder="Rechercher par nom de scénario..."
+           [(ngModel)]="filterSearch" (input)="applyFilters()">
+    <button *ngIf="filterSearch" class="clear-btn" (click)="filterSearch=''; applyFilters()">✕</button>
+  </div>
+
+  <select class="filter-select" [(ngModel)]="filterStatus" (change)="applyFilters()">
+    <option value="">Tous les statuts</option>
+    <option value="PASS">✅ Passé</option>
+    <option value="FAIL">❌ Échoué</option>
+    <option value="ERROR">⚠ Erreur</option>
+    <option value="RUNNING">⟳ En cours</option>
+  </select>
+
+  <div class="date-range">
+    <input class="filter-select" type="date" [(ngModel)]="filterDateFrom" (change)="applyFilters()" title="Depuis">
+    <span class="date-sep">→</span>
+    <input class="filter-select" type="date" [(ngModel)]="filterDateTo"   (change)="applyFilters()" title="Jusqu'au">
+  </div>
+
+  <button class="btn btn-ghost btn-xs" (click)="resetFilters()">✕ Réinitialiser</button>
+</div>
+
+<!-- ═══════════════ TABLEAU ═══════════════ -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      Exécutions
+      <span style="font-size:12px;color:var(--text3);font-weight:400;font-family:'Space Mono',monospace">
+        ({{ totalRuns }} total)
+      </span>
+    </div>
+  </div>
+
+  <!-- Chargement -->
+  <div *ngIf="loading()" class="empty-state">
+    <span class="spin">⟳</span> Chargement...
+  </div>
+
+  <!-- Vide -->
+  <div *ngIf="!loading() && runs().length === 0" class="empty-state">
+    <div class="empty-icon">🔍</div>
+    <div>Aucune exécution trouvée.</div>
+    <button class="btn btn-ghost btn-xs" style="margin-top:8px" (click)="resetFilters()">Réinitialiser les filtres</button>
+  </div>
+
+  <!-- Tableau -->
+  <div class="run-table-wrap" *ngIf="!loading() && runs().length > 0">
+    <table class="run-table">
+      <thead>
+        <tr>
+          <th>Scénario</th>
+          <th>Projet</th>
+          <th>Type</th>
+          <th>Statut</th>
+          <th>Résultats</th>
+          <th>Durée</th>
+          <th>Capture</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let run of runs()">
+
+          <!-- Ligne principale -->
+          <tr>
+            <td>
+              <div class="run-row" [ngClass]="{ expanded: expandedRun() === run.id }"
+                   (click)="toggleRun(run.id)">
+                <div class="run-cell">
+                  <div style="font-size:12px;font-weight:600">{{ run.scenario.name }}</div>
+                  <div style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace">
+                    {{ run.id | slice:0:8 }}...
+                  </div>
+                </div>
+                <div class="run-cell">{{ run.scenario.project.name }}</div>
+                <div class="run-cell">
+                  <span class="scenario-type" [ngClass]="getTypeClass(run.scenario.type)">
+                    {{ getTypeLabel(run.scenario.type) }}
+                  </span>
+                </div>
+                <div class="run-cell">
+                  <span class="status-badge" [ngClass]="{
+                    passed:  run.result === 'PASS',
+                    failed:  run.result === 'FAIL' || run.result === 'ERROR',
+                    running: run.result === 'RUNNING'
+                  }">
+                    {{ run.result === 'PASS' ? '✓ PASSÉ'
+                     : run.result === 'FAIL' ? '✗ ÉCHOUÉ'
+                     : run.result === 'ERROR' ? '⚠ ERREUR' : '⟳ EN COURS' }}
+                  </span>
+                  <div style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:3px">
+                    {{ getRate(run) }}%
+                  </div>
+                </div>
+                <div class="run-cell">
+                  <div class="mini-bar">
+                    <div class="mini-bar-seg mini-bar-pass" [style.width.%]="getPassWidth(run)"></div>
+                    <div class="mini-bar-seg mini-bar-fail" [style.width.%]="getFailWidth(run)"></div>
+                  </div>
+                  <div class="mini-stats">
+                    <span class="mini-stat-pass">✓{{ run.passCount }}</span>
+                    <span class="mini-stat-fail" *ngIf="run.failCount > 0">✗{{ run.failCount }}</span>
+                    <span style="color:var(--text3)">/{{ run.totalCount }}</span>
+                  </div>
+                </div>
+                <div class="run-cell run-cell-dur">{{ formatDuration(run.durationMs) }}</div>
+                <div class="run-cell">
+                  <span *ngIf="run.videoPath" class="capture-tag video">🎥</span>
+                  <span *ngIf="run.screenshotPath && !run.videoPath" class="capture-tag screenshot">📸</span>
+                  <span *ngIf="!run.screenshotPath && !run.videoPath" class="capture-tag none">—</span>
+                </div>
+                <div class="run-cell run-cell-date">
+                  {{ run.executedAt | date:'dd/MM HH:mm' }}
+                </div>
+                <div class="run-cell" style="text-align:right">
+                  <span class="expand-toggle">{{ expandedRun() === run.id ? '▴' : '▾' }}</span>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Ligne de détail -->
+          <tr *ngIf="expandedRun() === run.id">
+            <td>
+              <div class="run-detail open">
+                <div class="run-detail-inner">
+
+                  <!-- 2 colonnes: étapes + media -->
+                  <div class="detail-grid">
+
+                    <!-- Étapes -->
+                    <div>
+                      <div class="detail-section-title">🔍 Étapes exécutées</div>
+
+                      <div *ngIf="run.steps.length === 0" style="font-size:12px;color:var(--text3);padding:12px 0">
+                        Aucune étape enregistrée pour cette exécution.
+                      </div>
+
+                      <div class="steps-list-compact">
+                        <div class="step-item-compact"
+                             *ngFor="let step of run.steps; let i = index"
+                             [ngClass]="{ 'step-fail': step.result === 'fail' }"
+                             (click)="toggleStep(i)">
+
+                          <div class="step-row-compact">
+                            <div class="step-dot" [ngClass]="step.result">
+                              {{ step.result === 'pass' ? '✓' : step.result === 'fail' ? '✗' : '—' }}
+                            </div>
+                            <div style="flex:1;min-width:0">
+                              <div class="step-action-compact">{{ step.action }}</div>
+                              <div *ngIf="step.selector" class="step-selector-compact">{{ step.selector }}</div>
+                            </div>
+                            <span class="step-dur-compact" *ngIf="step.durationMs">{{ step.durationMs }}ms</span>
+                            <span class="step-expand-btn"
+                                  *ngIf="step.errorMessage || step.screenshotPath">
+                              {{ expandedStep() === i ? '▴' : '▾' }}
+                            </span>
+                          </div>
+
+                          <!-- Détail étape -->
+                          <div class="step-detail-compact" *ngIf="expandedStep() === i">
+                            <div class="step-error-compact" *ngIf="step.errorMessage">
+                              <span class="step-error-label-compact">⚠</span>
+                              <pre class="step-error-pre">{{ step.errorMessage }}</pre>
+                            </div>
+                            <img *ngIf="step.screenshotPath"
+                                 [src]="SERVER + step.screenshotPath"
+                                 alt="Step screenshot"
+                                 class="step-screenshot-compact">
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Media (screenshot / vidéo) -->
+                    <div>
+                      <div class="detail-section-title">
+                        {{ run.videoPath ? '🎥 Vidéo d\'exécution' : run.screenshotPath ? '📸 Screenshot à l\'échec' : '⊘ Aucune capture' }}
+                      </div>
+
+                      <!-- Vidéo -->
+                      <video *ngIf="run.videoPath" controls class="detail-video"
+                             [src]="SERVER + run.videoPath">
+                      </video>
+
+                      <!-- Screenshot -->
+                      <div *ngIf="!run.videoPath && run.screenshotPath" class="detail-screenshot-wrap">
+                        <div class="scr-browser-bar">
+                          <div class="scr-dots">
+                            <div class="scr-dot r"></div>
+                            <div class="scr-dot y"></div>
+                            <div class="scr-dot g"></div>
+                          </div>
+                          <span style="font-size:10px;color:var(--text3);font-family:'Space Mono',monospace">
+                            Capture automatique à l'échec
+                          </span>
+                          <a [href]="SERVER + run.screenshotPath" target="_blank"
+                             class="btn btn-ghost btn-xs" style="margin-left:auto">⬇</a>
+                        </div>
+                        <img [src]="SERVER + run.screenshotPath" alt="Screenshot"
+                             class="detail-screenshot"
+                           (click)="openImage(SERVER + run.screenshotPath)">
+                        <div class="screenshot-status" [ngClass]="run.result === 'PASS' ? 'success-overlay' : 'error-overlay'">
+                          {{ run.result === 'PASS' ? '✅ Tests passés' : '❌ Échec — voir les étapes' }}
+                        </div>
+                      </div>
+
+                      <!-- Aucune capture -->
+                      <div *ngIf="!run.videoPath && !run.screenshotPath"
+                           style="height:120px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+                        Aucune capture disponible pour cette exécution.
+                      </div>
+
+                      <!-- AI Analysis -->
+                      <div class="ai-analysis-block" style="margin-top:12px">
+                        <div class="ai-analysis-title">
+                          <div class="ai-dot"></div> Analyse IA
+                        </div>
+                        <div *ngIf="run.result === 'PASS'" class="ai-insight-row">
+                          <div class="ai-insight-num">✓</div>
+                          <div>Exécution réussie · {{ run.passCount }}/{{ run.totalCount }} étapes passées.</div>
+                        </div>
+                        <div *ngIf="run.result !== 'PASS' && run.steps.length > 0" class="ai-insight-row">
+                          <div class="ai-insight-num">1</div>
+                          <div>
+                            <strong>{{ run.steps | failedSteps | slice:0:1 | stepName }}</strong> —
+                            Vérifiez le sélecteur et le state de l'application après le commit.
+                          </div>
+                        </div>
+                        <div *ngIf="run.failCount > 0" class="ai-insight-row">
+                          <div class="ai-insight-num">💡</div>
+                          <div>
+                            Taux de succès : <strong [style.color]="getRate(run) > 80 ? 'var(--success)' : 'var(--danger)'">
+                              {{ getRate(run) }}%
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="detail-actions">
+                    <button class="btn btn-ghost btn-xs">⬇ Exporter PDF</button>
+                    <button class="btn btn-ghost btn-xs" *ngIf="run.result === 'FAIL'" style="color:var(--danger)">🐛 Créer bug Jira</button>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════ PAGINATION ═══════════════ -->
+<div class="pagination-bar" *ngIf="!loading() && totalRuns > 0">
+  <span class="pagination-info">
+    {{ (currentPage-1)*pageSize+1 }}–{{ [currentPage*pageSize, totalRuns] | min }} sur
+    <strong>{{ totalRuns }}</strong> exécutions
+  </span>
+  <div class="pagination-controls">
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === 1" (click)="goToPage(1)">«</button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === 1" (click)="goToPage(currentPage-1)">‹</button>
+    <ng-container *ngFor="let p of pages">
+      <span *ngIf="isEllipsis(p)" class="page-ellipsis">…</span>
+      <button *ngIf="!isEllipsis(p)" class="page-btn" [ngClass]="{ active: p === currentPage }"
+              (click)="goToPage(+p)">{{ p }}</button>
+    </ng-container>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage+1)">›</button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)">»</button>
+  </div>
+</div>

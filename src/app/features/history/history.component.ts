@@ -1,58 +1,225 @@
-import { Component, signal } from '@angular/core';
-import { NgFor, NgClass, NgIf } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { MinPipe } from './../../shared/pipes/min.pipe';
+// src/app/features/history/history.component.ts
+import {
+  Component, OnInit, signal, inject,
+} from '@angular/core';
+import {
+  NgFor,
+  NgClass,
+  NgIf,
+  DatePipe,
+  SlicePipe
+} from '@angular/common';
+import { FormsModule }                    from '@angular/forms';
+import { RouterLink, ActivatedRoute }     from '@angular/router';
+import { HttpClient }                     from '@angular/common/http';
+import { Pipe, PipeTransform } from '@angular/core';
+import { FailedStepsPipe } from '../../shared/pipes/failed-steps.pipe';
+import { StepNamePipe } from '../../shared/pipes/step-name.pipe';
 
-export interface Run {
-  id: string; project: string; framework: string;
-  trigger: string; triggerLabel: string; branch: string; commit: string;
-  status: string; pass: number; fail: number; blocked: number; skip: number; total: number;
-  dur: string; date: string; rate: number;
+
+export interface HistoryRun {
+  id:            string;
+  result:        'PASS' | 'FAIL' | 'ERROR' | 'RUNNING';
+  durationMs:    number | null;
+  passCount:     number;
+  failCount:     number;
+  totalCount:    number;
+  screenshotPath: string | null;
+  videoPath:     string | null;
+  executedAt:    string;
+  scenario: {
+    id:        string;
+    name:      string;
+    type:      string;
+    projectId: string;
+    project:   { name: string };
+  };
+  steps: {
+    stepIndex:     number;
+    action:        string;
+    selector?:     string;
+    result:        'pass' | 'fail' | 'skip';
+    durationMs?:   number;
+    errorMessage?: string;
+    screenshotPath?: string;
+  }[];
+}
+
+interface GlobalStats {
+  totalRuns:   number;
+  passRate:    number;
+  failedRuns:  number;
+  avgDuration: number;
+  jiraBugs:    number;
 }
 
 @Component({
-  selector: 'app-history',
-  standalone: true,
-  imports: [NgFor, NgClass, NgIf, RouterLink],
+  selector:    'app-history',
+  standalone:  true,
+  imports: [
+  NgFor,
+  NgClass,
+  NgIf,
+  FormsModule,
+  RouterLink,
+  DatePipe,
+  SlicePipe,
+  FailedStepsPipe,
+  StepNamePipe,
+  MinPipe
+],
   templateUrl: './history.component.html',
-  styleUrl: './history.component.scss',
+  styleUrl:    './history.component.scss',
 })
-export class HistoryComponent {
-  activeTab = signal<'runs' | 'flux'>('runs');
+export class HistoryComponent implements OnInit {
 
-  globalStats = [
-    { label: 'Total Runs', value: '143', sub: '+12 cette semaine', color: 'cyan', valueColor: 'var(--accent)' },
-    { label: 'Taux moyen', value: '91%', sub: '↑ +3% vs mois dernier', color: 'green', valueColor: 'var(--success)' },
-    { label: 'Runs avec échecs', value: '18', sub: '↑ 3 cette semaine', color: 'red', valueColor: 'var(--danger)' },
-    { label: 'Durée moyenne', value: '1m 12s', sub: '↓ -8s vs mois dernier', color: 'orange', valueColor: 'var(--warning)' },
-    { label: 'Bugs Jira créés', value: '41', sub: 'depuis le début', color: 'purple', valueColor: 'var(--accent2)' },
-  ];
+  private http  = inject(HttpClient);
+  private route = inject(ActivatedRoute);
 
-  runs: Run[] = [
-    { id: '#143', project: 'E-Commerce Frontend', framework: 'Playwright', trigger: 'push', triggerLabel: 'Push main', branch: 'main', commit: 'feat/checkout-v2', status: 'passed', pass: 22, fail: 1, blocked: 0, skip: 0, total: 23, dur: '1m 05s', date: '28 févr. 10:32', rate: 96 },
-    { id: '#142', project: 'E-Commerce Frontend', framework: 'Playwright', trigger: 'pr', triggerLabel: 'Merge PR #89', branch: 'feat/checkout', commit: 'feat/checkout-redesign', status: 'passed', pass: 23, fail: 0, blocked: 0, skip: 0, total: 23, dur: '0m 58s', date: '28 févr. 14:32', rate: 100 },
-    { id: '#141', project: 'Admin Dashboard', framework: 'Playwright', trigger: 'push', triggerLabel: 'Push main', branch: 'hotfix/auth', commit: 'hotfix/auth-fix', status: 'failed', pass: 18, fail: 3, blocked: 2, skip: 0, total: 23, dur: '0m 48s', date: '27 févr. 18:10', rate: 78 },
-    { id: '#140', project: 'API Gateway Tests', framework: 'Cypress', trigger: 'cron', triggerLabel: 'Cron 02:00', branch: 'main', commit: 'main', status: 'passed', pass: 28, fail: 0, blocked: 0, skip: 3, total: 31, dur: '2m 14s', date: '27 févr. 02:00', rate: 90 },
-    { id: '#139', project: 'E-Commerce Frontend', framework: 'Playwright', trigger: 'manual', triggerLabel: 'Manuel', branch: 'develop', commit: 'develop', status: 'failed', pass: 19, fail: 4, blocked: 0, skip: 0, total: 23, dur: '1m 32s', date: '26 févr. 16:45', rate: 83 },
-    { id: '#138', project: 'Admin Dashboard', framework: 'Playwright', trigger: 'push', triggerLabel: 'Push main', branch: 'main', commit: 'refactor/ui-angular17', status: 'passed', pass: 21, fail: 0, blocked: 0, skip: 2, total: 23, dur: '0m 52s', date: '25 févr. 11:20', rate: 91 },
-  ];
+  readonly SERVER = 'http://localhost:3000';
 
-  fluxRuns = [
-    { id: '#F-32', name: 'Parcours achat complet — Positif', project: 'E-Commerce Frontend', status: 'passed', stepsPass: 5, stepsTotal: 5, date: '28 févr. 14:40', dur: '4m 54s', trigger: 'Merge PR' },
-    { id: '#F-31', name: 'Authentification incorrecte — Négatif', project: 'E-Commerce Frontend', status: 'passed', stepsPass: 3, stepsTotal: 3, date: '27 févr. 18:15', dur: '2m 18s', trigger: 'Push main' },
-    { id: '#F-30', name: 'Accès admin sans droits — Sécurité', project: 'E-Commerce Frontend', status: 'failed', stepsPass: 2, stepsTotal: 4, date: '26 févr. 09:00', dur: '1m 42s', trigger: 'Manuel' },
-  ];
+  // ── Filters ──────────────────────────────────────────────────────────────────
+  projectId  = '';
+  filterStatus   = '';
+  filterSearch   = '';
+  filterDateFrom = '';
+  filterDateTo   = '';
 
+  // ── Pagination ───────────────────────────────────────────────────────────────
+  currentPage  = 1;
+  pageSize     = 20;
+  totalRuns    = 0;
+  totalPages   = 1;
+
+  // ── Data ─────────────────────────────────────────────────────────────────────
+  runs        = signal<HistoryRun[]>([]);
+  loading     = signal(false);
   expandedRun = signal<string | null>(null);
+  expandedStep = signal<number | null>(null);
+
+  globalStats = signal<GlobalStats>({
+    totalRuns: 0, passRate: 0, failedRuns: 0, avgDuration: 0, jiraBugs: 0,
+  });
+
+  // ── Lifecycle ────────────────────────────────────────────────────────────────
+
+  ngOnInit(): void {
+    this.projectId = this.route.snapshot.params['id'] || this.route.snapshot.queryParams['projectId'] || '';
+    this.loadHistory();
+  }
+
+  // ── Load ─────────────────────────────────────────────────────────────────────
+
+  openImage(url: string): void {
+  window.open(url, '_blank');
+}
+  loadHistory(): void {
+    this.loading.set(true);
+    const params = new URLSearchParams({
+      page:     String(this.currentPage),
+      limit:    String(this.pageSize),
+      projectId: this.projectId,
+      status:   this.filterStatus,
+      search:   this.filterSearch,
+      dateFrom: this.filterDateFrom,
+      dateTo:   this.filterDateTo,
+    });
+
+    this.http.get<any>(`${this.SERVER}/api/executions/history?${params}`)
+      .subscribe({
+        next: (res) => {
+          this.runs.set(res.data);
+          this.totalRuns  = res.total;
+          this.totalPages = res.totalPages;
+          this.loading.set(false);
+          this._computeStats(res.data);
+        },
+        error: () => this.loading.set(false),
+      });
+  }
+
+  private _computeStats(runs: HistoryRun[]): void {
+    const total    = runs.length;
+    const passed   = runs.filter(r => r.result === 'PASS').length;
+    const failed   = runs.filter(r => r.result === 'FAIL' || r.result === 'ERROR').length;
+    const avgDur   = total > 0
+      ? Math.round(runs.reduce((s, r) => s + (r.durationMs || 0), 0) / total / 1000)
+      : 0;
+
+    this.globalStats.set({
+      totalRuns:   this.totalRuns,
+      passRate:    total > 0 ? Math.round(passed / total * 100) : 0,
+      failedRuns:  failed,
+      avgDuration: avgDur,
+      jiraBugs:    failed, // simplification : 1 bug Jira par run échoué
+    });
+  }
+
+  // ── Actions ──────────────────────────────────────────────────────────────────
 
   toggleRun(id: string): void {
     this.expandedRun.update(v => v === id ? null : id);
+    this.expandedStep.set(null);
   }
 
-  getTriggerClass(t: string): string {
-    return { push: 'push', pr: 'pr', manual: 'manual', cron: 'cron' }[t] ?? 'manual';
+  toggleStep(idx: number): void {
+    this.expandedStep.update(v => v === idx ? null : idx);
   }
 
-  getPassWidth(r: Run): number { return Math.round(r.pass / r.total * 100); }
-  getFailWidth(r: Run): number { return Math.round(r.fail / r.total * 100); }
-  getBlockWidth(r: Run): number { return Math.round(r.blocked / r.total * 100); }
+  applyFilters(): void {
+    this.currentPage = 1;
+    this.loadHistory();
+  }
+
+  resetFilters(): void {
+    this.filterStatus = this.filterSearch = this.filterDateFrom = this.filterDateTo = '';
+    this.currentPage = 1;
+    this.loadHistory();
+  }
+
+  goToPage(p: number): void {
+    if (p < 1 || p > this.totalPages) return;
+    this.currentPage = p;
+    this.loadHistory();
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  getPassWidth(r: HistoryRun): number {
+    return r.totalCount > 0 ? Math.round(r.passCount / r.totalCount * 100) : 0;
+  }
+  getFailWidth(r: HistoryRun): number {
+    return r.totalCount > 0 ? Math.round(r.failCount / r.totalCount * 100) : 0;
+  }
+  getRate(r: HistoryRun): number {
+    return r.totalCount > 0 ? Math.round(r.passCount / r.totalCount * 100) : (r.result === 'PASS' ? 100 : 0);
+  }
+  getTypeClass(type: string): string {
+    return ({ POSITIVE: 'positive', NEGATIVE: 'negative', SECURITY: 'security', PERFORMANCE: 'perf' })[type] || 'positive';
+  }
+  getTypeLabel(type: string): string {
+    return ({ POSITIVE: 'POSITIF', NEGATIVE: 'NÉGATIF', SECURITY: 'SÉCURITÉ', PERFORMANCE: 'PERF' })[type] || type;
+  }
+  formatDuration(ms: number | null): string {
+    if (!ms) return '—';
+    return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+  }
+
+  get pages(): (number | '...')[] {
+    const result: (number | '...')[] = [];
+    const range = new Set<number>([1, this.totalPages]);
+    for (let i = Math.max(2, this.currentPage - 1); i <= Math.min(this.totalPages - 1, this.currentPage + 1); i++) {
+      range.add(i);
+    }
+    let prev = 0;
+    for (const p of Array.from(range).sort((a, b) => a - b)) {
+      if (p - prev > 1) result.push('...');
+      result.push(p);
+      prev = p;
+    }
+    return result;
+  }
+
+  isEllipsis(p: number | '...'): p is '...' { return p === '...'; }
 }
