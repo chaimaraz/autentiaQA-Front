@@ -13,8 +13,10 @@
       </span>
     </div>
     <div class="section-sub">
-      {{ scenarioName() }}
-      <span *ngIf="durationMs() !== null" class="duration-label">· {{ durationLabel }}</span>
+      {{ mode() === 'batch' ? 'Exécution de tous les scénarios actifs' : scenarioName() }}
+      <span *ngIf="mode() === 'single' && durationMs() !== null" class="duration-label">
+        · {{ durationLabel }}
+      </span>
     </div>
   </div>
   <div class="page-actions">
@@ -24,43 +26,58 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
-     MODE BATCH
+     MODE BATCH — Progression
      ═══════════════════════════════════════════════════════════ -->
 <ng-container *ngIf="mode() === 'batch'">
 
   <div class="card mb-16" *ngIf="batchProgress() as bp">
     <div class="card-header">
-      <div class="card-title">Exécution groupée — {{ bp.total }} scénarios</div>
-      <span class="status-badge" [ngClass]="bp.status === 'DONE' ? (bp.fail > 0 ? 'fail' : 'pass') : 'running'">
-        {{ bp.status === 'DONE' ? (bp.fail > 0 ? '✗ TERMINÉ' : '✓ TERMINÉ') : '⟳ EN COURS' }}
+      <div class="card-title">
+        Exécution groupée
+        <span class="batch-count">{{ bp.total }} scénario{{ bp.total > 1 ? 's' : '' }}</span>
+      </div>
+      <span class="status-badge"
+        [ngClass]="bp.status === 'DONE' ? (bp.fail > 0 ? 'fail' : 'pass') : 'running'">
+        {{ bp.status === 'DONE'
+            ? (bp.fail > 0 ? '✗ TERMINÉ AVEC ÉCHECS' : '✓ TOUT RÉUSSI')
+            : '⟳ EN COURS' }}
       </span>
     </div>
     <div class="card-body">
 
-      <!-- Scénario en cours -->
       <div class="current-scenario" *ngIf="bp.currentScenario && bp.status !== 'DONE'">
         <span class="spin">⟳</span>
         <span>En cours : <strong>{{ bp.currentScenario }}</strong></span>
+        <span class="current-count">{{ bp.done + 1 }}/{{ bp.total }}</span>
       </div>
 
-      <!-- Stats -->
       <div class="exec-stats">
-        <div class="exec-stat"><div class="exec-stat-val" style="color:var(--success)">{{ bp.pass }}</div><div class="exec-stat-label">Passés</div></div>
-        <div class="exec-stat"><div class="exec-stat-val" style="color:var(--danger)">{{ bp.fail }}</div><div class="exec-stat-label">Échoués</div></div>
-        <div class="exec-stat"><div class="exec-stat-val" style="color:var(--text3)">{{ bp.total }}</div><div class="exec-stat-label">Total</div></div>
-        <div class="exec-stat"><div class="exec-stat-val" style="color:var(--accent)">{{ bp.done }}</div><div class="exec-stat-label">Terminés</div></div>
-      </div>
-
-      <!-- Barre -->
-      <div class="progress-bar" style="margin-top:16px">
-        <div class="progress-fill"
-          [ngClass]="bp.fail > 0 ? 'red' : 'cyan'"
-          [style.width.%]="batchProgress_pct">
+        <div class="exec-stat">
+          <div class="exec-stat-val" style="color:var(--success)">{{ bp.pass }}</div>
+          <div class="exec-stat-label">✓ Passés</div>
+        </div>
+        <div class="exec-stat">
+          <div class="exec-stat-val" style="color:var(--danger)">{{ bp.fail }}</div>
+          <div class="exec-stat-label">✗ Échoués</div>
+        </div>
+        <div class="exec-stat">
+          <div class="exec-stat-val" style="color:var(--text3)">{{ bp.total }}</div>
+          <div class="exec-stat-label">Total</div>
+        </div>
+        <div class="exec-stat">
+          <div class="exec-stat-val" style="color:var(--accent)">{{ bp.done }}</div>
+          <div class="exec-stat-label">Terminés</div>
         </div>
       </div>
-      <div style="text-align:right;font-size:11px;color:var(--text3);margin-top:6px">
-        {{ bp.done }}/{{ bp.total }} · {{ batchProgress_pct }}%
+
+      <div class="progress-bar" style="margin-top:16px;height:10px">
+        <div class="progress-fill" [ngClass]="bp.fail > 0 ? 'red' : 'cyan'" [style.width.%]="batchProgress_pct"></div>
       </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:6px;font-family:'Space Mono',monospace">
+        <span>{{ bp.done }}/{{ bp.total }} scénarios</span>
+        <span>{{ batchProgress_pct }}%</span>
+      </div>
+
     </div>
   </div>
 
@@ -92,7 +109,7 @@
       <div class="exec-stats">
         <div class="exec-stat"><div class="exec-stat-val" style="color:var(--success)">{{ stats().pass }}</div><div class="exec-stat-label">Passés</div></div>
         <div class="exec-stat"><div class="exec-stat-val" style="color:var(--danger)">{{ stats().fail }}</div><div class="exec-stat-label">Échoués</div></div>
-        <div class="exec-stat"><div class="exec-stat-val" style="color:var(--accent)">{{ result() === 'RUNNING' ? 1 : 0 }}</div><div class="exec-stat-label">En cours</div></div>
+        <div class="exec-stat"><div class="exec-stat-val" style="color:var(--accent)">{{ stats().running }}</div><div class="exec-stat-label">En cours</div></div>
         <div class="exec-stat"><div class="exec-stat-val" style="color:var(--text3)">{{ stats().skipped }}</div><div class="exec-stat-label">Ignorés</div></div>
       </div>
 
@@ -101,7 +118,48 @@
           <div class="progress-fill" [ngClass]="result() === 'FAIL' ? 'red' : 'cyan'" [style.width.%]="progress"></div>
         </div>
         <div style="font-size:11px;color:var(--text3);margin-top:6px;text-align:right">
-          {{ stats().pass + stats().fail }}/{{ stats().total }} tests · {{ progress }}%
+          {{ stats().pass + stats().fail }}/{{ stats().total }} étapes · {{ progress }}%
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ÉTAPES EN TEMPS RÉEL ═══ -->
+  <div class="card mb-16" *ngIf="steps().length > 0">
+    <div class="card-header">
+      <div class="card-title">🔍 Étapes en cours d'exécution</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="step-summary-badge pass">✓ {{ passSteps.length }}</span>
+        <span class="step-summary-badge fail">✗ {{ failSteps.length }}</span>
+      </div>
+    </div>
+    <div class="card-body" style="padding:12px 16px">
+      <div class="steps-list">
+        <div class="step-item"
+             *ngFor="let step of steps(); let i = index"
+             [ngClass]="{ 'step-fail': step.result === 'FAIL', 'step-pass': step.result === 'PASS', 'step-running': step.result === 'RUNNING' }"
+             (click)="toggleStep(i)">
+          <div class="step-row">
+            <div class="step-index">{{ i + 1 }}</div>
+            <div class="step-indicator" [ngClass]="step.result.toLowerCase()">
+              <span *ngIf="step.result === 'RUNNING'" class="spin">⟳</span>
+              <span *ngIf="step.result === 'PASS'">✓</span>
+              <span *ngIf="step.result === 'FAIL'">✗</span>
+              <span *ngIf="step.result === 'SKIP'">—</span>
+            </div>
+            <div class="step-content">
+              <div class="step-action">{{ step.action }}</div>
+            </div>
+            <div class="step-dur" *ngIf="step.durationMs">{{ step.durationMs }}ms</div>
+            <span class="step-result-badge" [ngClass]="step.result.toLowerCase()">{{ step.result }}</span>
+            <span class="step-toggle" *ngIf="step.errorMessage">{{ expandedStep() === i ? '▴' : '▾' }}</span>
+          </div>
+          <div class="step-detail" *ngIf="expandedStep() === i && step.errorMessage">
+            <div class="step-error-block">
+              <div class="step-error-label">⚠ Message d'erreur</div>
+              <pre class="step-error-msg">{{ step.errorMessage }}</pre>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -110,15 +168,12 @@
 </ng-container>
 
 <!-- ═══════════════════════════════════════════════════════════
-     CONSOLE
+     CONSOLE D'EXÉCUTION
      ═══════════════════════════════════════════════════════════ -->
 <div class="card mb-16">
   <div class="card-header">
     <div class="card-title">Console d'exécution</div>
     <div style="display:flex;gap:6px;align-items:center">
-      <span class="capture-badge">
-        {{ captureMode() === 'screenshot' ? '📸 Screenshots' : captureMode() === 'video' ? '🎥 Vidéo' : '⊘ Sans capture' }}
-      </span>
       <span *ngIf="mode() === 'single'" class="status-badge"
         [ngClass]="result() === 'RUNNING' ? 'running' : result() === 'PASS' ? 'pass' : 'fail'">
         {{ result() }}
@@ -128,7 +183,7 @@
 
   <div class="execution-log" #logContainer>
     <div *ngIf="logs().length === 0" class="log-empty">⟳ En attente des logs...</div>
-    <div class="log-line" *ngFor="let log of logs()">
+    <div class="log-line" *ngFor="let log of logs()" [ngClass]="'log-line-' + log.level">
       <span class="log-time">{{ log.time }}</span>
       <span class="log-level" [ngClass]="log.level">{{ log.level.toUpperCase() }}</span>
       <span class="log-msg">{{ log.msg }}</span>
@@ -137,51 +192,10 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════
-     RAPPORT FINAL
+     RAPPORT FINAL — MODE SINGLE
      ═══════════════════════════════════════════════════════════ -->
 <ng-container *ngIf="showReport() && mode() === 'single'">
 
-  <!-- Screenshot / Vidéo -->
-  <div class="card mb-16" *ngIf="screenshotUrl() || videoUrl()">
-    <div class="card-header">
-      <div class="card-title">
-        {{ videoUrl() ? '🎥 Vidéo d\'exécution' : '📸 Capture d\'écran' }}
-      </div>
-      <a *ngIf="screenshotUrl()" [href]="screenshotUrl()!" target="_blank" class="btn btn-ghost btn-sm">⬇ Télécharger</a>
-      <a *ngIf="videoUrl()"      [href]="videoUrl()!"      target="_blank" class="btn btn-ghost btn-sm">⬇ Télécharger</a>
-    </div>
-    <div class="card-body" style="padding:0">
-
-      <!-- Video player -->
-      <div *ngIf="videoUrl()" class="media-container">
-        <video controls class="exec-video" [src]="videoUrl()!">
-          Votre navigateur ne supporte pas la vidéo.
-        </video>
-      </div>
-
-      <!-- Screenshot -->
-      <div *ngIf="!videoUrl() && screenshotUrl()" class="media-container">
-        <div class="screenshot-browser">
-          <div class="screenshot-bar">
-            <div class="scr-dots">
-              <div class="scr-dot r"></div>
-              <div class="scr-dot y"></div>
-              <div class="scr-dot g"></div>
-            </div>
-            <div class="scr-url">🔒 Capture d'écran automatique</div>
-            <span class="fail-badge" *ngIf="result() === 'FAIL'">⚠ Échec détecté</span>
-          </div>
-          <img [src]="screenshotUrl()!" alt="Screenshot" class="exec-screenshot"
-               (click)="window.open(screenshotUrl()!, '_blank')">
-          <div class="screenshot-overlay" [ngClass]="result() === 'PASS' ? 'success' : 'error'">
-            <span>{{ result() === 'PASS' ? '✅ Tests passés' : '❌ Échec — voir les étapes ci-dessous' }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Rapport principal -->
   <div class="rapport-card mb-16">
     <div class="rapport-header">
       <span class="rapport-icon">📊</span>
@@ -197,11 +211,11 @@
     <div class="rapport-stats">
       <div class="rapport-stat green">
         <div class="rapport-stat-val">{{ stats().pass }}</div>
-        <div class="rapport-stat-label">Tests passés</div>
+        <div class="rapport-stat-label">Étapes passées</div>
       </div>
       <div class="rapport-stat red">
         <div class="rapport-stat-val">{{ stats().fail }}</div>
-        <div class="rapport-stat-label">Tests échoués</div>
+        <div class="rapport-stat-label">Étapes échouées</div>
       </div>
       <div class="rapport-stat gray">
         <div class="rapport-stat-val">{{ stats().total }}</div>
@@ -211,113 +225,164 @@
         <div class="rapport-stat-val">{{ durationLabel }}</div>
         <div class="rapport-stat-label">Durée</div>
       </div>
+      <div class="rapport-stat purple">
+        <div class="rapport-stat-val">
+          {{ stats().total > 0 ? (stats().pass / stats().total * 100 | number:'1.0-0') : (result() === 'PASS' ? 100 : 0) }}%
+        </div>
+        <div class="rapport-stat-label">Taux succès</div>
+      </div>
     </div>
 
-    <!-- Erreur principale -->
-    <div *ngIf="errorLog()" class="rapport-error">
+    <div style="padding:0 20px 16px" *ngIf="stats().total > 0">
+      <div class="progress-bar" style="height:8px">
+        <div class="progress-fill" [ngClass]="result() === 'PASS' ? 'cyan' : 'red'" [style.width.%]="progress"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text3);font-family:'Space Mono',monospace">
+        <span>{{ stats().pass }} / {{ stats().total }} étapes passées</span>
+        <span>{{ progress }}%</span>
+      </div>
+    </div>
+
+    <div *ngIf="errorMessage()" class="rapport-error">
       <div class="rapport-error-title">⚠ Détail de l'erreur</div>
-      <pre class="rapport-error-log">{{ errorLog() }}</pre>
-    </div>
-
-    <!-- Étapes détaillées -->
-    <div class="rapport-steps" *ngIf="steps().length > 0">
-      <div class="rapport-steps-title">
-        <span>🔍 Étapes exécutées</span>
-        <div class="steps-summary">
-          <span class="step-badge pass">✓ {{ passSteps.length }}</span>
-          <span class="step-badge fail">✗ {{ failSteps.length }}</span>
-        </div>
-      </div>
-
-      <div class="steps-list">
-        <div class="step-item" *ngFor="let step of steps(); let i = index"
-             [ngClass]="{ 'step-fail': step.result === 'fail', 'step-pass': step.result === 'pass' }"
-             (click)="toggleStep(i)">
-
-          <div class="step-row">
-            <!-- Indicateur -->
-            <div class="step-indicator" [ngClass]="step.result">
-              {{ step.result === 'pass' ? '✓' : step.result === 'fail' ? '✗' : '—' }}
-            </div>
-            <!-- Contenu -->
-            <div class="step-content">
-              <div class="step-action">{{ step.action }}</div>
-              <div class="step-meta" *ngIf="step.selector">
-                <span class="step-selector">{{ step.selector }}</span>
-              </div>
-            </div>
-            <!-- Durée -->
-            <div class="step-dur" *ngIf="step.durationMs">{{ step.durationMs }}ms</div>
-            <!-- Badge -->
-            <span class="step-result-badge" [ngClass]="step.result">
-              {{ step.result === 'pass' ? 'PASS' : step.result === 'fail' ? 'FAIL' : 'SKIP' }}
-            </span>
-            <!-- Toggle -->
-            <span class="step-toggle" *ngIf="step.errorMessage || step.screenshotPath">
-              {{ expandedStep() === i ? '▴' : '▾' }}
-            </span>
-          </div>
-
-          <!-- Détails expansibles -->
-          <div class="step-detail" *ngIf="expandedStep() === i">
-
-            <!-- Message d'erreur -->
-            <div class="step-error-block" *ngIf="step.errorMessage">
-              <div class="step-error-label">⚠ Erreur</div>
-              <pre class="step-error-msg">{{ step.errorMessage }}</pre>
-            </div>
-
-            <!-- Screenshot de l'étape -->
-            <div class="step-screenshot" *ngIf="step.screenshotPath">
-              <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-family:'Space Mono',monospace">
-                📸 CAPTURE À L'ÉCHEC
-              </div>
-              <img [src]="SERVER + step.screenshotPath" alt="Step screenshot" class="step-screenshot-img">
-            </div>
-
-          </div>
-        </div>
-      </div>
+      <pre class="rapport-error-log">{{ errorMessage() }}</pre>
     </div>
 
     <div class="rapport-actions">
       <button class="btn btn-ghost btn-sm" (click)="goBack()">← Retour aux scénarios</button>
       <button class="btn btn-ghost btn-sm" (click)="goToHistory()">📜 Voir l'historique</button>
+      <button class="btn btn-ghost btn-sm">⬇ Exporter PDF</button>
+      <button *ngIf="result() === 'FAIL' || result() === 'ERROR'"
+              class="btn btn-ghost btn-sm" style="color:var(--danger)">
+        🐛 Créer bug Jira
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ ARTEFACTS : Trace Viewer / Vidéo / Screenshot ═══ -->
+
+  <!-- Trace Playwright — outil principal de diagnostic -->
+  <div class="card mb-16 trace-highlight" *ngIf="traceUrl()">
+    <div class="card-header">
+      <div class="card-title">🧭 Trace Playwright <span class="temp-badge trace-badge">Trace Viewer</span></div>
+    </div>
+    <div class="card-body trace-cta">
+      <p class="trace-desc">
+        Inspectez chaque action, le DOM, les requêtes réseau et la timeline complète
+        de cette exécution dans le Trace Viewer officiel de Playwright.
+      </p>
+      <div class="trace-actions">
+        <button class="btn btn-primary btn-sm" (click)="openTraceViewer()">
+          🧭 Ouvrir dans Trace Viewer
+        </button>
+        <a [href]="traceUrl()!" target="_blank" class="btn btn-ghost btn-sm">↗ Nouvel onglet</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vidéo -->
+  <div class="card mb-16" *ngIf="videoUrl()">
+    <div class="card-header">
+      <div class="card-title">🎥 Vidéo d'exécution</div>
+      <a [href]="videoUrl()!" target="_blank" class="btn btn-ghost btn-sm">⬇ Télécharger</a>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="media-container">
+        <video controls class="exec-video" [src]="videoUrl()!">
+          Votre navigateur ne supporte pas la vidéo.
+        </video>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screenshot -->
+  <div class="card mb-16" *ngIf="screenshotUrl()">
+    <div class="card-header">
+      <div class="card-title">📸 Capture</div>
+      <a [href]="screenshotUrl()!" target="_blank" class="btn btn-ghost btn-sm">⬇ Télécharger</a>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="screenshot-browser">
+        <div class="screenshot-bar">
+          <div class="scr-dots">
+            <div class="scr-dot r"></div><div class="scr-dot y"></div><div class="scr-dot g"></div>
+          </div>
+          <div class="scr-url">🔒 Capture automatique</div>
+          <span class="fail-badge" *ngIf="result() === 'FAIL'">⚠ Échec détecté</span>
+        </div>
+        <img [src]="screenshotUrl()!" alt="Screenshot" class="exec-screenshot">
+        <div class="screenshot-overlay" [ngClass]="result() === 'PASS' ? 'success' : 'error'">
+          <span>{{ result() === 'PASS' ? '✅ Tests passés' : '❌ Échec — voir les étapes ci-dessus' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-16" *ngIf="steps().length === 0 && result() !== 'RUNNING'">
+    <div class="card-body" style="text-align:center;padding:32px;color:var(--text3)">
+      <div style="font-size:24px;margin-bottom:10px;opacity:0.5">🔍</div>
+      <div style="font-size:13px">Aucune étape enregistrée pour cette exécution.</div>
     </div>
   </div>
 
 </ng-container>
 
-<!-- Rapport batch -->
+<!-- ═══════════════════════════════════════════════════════════
+     RAPPORT FINAL — MODE BATCH
+     ═══════════════════════════════════════════════════════════ -->
 <ng-container *ngIf="showReport() && mode() === 'batch'">
-  <div class="rapport-card mb-16">
+
+  <div class="rapport-card mb-16" *ngIf="batchProgress() as bp">
     <div class="rapport-header">
       <span class="rapport-icon">📦</span>
       <div>
         <div class="rapport-title">Rapport d'exécution groupée</div>
-        <div class="rapport-sub">{{ batchProgress()?.total }} scénarios exécutés</div>
+        <div class="rapport-sub">{{ bp.total }} scénarios · {{ getBatchTotalDuration() }}</div>
       </div>
-      <span class="rapport-result" [ngClass]="(batchProgress()?.fail ?? 0) > 0 ? 'fail' : 'pass'">
-        {{ (batchProgress()?.fail ?? 0) > 0 ? '✗ ÉCHEC(S)' : '✓ SUCCÈS' }}
+      <span class="rapport-result" [ngClass]="bp.fail > 0 ? 'fail' : 'pass'">
+        {{ bp.fail > 0 ? '✗ ' + bp.fail + ' ÉCHEC(S)' : '✓ TOUS RÉUSSIS' }}
       </span>
     </div>
+
     <div class="rapport-stats">
       <div class="rapport-stat green">
-        <div class="rapport-stat-val">{{ batchProgress()?.pass }}</div>
-        <div class="rapport-stat-label">Passés</div>
+        <div class="rapport-stat-val">{{ bp.pass }}</div>
+        <div class="rapport-stat-label">Scénarios passés</div>
       </div>
       <div class="rapport-stat red">
-        <div class="rapport-stat-val">{{ batchProgress()?.fail }}</div>
-        <div class="rapport-stat-label">Échoués</div>
+        <div class="rapport-stat-val">{{ bp.fail }}</div>
+        <div class="rapport-stat-label">Scénarios échoués</div>
       </div>
       <div class="rapport-stat gray">
-        <div class="rapport-stat-val">{{ batchProgress()?.total }}</div>
+        <div class="rapport-stat-val">{{ bp.total }}</div>
         <div class="rapport-stat-label">Total</div>
       </div>
+      <div class="rapport-stat blue">
+        <div class="rapport-stat-val">{{ getBatchTotalDuration() }}</div>
+        <div class="rapport-stat-label">Durée totale</div>
+      </div>
+      <div class="rapport-stat purple">
+        <div class="rapport-stat-val">{{ batchPassRate }}%</div>
+        <div class="rapport-stat-label">Taux de succès</div>
+      </div>
     </div>
+
+    <div style="padding:0 20px 16px">
+      <div class="progress-bar" style="height:8px">
+        <div class="progress-fill" [ngClass]="bp.fail > 0 ? 'red' : 'cyan'" [style.width.%]="batchPassRate"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text3);font-family:'Space Mono',monospace">
+        <span>{{ bp.pass }} / {{ bp.total }} scénarios passés</span>
+        <span>{{ batchPassRate }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="rapport-card mb-16">
     <div class="rapport-actions">
       <button class="btn btn-ghost btn-sm" (click)="goBack()">← Retour aux scénarios</button>
       <button class="btn btn-ghost btn-sm" (click)="goToHistory()">📜 Voir l'historique</button>
     </div>
   </div>
+
 </ng-container>

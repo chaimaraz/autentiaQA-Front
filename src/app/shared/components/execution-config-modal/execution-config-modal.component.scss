@@ -1,0 +1,95 @@
+// src/app/shared/components/execution-config-modal/execution-config-modal.component.scss
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease;
+}
+
+.modal-card {
+  width: 460px;
+  max-width: 92vw;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  animation: slideUp 0.2s ease;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; }
+.modal-sub   { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.modal-close {
+  background: none; border: none; color: var(--text3);
+  font-size: 16px; cursor: pointer; line-height: 1;
+  &:hover { color: var(--text); }
+}
+
+.modal-body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.config-group { display: flex; flex-direction: column; gap: 8px; }
+.config-label { font-size: 13px; font-weight: 600; color: var(--text2); }
+
+.pill-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.pill-row-3 { grid-template-columns: repeat(3, 1fr); }
+
+.pill {
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  padding: 8px 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+
+  &:hover { border-color: var(--accent); }
+  &.active {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 700;
+  }
+}
+
+.config-hint {
+  font-size: 11px;
+  color: var(--text3);
+  line-height: 1.4;
+}
+
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}

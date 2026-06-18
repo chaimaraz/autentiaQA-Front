@@ -3,6 +3,7 @@ import { Injectable }   from '@angular/core';
 import { HttpClient }   from '@angular/common/http';
 import { Observable }   from 'rxjs';
 import { map }          from 'rxjs/operators';
+import { ExecutionCaptureConfig } from './execution.service';
 
 // ─── Interfaces ────────────────────────────────────────────────────────────────
 
@@ -37,14 +38,18 @@ export interface PaginatedScenarios {
   totalPages: number;
 }
 
-export interface ScenarioExecution {
-  id:             string;
-  scenarioId:     string;
-  result:         'PASS' | 'FAIL' | 'ERROR' | 'RUNNING';
-  snapshotScript: string;
-  durationMs?:    number;
-  errorLog?:      string;
-  executedAt:     string;
+export interface ScenarioExecutionRef {
+  id:         string;
+  scenarioId: string;
+  result:     'PASS' | 'FAIL' | 'ERROR' | 'RUNNING';
+  startedAt:  string;
+}
+
+export interface BatchExecutionRef {
+  id:         string;
+  projectId:  string;
+  status:     string;
+  totalCount: number;
 }
 
 export interface CreateScenarioPayload {
@@ -87,30 +92,15 @@ export class ScenarioService {
 
   getAll(projectId: string, params: ScenarioFilterParams = {}): Observable<PaginatedScenarios> {
     const {
-      page     = 1,
-      limit    = 10,
-      search   = '',
-      type     = '',
-      status   = '',
-      mode     = '',
-      dateFrom = '',
-      dateTo   = '',
+      page = 1, limit = 10, search = '', type = '', status = '', mode = '',
+      dateFrom = '', dateTo = '',
     } = params;
 
     const query = new URLSearchParams({
-      page:     String(page),
-      limit:    String(limit),
-      search,
-      type,
-      status,
-      mode,
-      dateFrom,
-      dateTo,
+      page: String(page), limit: String(limit), search, type, status, mode, dateFrom, dateTo,
     });
 
-    return this.http.get<PaginatedScenarios>(
-      `${this.base}/projects/${projectId}/scenarios?${query}`
-    );
+    return this.http.get<PaginatedScenarios>(`${this.base}/projects/${projectId}/scenarios?${query}`);
   }
 
   getOne(projectId: string, scenarioId: string): Observable<Scenario> {
@@ -132,9 +122,7 @@ export class ScenarioService {
   }
 
   remove(projectId: string, scenarioId: string): Observable<void> {
-    return this.http.delete<void>(
-      `${this.base}/projects/${projectId}/scenarios/${scenarioId}`
-    );
+    return this.http.delete<void>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}`);
   }
 
   // ── Variables ───────────────────────────────────────────────────────────────
@@ -145,29 +133,15 @@ export class ScenarioService {
       .pipe(map(r => r.data));
   }
 
-  regenerateVariables(
-    projectId:  string,
-    scenarioId: string,
-    variables:  Omit<ScenarioVariable, 'id'>[]
-  ): Observable<ScenarioVariable[]> {
+  regenerateVariables(projectId: string, scenarioId: string, variables: Omit<ScenarioVariable, 'id'>[]): Observable<ScenarioVariable[]> {
     return this.http
-      .put<{ data: ScenarioVariable[] }>(
-        `${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables`,
-        { variables }
-      )
+      .put<{ data: ScenarioVariable[] }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables`, { variables })
       .pipe(map(r => r.data));
   }
 
-  copyVariablesFrom(
-    projectId:        string,
-    targetScenarioId: string,
-    sourceScenarioId: string
-  ): Observable<ScenarioVariable[]> {
+  copyVariablesFrom(projectId: string, targetScenarioId: string, sourceScenarioId: string): Observable<ScenarioVariable[]> {
     return this.http
-      .post<{ data: ScenarioVariable[] }>(
-        `${this.base}/projects/${projectId}/scenarios/${targetScenarioId}/copy-variables`,
-        { sourceScenarioId }
-      )
+      .post<{ data: ScenarioVariable[] }>(`${this.base}/projects/${projectId}/scenarios/${targetScenarioId}/copy-variables`, { sourceScenarioId })
       .pipe(map(r => r.data));
   }
 
@@ -175,29 +149,35 @@ export class ScenarioService {
 
   updateScript(projectId: string, scenarioId: string, scriptTemplate: string): Observable<Scenario> {
     return this.http
-      .put<{ data: Scenario }>(
-        `${this.base}/projects/${projectId}/scenarios/${scenarioId}/script`,
-        { scriptTemplate }
-      )
+      .put<{ data: Scenario }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/script`, { scriptTemplate })
       .pipe(map(r => r.data));
   }
 
   // ── Exécutions ──────────────────────────────────────────────────────────────
 
-  execute(projectId: string, scenarioId: string): Observable<ScenarioExecution> {
+  /** Lance un scénario unique avec la config de capture choisie dans la popup */
+  execute(projectId: string, scenarioId: string, captureConfig: ExecutionCaptureConfig): Observable<ScenarioExecutionRef> {
     return this.http
-      .post<{ data: ScenarioExecution }>(
+      .post<{ data: ScenarioExecutionRef }>(
         `${this.base}/projects/${projectId}/scenarios/${scenarioId}/executions`,
-        {}
+        { captureConfig }
       )
       .pipe(map(r => r.data));
   }
 
-  getExecutions(projectId: string, scenarioId: string): Observable<ScenarioExecution[]> {
+  /** Lance tous les scénarios actifs du projet avec la config de capture choisie */
+  executeAll(projectId: string, captureConfig: ExecutionCaptureConfig): Observable<BatchExecutionRef> {
     return this.http
-      .get<{ data: ScenarioExecution[] }>(
-        `${this.base}/projects/${projectId}/scenarios/${scenarioId}/executions`
+      .post<{ data: BatchExecutionRef }>(
+        `${this.base}/projects/${projectId}/scenarios/execute-all`,
+        { captureConfig }
       )
+      .pipe(map(r => r.data));
+  }
+
+  getExecutions(projectId: string, scenarioId: string): Observable<ScenarioExecutionRef[]> {
+    return this.http
+      .get<{ data: ScenarioExecutionRef[] }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/executions`)
       .pipe(map(r => r.data));
   }
 
@@ -224,10 +204,4 @@ export class ScenarioService {
   removeEnvVar(projectId: string, envVarId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/projects/${projectId}/env-vars/${envVarId}`);
   }
-  executeAll(projectId: string, captureMode: string): Observable<any> {
-  return this.http.post<any>(
-    `${this.base}/projects/${projectId}/scenarios/execute-all`,
-    { captureMode }
-  ).pipe(map(r => r.data));
-}
 }

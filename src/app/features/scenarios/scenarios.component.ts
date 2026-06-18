@@ -1,22 +1,17 @@
 // src/app/features/scenarios/scenarios.component.ts
 import {
-  Component,
-  signal,
-  ViewChild,
-  inject,
-  OnInit,
-  OnDestroy,
+  Component, signal, ViewChild, inject, OnInit, OnDestroy,
 } from '@angular/core';
 import { NgFor, NgClass, NgIf }       from '@angular/common';
 import { FormsModule }                from '@angular/forms';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
-import {
-  Subject,
-  debounceTime,
-  distinctUntilChanged,
-  takeUntil,
-} from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+
 import { AddScenarioModalComponent }  from './add-scenario-modal/add-scenario-modal.component';
+import {
+  ExecutionConfigModalComponent,
+  ExecutionConfigResult,
+} from '../../shared/components/execution-config-modal/execution-config-modal.component';
 import {
   ScenarioService,
   Scenario as BackendScenario,
@@ -44,40 +39,23 @@ export interface ScenarioDisplay {
   execCount: number;
 }
 
-// ─── Maps ──────────────────────────────────────────────────────────────────────
-
 const TYPE_LABEL: Record<string, string> = {
-  POSITIVE:    'POSITIF',
-  NEGATIVE:    'NÉGATIF',
-  SECURITY:    'SÉCURITÉ',
-  PERFORMANCE: 'PERF',
+  POSITIVE: 'POSITIF', NEGATIVE: 'NÉGATIF', SECURITY: 'SÉCURITÉ', PERFORMANCE: 'PERF',
 };
 const TYPE_CLASS: Record<string, string> = {
-  POSITIVE:    'positive',
-  NEGATIVE:    'negative',
-  SECURITY:    'security',
-  PERFORMANCE: 'perf',
+  POSITIVE: 'positive', NEGATIVE: 'negative', SECURITY: 'security', PERFORMANCE: 'perf',
 };
 const TYPE_SHORT: Record<string, 'pos' | 'neg' | 'sec' | 'perf'> = {
-  POSITIVE:    'pos',
-  NEGATIVE:    'neg',
-  SECURITY:    'sec',
-  PERFORMANCE: 'perf',
+  POSITIVE: 'pos', NEGATIVE: 'neg', SECURITY: 'sec', PERFORMANCE: 'perf',
 };
 const TYPE_BACKEND: Record<string, string> = {
-  all:  '',
-  pos:  'POSITIVE',
-  neg:  'NEGATIVE',
-  sec:  'SECURITY',
-  perf: 'PERFORMANCE',
+  all: '', pos: 'POSITIVE', neg: 'NEGATIVE', sec: 'SECURITY', perf: 'PERFORMANCE',
 };
-
-// ─── Component ─────────────────────────────────────────────────────────────────
 
 @Component({
   selector:    'app-scenarios',
   standalone:  true,
-  imports:     [NgFor, NgClass, NgIf, FormsModule, RouterLink, AddScenarioModalComponent],
+  imports:     [NgFor, NgClass, NgIf, FormsModule, RouterLink, AddScenarioModalComponent, ExecutionConfigModalComponent],
   templateUrl: './scenarios.component.html',
   styleUrl:    './scenarios.component.scss',
 })
@@ -87,42 +65,41 @@ export class ScenariosComponent implements OnInit, OnDestroy {
 
   private route    = inject(ActivatedRoute);
   private svc      = inject(ScenarioService);
+  private router   = inject(Router);
   private destroy$ = new Subject<void>();
   private search$  = new Subject<string>();
-  private router = inject(Router)
-  @ViewChild(AddScenarioModalComponent) addModal!: AddScenarioModalComponent;
 
-  // ── State ──────────────────────────────────────────────────────────────────
+  @ViewChild(AddScenarioModalComponent) addModal!: AddScenarioModalComponent;
+  @ViewChild(ExecutionConfigModalComponent) execConfigModal!: ExecutionConfigModalComponent;
+
+  // Mémorise le scénario ciblé tant que la popup de config est ouverte
+  private pendingScenario: ScenarioDisplay | null = null;
+
   scenarios:  ScenarioDisplay[] = [];
   loading     = false;
   deleteError = '';
-
-  // Recherche
   searchQuery = '';
 
-  // Tabs
   activeTab = signal<'all' | 'pos' | 'neg' | 'sec' | 'perf'>('all');
 
-  // Pagination
   currentPage  = 1;
   totalPages   = 1;
   total        = 0;
   pageSizeOptions = [5, 10, 25, 50];
   pageSize     = signal<number>(10);
 
-  // Filtres avancés
-  filtersOpen   = false;
-  filterStatus  = signal<'' | 'DRAFT' | 'ACTIVE'>('');
-  filterMode    = signal<'' | 'NLP' | 'RECORD'>('');
+  filtersOpen    = false;
+  filterStatus   = signal<'' | 'DRAFT' | 'ACTIVE'>('');
+  filterMode     = signal<'' | 'NLP' | 'RECORD'>('');
   filterDateFrom = '';
   filterDateTo   = '';
 
-  // ── Lifecycle ──────────────────────────────────────────────────────────────
+  executingAll = signal(false);
+  executingOne = signal<string | null>(null); // id du scénario en cours de lancement
 
   ngOnInit(): void {
     this.projectId = this.route.snapshot.params['id'];
 
-    // Debounce recherche 350 ms
     this.search$.pipe(
       debounceTime(350),
       distinctUntilChanged(),
@@ -140,10 +117,8 @@ export class ScenariosComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // ── Chargement ─────────────────────────────────────────────────────────────
-
   loadScenarios(): void {
-    this.loading    = true;
+    this.loading     = true;
     this.deleteError = '';
 
     this.svc.getAll(this.projectId, {
@@ -164,20 +139,12 @@ export class ScenariosComponent implements OnInit, OnDestroy {
         this.totalPages = res.totalPages;
         this.loading    = false;
       },
-      error: () => {
-        this.loading = false;
-      },
+      error: () => { this.loading = false; },
     });
   }
 
-  // ── Mapping backend → affichage ───────────────────────────────────────────
-
   private toDisplay(s: BackendScenario): ScenarioDisplay {
-    const date = new Date(s.createdAt).toLocaleDateString('fr-FR', {
-      day:   '2-digit',
-      month: '2-digit',
-      year:  'numeric',
-    });
+    const date = new Date(s.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
     return {
       id:        s.id,
       type:      TYPE_SHORT[s.type] ?? 'pos',
@@ -194,15 +161,13 @@ export class ScenariosComponent implements OnInit, OnDestroy {
     };
   }
 
-  // ── Tabs ───────────────────────────────────────────────────────────────────
+  // ── Tabs / Recherche / Pagination / Filtres (inchangés) ────────────────────
 
   setTab(tab: 'all' | 'pos' | 'neg' | 'sec' | 'perf'): void {
     this.activeTab.set(tab);
     this.currentPage = 1;
     this.loadScenarios();
   }
-
-  // ── Recherche ──────────────────────────────────────────────────────────────
 
   onSearch(value: string): void {
     this.searchQuery = value;
@@ -214,8 +179,6 @@ export class ScenariosComponent implements OnInit, OnDestroy {
     this.currentPage = 1;
     this.loadScenarios();
   }
-
-  // ── Pagination ─────────────────────────────────────────────────────────────
 
   goToPage(page: number): void {
     if (page < 1 || page > this.totalPages || page === this.currentPage) return;
@@ -229,28 +192,14 @@ export class ScenariosComponent implements OnInit, OnDestroy {
     this.loadScenarios();
   }
 
-  get pageEnd(): number {
-    return Math.min(this.currentPage * this.pageSize(), this.total);
-  }
+  get pageEnd(): number { return Math.min(this.currentPage * this.pageSize(), this.total); }
+  get pageStart(): number { return this.total === 0 ? 0 : (this.currentPage - 1) * this.pageSize() + 1; }
 
-  get pageStart(): number {
-    return this.total === 0 ? 0 : (this.currentPage - 1) * this.pageSize() + 1;
-  }
-
-  /** Numéros de pages à afficher avec ellipsis */
   get pages(): (number | '...')[] {
-    const total  = this.totalPages;
-    const cur    = this.currentPage;
-    const delta  = 1; // pages autour de la courante
+    const total = this.totalPages, cur = this.currentPage, delta = 1;
     const result: (number | '...')[] = [];
-
-    const range = new Set<number>();
-    range.add(1);
-    range.add(total);
-    for (let i = Math.max(2, cur - delta); i <= Math.min(total - 1, cur + delta); i++) {
-      range.add(i);
-    }
-
+    const range = new Set<number>([1, total]);
+    for (let i = Math.max(2, cur - delta); i <= Math.min(total - 1, cur + delta); i++) range.add(i);
     let prev = 0;
     for (const p of Array.from(range).sort((a, b) => a - b)) {
       if (p - prev > 1) result.push('...');
@@ -260,16 +209,8 @@ export class ScenariosComponent implements OnInit, OnDestroy {
     return result;
   }
 
-  // ── Filtres avancés ────────────────────────────────────────────────────────
-
-  toggleFilters(): void {
-    this.filtersOpen = !this.filtersOpen;
-  }
-
-  applyFilters(): void {
-    this.currentPage = 1;
-    this.loadScenarios();
-  }
+  toggleFilters(): void { this.filtersOpen = !this.filtersOpen; }
+  applyFilters(): void { this.currentPage = 1; this.loadScenarios(); }
 
   resetFilters(): void {
     this.filterStatus.set('');
@@ -283,43 +224,81 @@ export class ScenariosComponent implements OnInit, OnDestroy {
 
   get activeFiltersCount(): number {
     return [
-      this.filterStatus()   !== '',
-      this.filterMode()     !== '',
-      this.filterDateFrom   !== '',
-      this.filterDateTo     !== '',
-      this.searchQuery      !== '',
+      this.filterStatus()  !== '',
+      this.filterMode()    !== '',
+      this.filterDateFrom  !== '',
+      this.filterDateTo    !== '',
+      this.searchQuery     !== '',
     ].filter(Boolean).length;
   }
 
-  // ── Actions ────────────────────────────────────────────────────────────────
+  toggleData(s: ScenarioDisplay): void { s.dataOpen = !s.dataOpen; }
 
-  toggleData(s: ScenarioDisplay): void {
-    s.dataOpen = !s.dataOpen;
-  }
-
-  openAddModal(): void {
-    this.addModal.open();
-  }
+  openAddModal(): void { this.addModal.open(); }
 
   onScenarioSaved(_scenario: BackendScenario): void {
     this.currentPage = 1;
     this.loadScenarios();
   }
 
+  // ── Exécution — ouverture de la popup de config ────────────────────────────
+
+  /** Bouton "Exécuter" sur une ligne de scénario */
   executeScenario(s: ScenarioDisplay): void {
-  this.svc.execute(this.projectId, s.id).subscribe({
-    next: (exec) => {
-      this.router.navigate(['/execution'], {
-        queryParams: {
-          executionId:  exec.id,
-          scenarioName: s.name,
-          projectId:    this.projectId,
-        },
-      });
-    },
-    error: () => alert('Erreur lors du lancement de l\'exécution.'),
-  });
-}
+    this.pendingScenario = s;
+    this.execConfigModal.open(s.name, false);
+  }
+
+  /** Bouton "Exécuter tous" */
+  executeAllScenarios(): void {
+    this.pendingScenario = null;
+    this.execConfigModal.open('Tous les scénarios actifs', true);
+  }
+
+  /** Callback unique de la modal, qu'il s'agisse d'un run simple ou batch */
+  onExecutionConfigConfirmed(res: ExecutionConfigResult): void {
+    if (res.isBatch) {
+      this._launchBatch(res);
+    } else if (this.pendingScenario) {
+      this._launchSingle(this.pendingScenario, res);
+    }
+  }
+
+  private _launchSingle(s: ScenarioDisplay, res: ExecutionConfigResult): void {
+    this.executingOne.set(s.id);
+    this.svc.execute(this.projectId, s.id, res.captureConfig).subscribe({
+      next: (exec) => {
+        this.executingOne.set(null);
+        this.router.navigate(['/execution'], {
+          queryParams: {
+            executionId:  exec.id,
+            scenarioName: s.name,
+            projectId:    this.projectId,
+          },
+        });
+      },
+      error: () => {
+        this.executingOne.set(null);
+        alert("Erreur lors du lancement de l'exécution.");
+      },
+    });
+  }
+
+  private _launchBatch(res: ExecutionConfigResult): void {
+    this.executingAll.set(true);
+    this.svc.executeAll(this.projectId, res.captureConfig).subscribe({
+      next: (batch) => {
+        this.executingAll.set(false);
+        this.router.navigate(['/execution'], {
+          queryParams: { batchId: batch.id, projectId: this.projectId },
+        });
+      },
+      error: () => {
+        this.executingAll.set(false);
+        alert("Erreur lors de l'exécution groupée.");
+      },
+    });
+  }
 
   deleteScenario(s: ScenarioDisplay): void {
     if (!confirm(`Supprimer le scénario "${s.name}" ?\nCette action est irréversible.`)) return;
@@ -328,10 +307,7 @@ export class ScenariosComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          // Si on supprime le dernier élément d'une page > 1, reculer d'une page
-          if (this.scenarios.length === 1 && this.currentPage > 1) {
-            this.currentPage--;
-          }
+          if (this.scenarios.length === 1 && this.currentPage > 1) this.currentPage--;
           this.loadScenarios();
         },
         error: () => {
@@ -340,36 +316,5 @@ export class ScenariosComponent implements OnInit, OnDestroy {
       });
   }
 
-  isEllipsis(p: number | '...'): p is '...' {
-    return p === '...';
-  }
-
-  // Ajoutez dans ScenariosComponent :
-
-captureMode = signal<'screenshot' | 'video' | 'none'>('screenshot');
-executingAll = signal(false);
-
-executeAllScenarios(): void {
-  if (!confirm(`Exécuter tous les scénarios ACTIFS du projet ?\nMode de capture: ${this.captureMode()}`)) return;
-
-  this.executingAll.set(true);
-
-  this.svc.executeAll(this.projectId, this.captureMode()).subscribe({
-    next: (res) => {
-      this.executingAll.set(false);
-
-      this.router.navigate(['/execution'], {
-        queryParams: {
-          batchId: res.id,
-          projectId: this.projectId,
-          captureMode: this.captureMode(),
-        },
-      });
-    },
-    error: () => {
-      this.executingAll.set(false);
-      alert("Erreur lors de l'exécution groupée.");
-    }
-  });
-}
+  isEllipsis(p: number | '...'): p is '...' { return p === '...'; }
 }

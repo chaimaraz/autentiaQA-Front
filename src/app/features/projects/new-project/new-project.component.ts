@@ -42,7 +42,7 @@ export interface UploadedFileItem {
 @Component({
   selector: 'app-new-project',
   standalone: true,
-  imports: [NgFor, NgClass, NgIf, FormsModule, RouterLink],
+  imports: [NgFor, NgClass, NgIf, FormsModule],
   templateUrl: './new-project.component.html',
   styleUrl: './new-project.component.scss',
 })

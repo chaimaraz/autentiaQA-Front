@@ -1,0 +1,72 @@
+<!-- src/app/shared/components/execution-config-modal/execution-config-modal.component.html -->
+<div class="modal-backdrop" *ngIf="isOpen()" (click)="onCancel()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Configuration d'exécution</div>
+        <div class="modal-sub">
+          {{ isBatchMode() ? 'Tous les scénarios actifs' : targetLabel() }}
+        </div>
+      </div>
+      <button class="modal-close" (click)="onCancel()" aria-label="Fermer">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Screenshot -->
+      <div class="config-group">
+        <div class="config-label">📸 Screenshot</div>
+        <div class="pill-row">
+          <button *ngFor="let opt of captureOptions"
+                  class="pill"
+                  [ngClass]="{ active: screenshotMode() === opt.value }"
+                  (click)="screenshotMode.set(opt.value)">
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Video -->
+      <div class="config-group">
+        <div class="config-label">🎥 Vidéo</div>
+        <div class="pill-row">
+          <button *ngFor="let opt of captureOptions"
+                  class="pill"
+                  [ngClass]="{ active: videoMode() === opt.value }"
+                  (click)="videoMode.set(opt.value)">
+            {{ opt.label }}
+          </button>
+        </div>
+        <div class="config-hint" *ngIf="isBatchMode() && videoMode() !== 'NEVER'">
+          ⚠ La vidéo ralentit l'exécution groupée. Recommandé : Jamais ou Si échec.
+        </div>
+      </div>
+
+      <!-- Trace -->
+      <div class="config-group">
+        <div class="config-label">🧭 Trace (Playwright Trace Viewer)</div>
+        <div class="pill-row pill-row-3">
+          <button *ngFor="let opt of traceOptions"
+                  class="pill"
+                  [ngClass]="{ active: traceMode() === opt.value }"
+                  (click)="traceMode.set(opt.value)">
+            {{ opt.label }}
+          </button>
+        </div>
+        <div class="config-hint">
+          La trace permet d'inspecter chaque action, le DOM et le réseau dans le Trace Viewer Playwright.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" (click)="onCancel()">Annuler</button>
+      <button class="btn btn-primary btn-sm" (click)="onConfirm()">
+        ▷ Lancer {{ isBatchMode() ? 'l\'exécution groupée' : 'l\'exécution' }}
+      </button>
+    </div>
+
+  </div>
+</div>

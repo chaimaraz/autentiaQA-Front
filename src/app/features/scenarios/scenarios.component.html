@@ -1,7 +1,11 @@
-<!-- ==================== MODAL ==================== -->
+<!-- ==================== MODALS ==================== -->
 <app-add-scenario-modal
   [projectId]="projectId"
   (saved)="onScenarioSaved($event)"
+/>
+
+<app-execution-config-modal
+  (confirmed)="onExecutionConfigConfirmed($event)"
 />
 
 <!-- ==================== HEADER ==================== -->
@@ -15,17 +19,22 @@
       Projet · {{ projectId }}
     </div>
   </div>
-  <div class="page-actions">
-    <button class="btn btn-ghost btn-sm">⬇ Exporter JSON</button>
-    <button class="btn btn-purple btn-sm" (click)="openAddModal()">✦ Ajouter un scénario</button>
-    <a [routerLink]="'/execution'" class="btn btn-primary btn-sm">▷ Exécuter tous</a>
-  </div>
+ <div class="page-actions">
+  <button class="btn btn-ghost btn-sm">⬇ Exporter JSON</button>
+  <button class="btn btn-purple btn-sm" (click)="openAddModal()">✦ Ajouter un scénario</button>
+
+  <button class="btn btn-primary btn-sm"
+       [disabled]="executingAll()"
+      (click)="executeAllScenarios()">
+    <span *ngIf="!executingAll()">▷ Exécuter tous</span>
+    <span *ngIf="executingAll()"><span class="loading-spinner">⟳</span> Lancement...</span>
+  </button>
+ </div>
 </div>
 
 <!-- ==================== TOOLBAR ==================== -->
 <div class="toolbar">
 
-  <!-- Recherche -->
   <div class="search-bar">
     <span class="search-icon">🔍</span>
     <input
@@ -38,14 +47,12 @@
     <button *ngIf="searchQuery" class="search-clear" (click)="clearSearch()" title="Effacer">✕</button>
   </div>
 
-  <!-- Filtres avancés toggle -->
   <button class="btn btn-ghost btn-sm filter-toggle" (click)="toggleFilters()">
     <span>⚙ Filtres</span>
     <span *ngIf="activeFiltersCount > 0" class="filter-badge">{{ activeFiltersCount }}</span>
     <span class="filter-arrow">{{ filtersOpen ? '▴' : '▾' }}</span>
   </button>
 
-  <!-- Sélecteur de taille de page -->
   <div class="page-size-selector">
     <span class="page-size-label">Afficher</span>
     <select [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)">
@@ -60,7 +67,6 @@
 <div class="filters-panel" [ngClass]="{ open: filtersOpen }">
   <div class="filters-grid">
 
-    <!-- Statut -->
     <div class="filter-group">
       <label class="filter-label">Statut</label>
       <div class="filter-pills">
@@ -73,7 +79,6 @@
       </div>
     </div>
 
-    <!-- Mode de création -->
     <div class="filter-group">
       <label class="filter-label">Mode de création</label>
       <div class="filter-pills">
@@ -86,23 +91,12 @@
       </div>
     </div>
 
-    <!-- Plage de dates -->
     <div class="filter-group">
       <label class="filter-label">Date de création</label>
       <div class="filter-dates">
-        <input
-          type="date"
-          class="date-input"
-          [(ngModel)]="filterDateFrom"
-          (change)="applyFilters()"
-        />
+        <input type="date" class="date-input" [(ngModel)]="filterDateFrom" (change)="applyFilters()" />
         <span class="date-sep">→</span>
-        <input
-          type="date"
-          class="date-input"
-          [(ngModel)]="filterDateTo"
-          (change)="applyFilters()"
-        />
+        <input type="date" class="date-input" [(ngModel)]="filterDateTo" (change)="applyFilters()" />
       </div>
     </div>
 
@@ -144,12 +138,10 @@
 <!-- ==================== LISTE ==================== -->
 <div class="scenarios-list">
 
-  <!-- Chargement -->
   <div *ngIf="loading" class="empty-state">
     <span class="loading-spinner">⟳</span>&nbsp;Chargement...
   </div>
 
-  <!-- Vide -->
   <div *ngIf="!loading && scenarios.length === 0" class="empty-state">
     <div class="empty-icon">🔍</div>
     <div>Aucun scénario trouvé.</div>
@@ -160,14 +152,11 @@
     </div>
   </div>
 
-  <!-- Items -->
   <div class="scenario-item" *ngFor="let s of scenarios">
     <div class="scenario-row">
 
-      <!-- Badge type -->
       <span class="scenario-type" [ngClass]="s.typeClass">{{ s.typeLabel }}</span>
 
-      <!-- Infos -->
       <div class="scenario-info">
         <div class="scenario-name">
           {{ s.name }}
@@ -183,13 +172,17 @@
         </div>
       </div>
 
-      <!-- Actions -->
       <div class="scenario-actions">
         <button class="btn btn-ghost btn-sm" (click)="toggleData(s)">
           {{ s.dataOpen ? '▴ Données' : '⚙ Données' }}
         </button>
         <button class="btn btn-ghost btn-sm">✏ Modifier</button>
-        <a  (click)="executeScenario(s)" class="btn btn-ghost btn-sm">▷ Exécuter</a>
+        <button class="btn btn-ghost btn-sm"
+                [disabled]="executingOne() === s.id"
+                (click)="executeScenario(s)">
+          <span *ngIf="executingOne() !== s.id">▷ Exécuter</span>
+          <span *ngIf="executingOne() === s.id"><span class="loading-spinner">⟳</span> ...</span>
+        </button>
         <button
           class="btn btn-danger btn-sm"
           (click)="deleteScenario(s)"
@@ -198,7 +191,6 @@
       </div>
     </div>
 
-    <!-- Panel données -->
     <div class="scenario-data-panel" [ngClass]="{ open: s.dataOpen }">
       <div class="data-header">
         <span>🤖 DONNÉES DE TEST GÉNÉRÉES AUTOMATIQUEMENT</span>
@@ -226,56 +218,22 @@
 <!-- ==================== BARRE PAGINATION ==================== -->
 <div class="pagination-bar" *ngIf="!loading && total > 0">
 
-  <!-- Info -->
   <span class="pagination-info">
     {{ pageStart }}–{{ pageEnd }} sur <strong>{{ total }}</strong> scénario{{ total > 1 ? 's' : '' }}
   </span>
 
-  <!-- Contrôles -->
   <div class="pagination-controls">
 
-    <!-- Première page -->
-    <button
-      class="page-btn page-btn-nav"
-      [disabled]="currentPage === 1"
-      (click)="goToPage(1)"
-      title="Première page"
-    >«</button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === 1" (click)="goToPage(1)" title="Première page">«</button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)" title="Page précédente">‹</button>
 
-    <!-- Page précédente -->
-    <button
-      class="page-btn page-btn-nav"
-      [disabled]="currentPage === 1"
-      (click)="goToPage(currentPage - 1)"
-      title="Page précédente"
-    >‹</button>
-
-    <!-- Numéros de pages avec ellipsis -->
     <ng-container *ngFor="let p of pages">
       <span *ngIf="isEllipsis(p)" class="page-ellipsis">…</span>
-      <button
-        *ngIf="!isEllipsis(p)"
-        class="page-btn"
-        [ngClass]="{ active: p === currentPage }"
-        (click)="goToPage(+p)"
-      >{{ p }}</button>
+      <button *ngIf="!isEllipsis(p)" class="page-btn" [ngClass]="{ active: p === currentPage }" (click)="goToPage(+p)">{{ p }}</button>
     </ng-container>
 
-    <!-- Page suivante -->
-    <button
-      class="page-btn page-btn-nav"
-      [disabled]="currentPage === totalPages"
-      (click)="goToPage(currentPage + 1)"
-      title="Page suivante"
-    >›</button>
-
-    <!-- Dernière page -->
-    <button
-      class="page-btn page-btn-nav"
-      [disabled]="currentPage === totalPages"
-      (click)="goToPage(totalPages)"
-      title="Dernière page"
-    >»</button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)" title="Page suivante">›</button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)" title="Dernière page">»</button>
 
   </div>
 </div>

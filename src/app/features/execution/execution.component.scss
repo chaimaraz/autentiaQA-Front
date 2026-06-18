@@ -1,4 +1,4 @@
-// execution.component.scss — styles supplémentaires (hérite des styles globaux)
+// execution.component.scss
 
 .page-header {
   display: flex;
@@ -8,7 +8,6 @@
 }
 .page-actions { display: flex; gap: 8px; margin-top: 4px; }
 
-// Badge résultat dans le titre
 .exec-result-badge {
   font-size: 11px;
   font-family: 'Space Mono', monospace;
@@ -26,7 +25,33 @@
 
 .duration-label { color: var(--text3); font-size: 12px; }
 
-// Pipeline
+.batch-count {
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 400;
+  font-family: 'Space Mono', monospace;
+  margin-left: 8px;
+}
+
+.current-scenario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(0,229,255,.05);
+  border: 1px solid rgba(0,229,255,.15);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text2);
+}
+.current-count {
+  margin-left: auto;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--text3);
+}
+
 .pipeline-stages {
   display: flex;
   align-items: center;
@@ -35,21 +60,16 @@
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
-
 .pipeline-stage {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
 }
-
 .stage-node {
-  width: 52px;
-  height: 52px;
+  width: 52px; height: 52px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   font-size: 20px;
   border: 2px solid var(--border);
   background: var(--surface2);
@@ -61,17 +81,12 @@
   &.fail    { background: rgba(239,68,68,.12);   border-color: var(--danger);  color: var(--danger);  }
   &.pending { opacity: 0.4; }
 }
-
 .stage-label { font-size: 11px; color: var(--text3); text-align: center; }
-
 .stage-connector {
-  width: 60px;
-  height: 2px;
+  width: 60px; height: 2px;
   background: var(--border);
-  margin: 0 4px;
-  margin-bottom: 28px;
+  margin: 0 4px; margin-bottom: 28px;
   transition: background 0.3s;
-
   &.done    { background: var(--success); }
   &.running { background: var(--accent); }
 }
@@ -79,7 +94,6 @@
 .spin { display: inline-block; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-// Stats
 .exec-stats {
   display: flex;
   gap: 20px;
@@ -90,11 +104,11 @@
 .exec-stat-val   { font-size: 28px; font-weight: 700; font-family: 'Space Mono', monospace; line-height: 1; }
 .exec-stat-label { font-size: 11px; color: var(--text3); margin-top: 4px; }
 
-// Progress bar
 .progress-bar {
   background: var(--surface2);
   border-radius: 4px;
   overflow: hidden;
+  height: 6px;
 }
 .progress-fill {
   height: 100%;
@@ -104,7 +118,6 @@
   &.red  { background: var(--danger); }
 }
 
-// Status badge
 .status-badge {
   font-size: 10px;
   font-family: 'Space Mono', monospace;
@@ -118,16 +131,16 @@
   &.error   { background: rgba(239,68,68,.12);  color: var(--danger);  border: 1px solid rgba(239,68,68,.25);  }
 }
 
-// Log console
+// ── Console ─────────────────────────────────────────────────────────────────
 .execution-log {
   font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  max-height: 380px;
+  font-size: 12px;
+  max-height: 420px;
   overflow-y: auto;
   scroll-behavior: smooth;
   padding: 4px 0;
+  background: var(--bg);
 }
-
 .log-empty {
   text-align: center;
   padding: 32px;
@@ -135,45 +148,53 @@
   font-size: 12px;
   animation: pulse 1.5s infinite;
 }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
 .log-line {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 5px 14px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255,255,255,.03);
   animation: slideIn 0.12s ease;
+  line-height: 1.5;
 
   &:last-child { border-bottom: none; }
+  &.log-line-pass   { background: rgba(16,185,129,.03); }
+  &.log-line-fail   { background: rgba(239,68,68,.04); }
+  &.log-line-error  { background: rgba(239,68,68,.06); }
 }
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-6px); }
+  from { opacity: 0; transform: translateX(-4px); }
   to   { opacity: 1; transform: none; }
 }
-
-.log-time  { color: var(--text3); flex-shrink: 0; width: 58px; }
-
+.log-time  { color: var(--text3); flex-shrink: 0; width: 60px; font-size: 10px; }
 .log-level {
   font-size: 9px;
-  padding: 1px 6px;
+  padding: 2px 6px;
   border-radius: 3px;
   font-weight: 700;
   flex-shrink: 0;
   text-transform: uppercase;
   align-self: center;
+  min-width: 44px;
+  text-align: center;
 
   &.info   { background: rgba(99,102,241,.1);  color: var(--accent);  }
-  &.pass   { background: rgba(16,185,129,.1);  color: var(--success); }
-  &.fail   { background: rgba(239,68,68,.1);   color: var(--danger);  }
-  &.error  { background: rgba(239,68,68,.15);  color: var(--danger);  }
+  &.pass   { background: rgba(16,185,129,.15); color: var(--success); }
+  &.fail   { background: rgba(239,68,68,.15);  color: var(--danger);  }
+  &.error  { background: rgba(239,68,68,.2);   color: var(--danger);  }
   &.detail { background: var(--surface2);       color: var(--text3);   }
   &.ai     { background: rgba(124,58,237,.1);  color: var(--accent2); }
 }
+.log-msg {
+  flex: 1;
+  color: var(--text2);
+  line-height: 1.6;
+  word-break: break-word;
+  font-size: 12px;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-.log-msg { flex: 1; color: var(--text2); line-height: 1.6; word-break: break-all; }
-
-// Rapport final
+// ── Rapport ──────────────────────────────────────────────────────────────────
 .rapport-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -181,7 +202,6 @@
   overflow: hidden;
   margin-top: 8px;
 }
-
 .rapport-header {
   display: flex;
   align-items: center;
@@ -198,12 +218,10 @@
   font-size: 13px;
   font-weight: 700;
   font-family: 'Space Mono', monospace;
-
   &.pass  { color: var(--success); }
   &.fail,
   &.error { color: var(--danger);  }
 }
-
 .rapport-stats {
   display: flex;
   gap: 0;
@@ -214,14 +232,14 @@
   padding: 16px;
   text-align: center;
   border-right: 1px solid var(--border);
-
   &:last-child { border-right: none; }
-  &.green .rapport-stat-val { color: var(--success); }
-  &.red   .rapport-stat-val { color: var(--danger);  }
-  &.gray  .rapport-stat-val { color: var(--text2);   }
-  &.blue  .rapport-stat-val { color: var(--accent);  }
+  &.green  .rapport-stat-val { color: var(--success); }
+  &.red    .rapport-stat-val { color: var(--danger);  }
+  &.gray   .rapport-stat-val { color: var(--text2);   }
+  &.blue   .rapport-stat-val { color: var(--accent);  }
+  &.purple .rapport-stat-val { color: var(--accent2); }
 }
-.rapport-stat-val   { font-size: 24px; font-weight: 700; font-family: 'Space Mono', monospace; }
+.rapport-stat-val   { font-size: 22px; font-weight: 700; font-family: 'Space Mono', monospace; }
 .rapport-stat-label { font-size: 11px; color: var(--text3); margin-top: 4px; }
 
 .rapport-error {
@@ -232,8 +250,7 @@
   overflow: hidden;
 }
 .rapport-error-title {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 11px; font-weight: 700;
   color: var(--danger);
   padding: 8px 12px;
   border-bottom: 1px solid rgba(239,68,68,.15);
@@ -249,48 +266,41 @@
   overflow-y: auto;
   margin: 0;
 }
-
 .rapport-actions {
   padding: 12px 20px;
   border-top: 1px solid var(--border);
   display: flex;
+  gap: 8px;
   justify-content: flex-end;
 }
 
-.mb-16 { margin-bottom: 16px; }
-
-// Ajouts à execution.component.scss
-
-// Capture badge
-.capture-badge {
-  font-size: 10px;
-  font-family: 'Space Mono', monospace;
-  padding: 3px 8px;
-  border-radius: 20px;
-  background: rgba(124,58,237,0.1);
-  color: var(--accent2);
-  border: 1px solid rgba(124,58,237,0.2);
-}
-
-// Current scenario (batch)
-.current-scenario {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: rgba(0,229,255,0.05);
-  border: 1px solid rgba(0,229,255,0.15);
-  border-radius: 8px;
-  margin-bottom: 16px;
+// ── Trace Viewer (Playwright) — bloc mis en avant ─────────────────────────────
+.trace-highlight { border-color: var(--accent); }
+.trace-cta { padding: 16px 20px !important; }
+.trace-desc {
   font-size: 13px;
   color: var(--text2);
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+.trace-actions { display: flex; gap: 8px; }
+.trace-badge {
+  background: rgba(99,102,241,.12) !important;
+  color: var(--accent) !important;
+  border-color: rgba(99,102,241,.25) !important;
 }
 
-// Media
-.media-container {
-  background: #000;
-  border-radius: 0 0 12px 12px;
-  overflow: hidden;
+// ── Vidéo ────────────────────────────────────────────────────────────────────
+.temp-badge {
+  font-size: 10px;
+  background: rgba(245,158,11,.1);
+  color: var(--warning);
+  border: 1px solid rgba(245,158,11,.25);
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-family: 'Space Mono', monospace;
+  margin-left: 8px;
+  vertical-align: middle;
 }
 .exec-video {
   width: 100%;
@@ -298,10 +308,15 @@
   display: block;
   background: #000;
 }
+.media-container {
+  background: #000;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+
+// ── Screenshot ───────────────────────────────────────────────────────────────
 .exec-screenshot {
-  width: 100%;
-  display: block;
-  cursor: zoom-in;
+  width: 100%; display: block; cursor: zoom-in;
   transition: opacity 0.2s;
   &:hover { opacity: 0.9; }
 }
@@ -311,9 +326,7 @@
   position: relative;
 }
 .screenshot-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: flex; align-items: center; gap: 10px;
   padding: 8px 14px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -325,69 +338,27 @@
   &.y { background: #f59e0b; }
   &.g { background: #10b981; }
 }
-.scr-url {
-  flex: 1;
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: var(--text3);
-}
+.scr-url { flex: 1; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text3); }
 .fail-badge {
   font-size: 10px;
-  background: rgba(239,68,68,0.15);
+  background: rgba(239,68,68,.15);
   color: var(--danger);
-  border: 1px solid rgba(239,68,68,0.3);
+  border: 1px solid rgba(239,68,68,.3);
   border-radius: 4px;
   padding: 2px 8px;
   font-family: 'Space Mono', monospace;
   font-weight: 700;
 }
 .screenshot-overlay {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
+  position: absolute; bottom: 0; left: 0; right: 0;
   padding: 10px 14px;
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  &.success {
-    background: rgba(16,185,129,0.9);
-    color: white;
-  }
-  &.error {
-    background: rgba(239,68,68,0.9);
-    color: white;
-  }
+  font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+  &.success { background: rgba(16,185,129,.9); color: white; }
+  &.error   { background: rgba(239,68,68,.9);  color: white; }
 }
 
-// Steps
-.rapport-steps {
-  padding: 20px;
-  border-top: 1px solid var(--border);
-}
-.rapport-steps-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: 'Syne', sans-serif;
-  font-weight: 700;
-  font-size: 14px;
-  margin-bottom: 14px;
-}
-.steps-summary { display: flex; gap: 8px; }
-.step-badge {
-  font-size: 11px;
-  font-family: 'Space Mono', monospace;
-  font-weight: 700;
-  padding: 2px 10px;
-  border-radius: 20px;
-
-  &.pass { background: rgba(16,185,129,0.1); color: var(--success); border: 1px solid rgba(16,185,129,0.2); }
-  &.fail { background: rgba(239,68,68,0.1);  color: var(--danger);  border: 1px solid rgba(239,68,68,0.2); }
-}
-
+// ── Steps ────────────────────────────────────────────────────────────────────
 .steps-list { display: flex; flex-direction: column; gap: 6px; }
 
 .step-item {
@@ -396,108 +367,78 @@
   overflow: hidden;
   cursor: pointer;
   transition: border-color 0.15s;
-
-  &:hover       { border-color: var(--border2); }
-  &.step-fail   { border-left: 3px solid var(--danger); }
-  &.step-pass   { border-left: 3px solid var(--success); }
+  &:hover     { border-color: var(--border2); }
+  &.step-fail { border-left: 3px solid var(--danger); }
+  &.step-pass { border-left: 3px solid var(--success); }
+  &.step-running { border-left: 3px solid var(--accent); }
 }
-
 .step-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: flex; align-items: center; gap: 12px;
   padding: 10px 14px;
   background: var(--surface2);
 }
-
+.step-index {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  font-size: 9px; font-family: 'Space Mono', monospace; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
 .step-indicator {
-  width: 24px; height: 24px;
-  border-radius: 50%;
+  width: 24px; height: 24px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 700; flex-shrink: 0;
-
-  &.pass { background: rgba(16,185,129,0.15); color: var(--success); border: 1.5px solid var(--success); }
-  &.fail { background: rgba(239,68,68,0.15);  color: var(--danger);  border: 1.5px solid var(--danger);  }
+  &.pass { background: rgba(16,185,129,.15); color: var(--success); border: 1.5px solid var(--success); }
+  &.fail { background: rgba(239,68,68,.15);  color: var(--danger);  border: 1.5px solid var(--danger);  }
   &.skip { background: var(--surface);        color: var(--text3);   border: 1.5px solid var(--border2); }
+  &.running { background: rgba(99,102,241,.15); color: var(--accent); border: 1.5px solid var(--accent); }
 }
-
 .step-content { flex: 1; min-width: 0; }
 .step-action  { font-size: 12px; font-weight: 500; color: var(--text); }
-.step-meta    { margin-top: 2px; }
-.step-selector {
-  font-size: 10px;
-  color: var(--text3);
-  font-family: 'Space Mono', monospace;
-  background: var(--bg);
-  padding: 1px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-}
-.step-dur {
-  font-size: 10px;
-  font-family: 'Space Mono', monospace;
-  color: var(--text3);
-}
+.step-dur { font-size: 10px; font-family: 'Space Mono', monospace; color: var(--text3); }
 .step-result-badge {
-  font-size: 9px;
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-family: 'Space Mono', monospace;
-  font-weight: 700;
-  flex-shrink: 0;
-
-  &.pass { background: rgba(16,185,129,0.1); color: var(--success); }
-  &.fail { background: rgba(239,68,68,0.1);  color: var(--danger);  }
-  &.skip { background: var(--surface2);       color: var(--text3);   }
+  font-size: 9px; padding: 2px 7px; border-radius: 4px;
+  font-family: 'Space Mono', monospace; font-weight: 700; flex-shrink: 0;
+  &.pass { background: rgba(16,185,129,.1); color: var(--success); }
+  &.fail { background: rgba(239,68,68,.1);  color: var(--danger);  }
+  &.skip { background: var(--surface2);      color: var(--text3);   }
+  &.running { background: rgba(99,102,241,.1); color: var(--accent); }
 }
-.step-toggle {
-  font-size: 12px;
-  color: var(--text3);
-  flex-shrink: 0;
-}
-
+.step-toggle { font-size: 12px; color: var(--text3); flex-shrink: 0; }
 .step-detail {
-  background: var(--bg);
-  padding: 12px 14px;
+  background: var(--bg); padding: 12px 14px;
   border-top: 1px solid var(--border);
   animation: fadeIn 0.15s ease;
 }
 .step-error-block {
-  background: rgba(239,68,68,0.06);
-  border: 1px solid rgba(239,68,68,0.2);
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 10px;
+  background: rgba(239,68,68,.06);
+  border: 1px solid rgba(239,68,68,.2);
+  border-radius: 8px; overflow: hidden; margin-bottom: 10px;
 }
 .step-error-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--danger);
-  padding: 6px 10px;
-  border-bottom: 1px solid rgba(239,68,68,0.15);
+  font-size: 10px; font-weight: 700; color: var(--danger);
+  padding: 6px 10px; border-bottom: 1px solid rgba(239,68,68,.15);
   font-family: 'Space Mono', monospace;
 }
 .step-error-msg {
   padding: 8px 10px;
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: var(--text2);
-  white-space: pre-wrap;
-  word-break: break-all;
-  margin: 0;
-  max-height: 160px;
-  overflow-y: auto;
+  font-family: 'Space Mono', monospace; font-size: 10px;
+  color: var(--text2); white-space: pre-wrap; word-break: break-all;
+  margin: 0; max-height: 160px; overflow-y: auto;
 }
-.step-screenshot { margin-top: 6px; }
-.step-screenshot-img {
-  width: 100%;
-  border-radius: 8px;
-  border: 1px solid var(--border2);
-  cursor: zoom-in;
+.step-summary-badge {
+  font-size: 11px; font-family: 'Space Mono', monospace;
+  font-weight: 700; padding: 3px 10px; border-radius: 20px;
+  &.pass { background: rgba(16,185,129,.1); color: var(--success); border: 1px solid rgba(16,185,129,.2); }
+  &.fail { background: rgba(239,68,68,.1);  color: var(--danger);  border: 1px solid rgba(239,68,68,.2); }
+  &.skip { background: var(--surface2);      color: var(--text3);   border: 1px solid var(--border); }
 }
+
+.mb-16 { margin-bottom: 16px; }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: none; }
 }
-

@@ -1,162 +1,70 @@
-import { MinPipe } from './../../shared/pipes/min.pipe';
 // src/app/features/history/history.component.ts
+import { Component, OnInit, signal, inject } from '@angular/core';
+import { NgFor, NgClass, NgIf, DatePipe, SlicePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import {
-  Component, OnInit, signal, inject,
-} from '@angular/core';
-import {
-  NgFor,
-  NgClass,
-  NgIf,
-  DatePipe,
-  SlicePipe
-} from '@angular/common';
-import { FormsModule }                    from '@angular/forms';
-import { RouterLink, ActivatedRoute }     from '@angular/router';
-import { HttpClient }                     from '@angular/common/http';
-import { Pipe, PipeTransform } from '@angular/core';
-import { FailedStepsPipe } from '../../shared/pipes/failed-steps.pipe';
-import { StepNamePipe } from '../../shared/pipes/step-name.pipe';
-
-
-export interface HistoryRun {
-  id:            string;
-  result:        'PASS' | 'FAIL' | 'ERROR' | 'RUNNING';
-  durationMs:    number | null;
-  passCount:     number;
-  failCount:     number;
-  totalCount:    number;
-  screenshotPath: string | null;
-  videoPath:     string | null;
-  executedAt:    string;
-  scenario: {
-    id:        string;
-    name:      string;
-    type:      string;
-    projectId: string;
-    project:   { name: string };
-  };
-  steps: {
-    stepIndex:     number;
-    action:        string;
-    selector?:     string;
-    result:        'pass' | 'fail' | 'skip';
-    durationMs?:   number;
-    errorMessage?: string;
-    screenshotPath?: string;
-  }[];
-}
-
-interface GlobalStats {
-  totalRuns:   number;
-  passRate:    number;
-  failedRuns:  number;
-  avgDuration: number;
-  jiraBugs:    number;
-}
+  ExecutionService, HistoryRun, GlobalStats, ExecutionStep,
+} from '../../services/execution.service';
 
 @Component({
-  selector:    'app-history',
-  standalone:  true,
-  imports: [
-  NgFor,
-  NgClass,
-  NgIf,
-  FormsModule,
-  RouterLink,
-  DatePipe,
-  SlicePipe,
-  FailedStepsPipe,
-  StepNamePipe,
-  MinPipe
-],
+  selector: 'app-history',
+  standalone: true,
+  imports: [NgFor, NgClass, NgIf, FormsModule, RouterLink, DatePipe, SlicePipe],
   templateUrl: './history.component.html',
-  styleUrl:    './history.component.scss',
+  styleUrl: './history.component.scss',
 })
 export class HistoryComponent implements OnInit {
-
-  private http  = inject(HttpClient);
   private route = inject(ActivatedRoute);
+  readonly executionSvc = inject(ExecutionService);
 
-  readonly SERVER = 'http://localhost:3000';
-
-  // ── Filters ──────────────────────────────────────────────────────────────────
-  projectId  = '';
-  filterStatus   = '';
-  filterSearch   = '';
+  projectId    = '';
+  filterStatus = '';
+  filterSearch = '';
   filterDateFrom = '';
   filterDateTo   = '';
 
-  // ── Pagination ───────────────────────────────────────────────────────────────
-  currentPage  = 1;
-  pageSize     = 20;
-  totalRuns    = 0;
-  totalPages   = 1;
+  currentPage = 1;
+  pageSize    = 20;
+  totalRuns   = 0;
+  totalPages  = 1;
 
-  // ── Data ─────────────────────────────────────────────────────────────────────
   runs        = signal<HistoryRun[]>([]);
   loading     = signal(false);
   expandedRun = signal<string | null>(null);
   expandedStep = signal<number | null>(null);
-
   globalStats = signal<GlobalStats>({
     totalRuns: 0, passRate: 0, failedRuns: 0, avgDuration: 0, jiraBugs: 0,
   });
 
-  // ── Lifecycle ────────────────────────────────────────────────────────────────
-
   ngOnInit(): void {
-    this.projectId = this.route.snapshot.params['id'] || this.route.snapshot.queryParams['projectId'] || '';
+    this.projectId = this.route.snapshot.params['id']
+      || this.route.snapshot.queryParams['projectId']
+      || '';
     this.loadHistory();
   }
 
-  // ── Load ─────────────────────────────────────────────────────────────────────
-
-  openImage(url: string): void {
-  window.open(url, '_blank');
-}
   loadHistory(): void {
     this.loading.set(true);
-    const params = new URLSearchParams({
-      page:     String(this.currentPage),
-      limit:    String(this.pageSize),
+    this.executionSvc.getHistory({
+      page:      this.currentPage,
+      limit:     this.pageSize,
       projectId: this.projectId,
-      status:   this.filterStatus,
-      search:   this.filterSearch,
-      dateFrom: this.filterDateFrom,
-      dateTo:   this.filterDateTo,
-    });
-
-    this.http.get<any>(`${this.SERVER}/api/executions/history?${params}`)
-      .subscribe({
-        next: (res) => {
-          this.runs.set(res.data);
-          this.totalRuns  = res.total;
-          this.totalPages = res.totalPages;
-          this.loading.set(false);
-          this._computeStats(res.data);
-        },
-        error: () => this.loading.set(false),
-      });
-  }
-
-  private _computeStats(runs: HistoryRun[]): void {
-    const total    = runs.length;
-    const passed   = runs.filter(r => r.result === 'PASS').length;
-    const failed   = runs.filter(r => r.result === 'FAIL' || r.result === 'ERROR').length;
-    const avgDur   = total > 0
-      ? Math.round(runs.reduce((s, r) => s + (r.durationMs || 0), 0) / total / 1000)
-      : 0;
-
-    this.globalStats.set({
-      totalRuns:   this.totalRuns,
-      passRate:    total > 0 ? Math.round(passed / total * 100) : 0,
-      failedRuns:  failed,
-      avgDuration: avgDur,
-      jiraBugs:    failed, // simplification : 1 bug Jira par run échoué
+      status:    this.filterStatus,
+      search:    this.filterSearch,
+      dateFrom:  this.filterDateFrom,
+      dateTo:    this.filterDateTo,
+    }).subscribe({
+      next: (res) => {
+        this.runs.set(res.data);
+        this.totalRuns  = res.total;
+        this.totalPages = res.totalPages;
+        this.globalStats.set(this.executionSvc.computeStats(res.data, res.total));
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false),
     });
   }
-
-  // ── Actions ──────────────────────────────────────────────────────────────────
 
   toggleRun(id: string): void {
     this.expandedRun.update(v => v === id ? null : id);
@@ -165,6 +73,33 @@ export class HistoryComponent implements OnInit {
 
   toggleStep(idx: number): void {
     this.expandedStep.update(v => v === idx ? null : idx);
+  }
+
+  openImage(url: string): void {
+    window.open(url, '_blank');
+  }
+
+  openTrace(run: HistoryRun): void {
+    const trace = this.executionSvc.findArtifact(run.artifacts, 'TRACE');
+    if (trace) window.open(this.executionSvc.getTraceViewerUrl(trace.filePath), '_blank');
+  }
+
+  hasTrace(run: HistoryRun): boolean {
+    return !!this.executionSvc.findArtifact(run.artifacts, 'TRACE');
+  }
+
+  hasVideo(run: HistoryRun): boolean {
+    return !!this.executionSvc.findArtifact(run.artifacts, 'VIDEO');
+  }
+
+  getScreenshotUrl(run: HistoryRun): string | null {
+    const shot = this.executionSvc.findArtifact(run.artifacts, 'SCREENSHOT');
+    return shot ? this.executionSvc.getArtifactUrl(shot.filePath) : null;
+  }
+
+  getVideoUrl(run: HistoryRun): string | null {
+    const video = this.executionSvc.findArtifact(run.artifacts, 'VIDEO');
+    return video ? this.executionSvc.getArtifactUrl(video.filePath) : null;
   }
 
   applyFilters(): void {
@@ -184,26 +119,24 @@ export class HistoryComponent implements OnInit {
     this.loadHistory();
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
+  getPassWidth  = (r: HistoryRun) => this.executionSvc.getPassWidth(r);
+  getFailWidth  = (r: HistoryRun) => this.executionSvc.getFailWidth(r);
+  getRate       = (r: HistoryRun) => this.executionSvc.getRate(r);
+  getTypeClass  = (type: string)  => this.executionSvc.getTypeClass(type);
+  getTypeLabel  = (type: string)  => this.executionSvc.getTypeLabel(type);
+  formatDuration = (ms: number | null) => this.executionSvc.formatDuration(ms);
 
-  getPassWidth(r: HistoryRun): number {
-    return r.totalCount > 0 ? Math.round(r.passCount / r.totalCount * 100) : 0;
+  getPassSteps(run: HistoryRun): ExecutionStep[] {
+    return (run.steps || []).filter(s => s.result === 'PASS');
   }
-  getFailWidth(r: HistoryRun): number {
-    return r.totalCount > 0 ? Math.round(r.failCount / r.totalCount * 100) : 0;
+
+  getFailSteps(run: HistoryRun): ExecutionStep[] {
+    return (run.steps || []).filter(s => s.result === 'FAIL');
   }
-  getRate(r: HistoryRun): number {
-    return r.totalCount > 0 ? Math.round(r.passCount / r.totalCount * 100) : (r.result === 'PASS' ? 100 : 0);
-  }
-  getTypeClass(type: string): string {
-    return ({ POSITIVE: 'positive', NEGATIVE: 'negative', SECURITY: 'security', PERFORMANCE: 'perf' })[type] || 'positive';
-  }
-  getTypeLabel(type: string): string {
-    return ({ POSITIVE: 'POSITIF', NEGATIVE: 'NÉGATIF', SECURITY: 'SÉCURITÉ', PERFORMANCE: 'PERF' })[type] || type;
-  }
-  formatDuration(ms: number | null): string {
-    if (!ms) return '—';
-    return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+
+  getFirstFailedStep(run: HistoryRun): string {
+    const failed = (run.steps || []).find(s => s.result === 'FAIL');
+    return failed ? failed.action : '';
   }
 
   get pages(): (number | '...')[] {
@@ -222,4 +155,12 @@ export class HistoryComponent implements OnInit {
   }
 
   isEllipsis(p: number | '...'): p is '...' { return p === '...'; }
+
+  pageRangeStart(): number {
+    return this.totalRuns === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  pageRangeEnd(): number {
+    return Math.min(this.currentPage * this.pageSize, this.totalRuns);
+  }
 }
