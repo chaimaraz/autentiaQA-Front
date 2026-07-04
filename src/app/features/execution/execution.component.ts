@@ -79,9 +79,8 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   screenshotUrl = signal<string | null>(null);
   videoUrl      = signal<string | null>(null);
-  traceUrl      = signal<string | null>(null); // lien Playwright Trace Viewer
+  traceUrl      = signal<string | null>(null);
 
-  // Étapes en temps réel — Map pour mise à jour idempotente par stepIndex
   private stepsMap = new Map<number, ExecutionStep>();
   steps = signal<ExecutionStep[]>([]);
 
@@ -99,6 +98,12 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
   ]);
 
   private shouldScroll = false;
+
+  // ── NOUVEAU : suivi de l'exécution actuellement affichée dans la console
+  // en mode batch — évite de rester abonné à une room exec:<id> obsolète et
+  // permet d'afficher les logs/steps de CHAQUE scénario du batch, pas juste
+  // la barre de progression globale (c'était le bug "exécuter tous"). ──────
+  private currentBatchExecId: string | null = null;
 
   ngOnInit(): void {
     const p = this.route.snapshot.queryParams;
@@ -147,7 +152,6 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     this.socket.on('exec_log', (entry: LogEntry) => this._addLog(entry));
 
-    // Nouveau : mise à jour temps réel d'une étape précise (begin ou end)
     this.socket.on('exec_step_update', (ev: StepUpdateEvent) => {
       const existing = this.stepsMap.get(ev.stepIndex) || { stepIndex: ev.stepIndex, action: ev.action, result: 'RUNNING' };
       const merged: ExecutionStep = {
@@ -171,7 +175,52 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
       })));
     });
 
+    // ── NOUVEAU : la progression du batch pilote maintenant l'abonnement
+    // à l'exécution courante, pour afficher console + steps en direct
+    // pour CHAQUE scénario, et pas juste à la fin. ─────────────────────────
+    this.socket.on('batch_progress', (data: BatchProgress) => {
+      this.batchProgress.set(data);
+
+      if (data.currentExecutionId && data.currentExecutionId !== this.currentBatchExecId) {
+        // on quitte l'ancienne room avant de rejoindre la nouvelle pour ne
+        // pas continuer à recevoir les events du scénario précédent
+        if (this.currentBatchExecId) {
+          this.socket?.emit('unsubscribe', { executionId: this.currentBatchExecId });
+        }
+        this.currentBatchExecId = data.currentExecutionId;
+        this.socket?.emit('subscribe', { executionId: data.currentExecutionId });
+
+        // reset des steps affichés pour le nouveau scénario du batch
+        this.stepsMap.clear();
+        this.steps.set([]);
+
+        this._addLog({
+          time: this._now(), level: 'info',
+          msg: `▶ Scénario ${data.done + 1}/${data.total} : ${data.currentScenario}`,
+        });
+      }
+
+      if (data.status === 'DONE') {
+        this.batchDone.set(true);
+        this.showReport.set(true);
+        this.socket?.disconnect();
+      }
+    });
+
     this.socket.on('exec_complete', (data: ExecCompleteEvent) => {
+      // ── NOUVEAU : en mode batch, exec_complete arrive pour CHAQUE scénario,
+      // pas seulement le dernier. On loggue le résultat individuel sans écraser
+      // les stats/result globaux du batch (gérés par batch_progress). ────────
+      if (this.mode() === 'batch') {
+        const icon = data.result === 'PASS' ? '✓' : '✗';
+        this._addLog({
+          time: this._now(),
+          level: data.result === 'PASS' ? 'pass' : 'fail',
+          msg: `${icon} Scénario terminé — ${data.result} en ${(data.durationMs / 1000).toFixed(1)}s`,
+        });
+        return;
+      }
+
       this.result.set(data.result as ExecResult);
       this.stats.set({
         pass: data.stats.pass, fail: data.stats.fail,
@@ -195,15 +244,6 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.socket?.disconnect();
 
       if (this.stepsMap.size === 0 && data.executionId) this._loadSteps(data.executionId);
-    });
-
-    this.socket.on('batch_progress', (data: BatchProgress) => {
-      this.batchProgress.set(data);
-      if (data.status === 'DONE') {
-        this.batchDone.set(true);
-        this.showReport.set(true);
-        this.socket?.disconnect();
-      }
     });
 
     this.socket.on('connect_error', () => {

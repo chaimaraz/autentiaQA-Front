@@ -1,0 +1,160 @@
+<!-- src/app/features/ai-review/ai-review.component.html -->
+
+<!-- ══ ÉTAT VIDE / ERREUR D'ACCÈS DIRECT ══ -->
+<div class="card" *ngIf="globalError() && proposals().length === 0">
+  <div class="card-body" style="text-align:center;padding:40px">
+    <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+    <div style="margin-bottom:16px">{{ globalError() }}</div>
+    <a routerLink="/projects" class="btn btn-primary btn-sm">← Retour aux projets</a>
+  </div>
+</div>
+
+<ng-container *ngIf="proposals().length > 0 || stage() !== 'review' && !globalError()">
+
+  <!-- ══ HEADER ══ -->
+  <div class="page-header">
+    <div>
+      <div class="section-title">
+        Révision des scénarios générés par l'IA
+        <span class="ai-badge">🤖 {{ source() === 'document' ? 'Depuis un document' : 'Depuis une URL' }}</span>
+      </div>
+      <div class="section-sub">
+        Projet · {{ projectName() }}
+        <span *ngIf="pagesExplored() !== null"> · {{ pagesExplored() }} page(s) explorée(s)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEPPER ══ -->
+  <div class="ai-review-stepper">
+    <div class="ai-review-step" [ngClass]="{ active: stage()==='review', done: stage()!=='review' }">
+      <span class="ai-review-step-num">1</span> Vérifier &amp; éditer
+    </div>
+    <div class="ai-review-step" [ngClass]="{ active: stage()==='generating_scripts', done: stage()==='scripts_ready' || stage()==='saving' || stage()==='done' }">
+      <span class="ai-review-step-num">2</span> Génération du script
+    </div>
+    <div class="ai-review-step" [ngClass]="{ active: stage()==='scripts_ready' || stage()==='saving', done: stage()==='done' }">
+      <span class="ai-review-step-num">3</span> Enregistrement
+    </div>
+  </div>
+
+  <div class="error-banner mb-16" *ngIf="globalError()">⚠️ {{ globalError() }}</div>
+
+  <!-- ══ ÉTAPE "DONE" ══ -->
+  <div class="rapport-card mb-16" *ngIf="stage()==='done'">
+    <div class="rapport-header">
+      <span class="rapport-icon">✅</span>
+      <div>
+        <div class="rapport-title">Scénarios enregistrés</div>
+        <div class="rapport-sub">{{ savedCount() }} scénario(s) créé(s) dans le projet</div>
+      </div>
+    </div>
+    <div class="rec-error-msg" *ngIf="saveErrors().length > 0">
+      ⚠️ Certains scénarios n'ont pas pu être créés :
+      <div *ngFor="let e of saveErrors()">— {{ e.name }} : {{ e.message }}</div>
+    </div>
+    <div class="rapport-actions">
+      <button class="btn btn-primary btn-sm" (click)="goToScenarios()">→ Voir les scénarios du projet</button>
+    </div>
+  </div>
+
+  <!-- ══ LISTE DES PROPOSITIONS (étapes 1 & 3) ══ -->
+  <div class="card mb-16" *ngIf="stage() !== 'done'">
+    <div class="card-header">
+      <div class="card-title">
+        Scénarios proposés
+        <span class="ai-badge">{{ selectedCount }}/{{ proposals().length }} sélectionné(s)</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-xs" (click)="selectAll(true)" [disabled]="stage()!=='review'">✓ Tout sélectionner</button>
+        <button class="btn btn-ghost btn-xs" (click)="selectAll(false)" [disabled]="stage()!=='review'">✕ Tout désélectionner</button>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="ai-proposal-item" *ngFor="let p of proposals()">
+        <div class="ai-proposal-row">
+          <input type="checkbox" [checked]="p.selected" (change)="toggleSelected(p)"
+                 class="ai-proposal-checkbox" [disabled]="stage()!=='review'"/>
+          <span class="scenario-type" [ngClass]="typeClass[p.type]">{{ typeLabel[p.type] }}</span>
+          <input class="form-input ai-proposal-name" [(ngModel)]="p.name" [disabled]="stage()!=='review'"/>
+          <button class="btn btn-ghost btn-xs" (click)="toggleExpanded(p)">
+            {{ expandedId() === p.tempId ? '▴ Détails' : '▾ Détails' }}
+          </button>
+          <button class="btn btn-danger btn-sm" (click)="removeProposal(p)" *ngIf="stage()==='review'" title="Retirer">🗑</button>
+        </div>
+
+        <div class="scenario-data-panel open" *ngIf="expandedId() === p.tempId">
+
+          <!-- Étapes (texte NLP éditable) -->
+          <div class="data-header"><span>🤖 ÉTAPES (texte NLP)</span></div>
+          <div class="ai-step-list">
+            <div class="ai-step-row" *ngFor="let step of p.steps; let i = index">
+              <span class="ai-step-num">{{ i + 1 }}</span>
+              <input class="form-input" style="flex:2" [(ngModel)]="step.action"
+                     placeholder="Action (ex: Remplir le champ email)" [disabled]="stage()!=='review'"/>
+              <input class="form-input form-input-mono" style="flex:1" [(ngModel)]="step.selector"
+                     placeholder="Sélecteur / URL (optionnel)" [disabled]="stage()!=='review'"/>
+              <button class="btn btn-ghost btn-xs" (click)="removeStep(p, step)" *ngIf="stage()==='review'">✕</button>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-xs" (click)="addStep(p)" *ngIf="stage()==='review'" style="margin-top:6px">
+            + Ajouter une étape
+          </button>
+
+          <!-- Résultat attendu -->
+          <div class="data-header" style="margin-top:12px"><span>RÉSULTAT ATTENDU</span></div>
+          <textarea class="form-input" rows="2" [(ngModel)]="p.expectedResult" [disabled]="stage()!=='review'"></textarea>
+
+          <!-- Données de test -->
+          <div class="data-header" style="margin-top:12px"><span>DONNÉES DE TEST</span></div>
+          <div class="data-fields">
+            <div *ngIf="p.variables.length === 0" class="no-data">Aucune variable.</div>
+            <div class="data-field" *ngFor="let v of p.variables">
+              <span class="data-key">
+                <input class="form-input-mono" style="width:120px" [(ngModel)]="v.key" [disabled]="stage()!=='review'"/>
+              </span>
+              <span class="data-val">
+                <input [(ngModel)]="v.value" [type]="v.isSecret ? 'password' : 'text'" [disabled]="stage()!=='review'"/>
+              </span>
+              <button class="btn btn-ghost btn-xs" (click)="removeVariable(p, v)" *ngIf="stage()==='review'">✕</button>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-xs" (click)="addVariable(p)" *ngIf="stage()==='review'" style="margin-top:6px">
+            + Ajouter une variable
+          </button>
+
+          <!-- Script (affiché uniquement après génération IA — étape 2 franchie) -->
+          <div *ngIf="stage()==='scripts_ready' || stage()==='saving'">
+            <div class="data-header" style="margin-top:14px"><span>🧠 SCRIPT PLAYWRIGHT GÉNÉRÉ PAR L'IA</span></div>
+            <textarea class="form-input script-edit-textarea" rows="10" [(ngModel)]="p.scriptTemplate"
+                      [disabled]="stage()==='saving'"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ACTIONS ══ -->
+  <div class="wizard-nav" *ngIf="stage() !== 'done'">
+    <a routerLink="/projects" class="btn btn-ghost">← Annuler / retour aux projets</a>
+
+    <button class="btn btn-primary" *ngIf="stage()==='review'"
+            (click)="confirmAndGenerateScripts()" [disabled]="selectedCount === 0">
+      🧠 Confirmer et générer les scripts ({{ selectedCount }})
+    </button>
+
+    <button class="btn btn-primary" disabled *ngIf="stage()==='generating_scripts'">
+      ⏳ Génération des scripts en cours...
+    </button>
+
+    <div style="display:flex;gap:10px" *ngIf="stage()==='scripts_ready' || stage()==='saving'">
+      <button class="btn btn-ghost" (click)="goBackToReview()" [disabled]="stage()==='saving'">← Revenir à l'édition</button>
+      <button class="btn btn-primary" (click)="saveAll()" [disabled]="stage()==='saving' || selectedCount === 0">
+        <span *ngIf="stage()==='saving'">⏳ Enregistrement...</span>
+        <span *ngIf="stage()!=='saving'">💾 Enregistrer {{ selectedCount }} scénario(s)</span>
+      </button>
+    </div>
+  </div>
+
+</ng-container>

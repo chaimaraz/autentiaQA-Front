@@ -1,4 +1,7 @@
-// add-scenario-modal.component.ts — v2.0 (script temps réel, arrêt propre)
+// add-scenario-modal.component.ts — v3.0
+// Ajout des onglets "Document" et "URL" (module IA), branchés sur
+// AIGenerationService. Les onglets NLP et Record existants ne sont pas
+// modifiés (mêmes méthodes, même comportement).
 import {
   Component, EventEmitter, Input, Output, signal,
   OnDestroy, inject, ViewChild, ElementRef, AfterViewChecked,
@@ -10,9 +13,12 @@ import {
   ScenarioService, Scenario, ScenarioVariable, CreateScenarioPayload,
 } from '../../../services/scenario.service';
 import { ModalSocketService } from '../../../services/modal-socket.service';
+import {
+  AIGenerationService, AIScenarioProposal,
+} from '../../../services/ai-generation.service';
 
 export type ScenarioType = 'pos' | 'neg' | 'sec' | 'perf';
-export type AddMode      = 'nlp' | 'record';
+export type AddMode      = 'nlp' | 'record' | 'document' | 'url';
 export type RecStatus    = 'idle' | 'no_agent' | 'checking' | 'agent_ok' | 'connecting' | 'recording' | 'stopped';
 export type BrowserType  = 'chromium' | 'firefox' | 'webkit';
 
@@ -22,6 +28,10 @@ export interface RecordEvent { time: string; actionClass: 'click'|'type'|'nav'|'
 
 const TYPE_MAP: Record<ScenarioType, CreateScenarioPayload['type']> = {
   pos:'POSITIVE', neg:'NEGATIVE', sec:'SECURITY', perf:'PERFORMANCE',
+};
+
+const TYPE_TO_SHORT: Record<string, ScenarioType> = {
+  POSITIVE: 'pos', NEGATIVE: 'neg', SECURITY: 'sec', PERFORMANCE: 'perf',
 };
 
 const BROWSER_LABELS: Record<BrowserType, string> = {
@@ -80,6 +90,28 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
 
   private readonly scenarioSvc = inject(ScenarioService);
   private readonly socketSvc   = inject(ModalSocketService);
+  private readonly aiSvc       = inject(AIGenerationService);
+
+  // ── Document (module IA — besoin #2) ───────────────────────────────────────
+  docFile           = signal<File | null>(null);
+  docGenerating     = signal(false);
+  docError          = signal('');
+  docProposals      = signal<AIScenarioProposal[]>([]);
+  docExpandedId     = signal<string | null>(null);
+  docSavingSelected = signal(false);
+  docSaveErrors     = signal<{ name: string; message: string }[]>([]);
+
+  // ── URL (module IA — besoin #3) ────────────────────────────────────────────
+  urlValue          = '';
+  urlMaxPages        = 15;
+  urlMaxDepth         = 2;
+  urlCrawling        = signal(false);
+  urlError           = signal('');
+  urlProposals       = signal<AIScenarioProposal[]>([]);
+  urlPagesExplored   = signal<number | null>(null);
+  urlExpandedId      = signal<string | null>(null);
+  urlSavingSelected  = signal(false);
+  urlSaveErrors      = signal<{ name: string; message: string }[]>([]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Lifecycle
@@ -113,7 +145,7 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
   // ─────────────────────────────────────────────────────────────────────────
   setMode(mode: AddMode): void {
     this.activeMode.set(mode);
-    if (mode === 'nlp' && this.recStatus() === 'recording') this._stopRecording();
+    if (mode !== 'record' && this.recStatus() === 'recording') this._stopRecording();
   }
 
   setType(t: ScenarioType): void   { this.selectedType.set(t); }
@@ -213,16 +245,11 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
     this.recScript.set('');
     this.recSec.set(0);
 
-    // ── Abonnements aux événements WebSocket ──────────────────────────────
-
-    // Le navigateur est maintenant ouvert AVANT que recording_started soit émis
-    // (l'agent attend page.goto() avant d'émettre)
     this._sub(this.socketSvc.recordingStarted$, () => {
       this.recStatus.set('recording');
       this._startTimer();
     });
 
-    // Chaque ligne de script arrive immédiatement depuis l'agent
     this._sub(this.socketSvc.scriptLine$, (d) => {
       this.recScriptLines.update(lines => [...lines, d.line]);
       this.shouldScrollScript = true;
@@ -232,11 +259,9 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
       this.recEvents.update(evts => [...evts, evt]);
     });
 
-    // Déclenché par : bouton Arrêter, fermeture de la fenêtre, déconnexion agent
     this._sub(this.socketSvc.recordingStopped$, (result) => {
       this._stopTimer();
 
-      // Utiliser le script reçu du serveur, ou assembler les lignes déjà reçues
       const finalScript = result.script?.trim()
         ? result.script
         : this.recScriptLines().join('\n');
@@ -255,7 +280,6 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
       this._stopTimer();
     });
 
-    // Envoyer l'ordre de démarrage (le navigateur s'ouvre côté agent en < 500 ms)
     this.socketSvc.startRecording({
       agentToken:   this.recAgentToken.trim(),
       scenarioName: this.recName,
@@ -280,10 +304,7 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
   }
 
   private _stopRecording(): void {
-    // Envoyer stop_recording → agent ferme browser.close() → émet agent_recording_stopped
-    // → serveur relaie recording_stopped → handler ci-dessus met status = 'stopped'
     this.socketSvc.stopRecording(this.recAgentToken.trim());
-    // Ne pas arrêter le timer ici : il s'arrêtera quand recording_stopped arrive
   }
 
   clearRecording(): void {
@@ -308,8 +329,208 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
     return this.recScriptLines().join('\n');
   }
 
+  // ═════════════════════════════════════════════════════════════════════════
+  // ══ DOCUMENT (module IA — besoin #2) ════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════════════
+
+  onDocFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    this.docError.set('');
+    if (file) {
+      const ALLOWED = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword',
+        'text/plain',
+      ];
+      if (!ALLOWED.includes(file.type)) {
+        this.docError.set('Type non supporté (PDF, DOCX ou TXT uniquement).');
+        input.value = '';
+        return;
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        this.docError.set('Fichier trop volumineux (max 20 MB).');
+        input.value = '';
+        return;
+      }
+    }
+    this.docFile.set(file);
+  }
+
+  clearDocFile(): void {
+    this.docFile.set(null);
+  }
+
+  generateFromDocument(): void {
+    const file = this.docFile();
+    if (!file) { this.docError.set('Sélectionnez un document.'); return; }
+
+    this.docGenerating.set(true);
+    this.docError.set('');
+    this.docProposals.set([]);
+    this.docSaveErrors.set([]);
+
+    const job = this.aiSvc.generateFromDocument(this.projectId, file);
+
+    job.progress$.subscribe(p => this.docError.set(''));
+
+    job.result$.subscribe(({ scenarios }) => {
+      this.docGenerating.set(false);
+      this.docProposals.set(scenarios.map(s => ({ ...s, selected: true })));
+      if (!scenarios.length) {
+        this.docError.set("L'IA n'a généré aucun scénario à partir de ce document.");
+      }
+    });
+
+    job.error$.subscribe(message => {
+      this.docGenerating.set(false);
+      this.docError.set(message || 'Erreur lors de la génération depuis le document.');
+    });
+  }
+
+  toggleDocSelection(p: AIScenarioProposal): void {
+    p.selected = !p.selected;
+  }
+
+  toggleDocExpanded(p: AIScenarioProposal): void {
+    this.docExpandedId.update(v => v === p.tempId ? null : p.tempId);
+  }
+
+  removeDocProposal(p: AIScenarioProposal): void {
+    this.docProposals.update(list => list.filter(x => x.tempId !== p.tempId));
+  }
+
+  get docSelectedCount(): number {
+    return this.docProposals().filter(p => p.selected).length;
+  }
+
+  selectAllDoc(state: boolean): void {
+    this.docProposals.update(list => list.map(p => ({ ...p, selected: state })));
+  }
+
+  saveSelectedDocProposals(): void {
+    const selected = this.docProposals().filter(p => p.selected);
+    if (!selected.length) { this.docError.set('Sélectionnez au moins un scénario.'); return; }
+
+    this.docSavingSelected.set(true);
+    this.docSaveErrors.set([]);
+
+    this.aiSvc.bulkCreate(this.projectId, selected).subscribe({
+      next: (res) => {
+        this.docSavingSelected.set(false);
+        this.docSaveErrors.set(res.errors || []);
+
+        const createdIds = new Set<string>();
+        // On retire du tableau de propositions celles effectivement créées
+        // (best-effort par nom, le bulk-create ne renvoie pas le tempId).
+        const failedNames = new Set((res.errors || []).map(e => e.name));
+        this.docProposals.update(list => list.filter(p => !p.selected || failedNames.has(p.name)));
+
+        (res.data || []).forEach((scenario: Scenario) => this.saved.emit(scenario));
+
+        if (!this.docProposals().length && !res.errors?.length) {
+          alert(`✅ ${res.data.length} scénario(s) créé(s) avec succès.`);
+        }
+      },
+      error: (err: unknown) => {
+        this.docSavingSelected.set(false);
+        this.docError.set(this._extractErrorMessage(err, 'Erreur lors de la création des scénarios.'));
+      },
+    });
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // ══ URL (module IA — besoin #3) ═════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════════════
+
+  generateFromUrl(): void {
+    if (!this.urlValue.trim()) { this.urlError.set('Saisissez une URL.'); return; }
+
+    this.urlCrawling.set(true);
+    this.urlError.set('');
+    this.urlProposals.set([]);
+    this.urlPagesExplored.set(null);
+    this.urlSaveErrors.set([]);
+
+    const job = this.aiSvc.generateFromUrl(this.projectId, this.urlValue.trim(), {
+      maxPages: this.urlMaxPages,
+      maxDepth: this.urlMaxDepth,
+    });
+
+    job.progress$.subscribe(p => this.urlError.set('ℹ️ ' + p.message));
+
+    job.result$.subscribe(({ scenarios, pagesExplored }) => {
+      this.urlCrawling.set(false);
+      this.urlPagesExplored.set(pagesExplored ?? null);
+      this.urlProposals.set(scenarios.map(s => ({ ...s, selected: true })));
+      this.urlError.set('');
+      if (!scenarios.length) {
+        this.urlError.set("L'IA n'a généré aucun scénario à partir de cette exploration.");
+      }
+    });
+
+    job.error$.subscribe(message => {
+      this.urlCrawling.set(false);
+      this.urlError.set(message || "Erreur lors de l'exploration de l'URL.");
+    });
+  }
+
+  toggleUrlSelection(p: AIScenarioProposal): void {
+    p.selected = !p.selected;
+  }
+
+  toggleUrlExpanded(p: AIScenarioProposal): void {
+    this.urlExpandedId.update(v => v === p.tempId ? null : p.tempId);
+  }
+
+  removeUrlProposal(p: AIScenarioProposal): void {
+    this.urlProposals.update(list => list.filter(x => x.tempId !== p.tempId));
+  }
+
+  get urlSelectedCount(): number {
+    return this.urlProposals().filter(p => p.selected).length;
+  }
+
+  selectAllUrl(state: boolean): void {
+    this.urlProposals.update(list => list.map(p => ({ ...p, selected: state })));
+  }
+
+  saveSelectedUrlProposals(): void {
+    const selected = this.urlProposals().filter(p => p.selected);
+    if (!selected.length) { this.urlError.set('Sélectionnez au moins un scénario.'); return; }
+
+    this.urlSavingSelected.set(true);
+    this.urlSaveErrors.set([]);
+
+    this.aiSvc.bulkCreate(this.projectId, selected).subscribe({
+      next: (res) => {
+        this.urlSavingSelected.set(false);
+        this.urlSaveErrors.set(res.errors || []);
+
+        const failedNames = new Set((res.errors || []).map(e => e.name));
+        this.urlProposals.update(list => list.filter(p => !p.selected || failedNames.has(p.name)));
+
+        (res.data || []).forEach((scenario: Scenario) => this.saved.emit(scenario));
+
+        if (!this.urlProposals().length && !res.errors?.length) {
+          alert(`✅ ${res.data.length} scénario(s) créé(s) avec succès.`);
+        }
+      },
+      error: (err: unknown) => {
+        this.urlSavingSelected.set(false);
+        this.urlError.set(this._extractErrorMessage(err, 'Erreur lors de la création des scénarios.'));
+      },
+    });
+  }
+
+  // Helper partagé pour afficher le badge de type sur une proposition IA
+  typeShort(p: AIScenarioProposal): ScenarioType {
+    return TYPE_TO_SHORT[p.type] ?? 'pos';
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
-  // Save
+  // Save (NLP / Record — inchangé)
   // ─────────────────────────────────────────────────────────────────────────
   saveDraft(): void { this._validateAndSave('DRAFT'); }
   save(): void      { this._validateAndSave('ACTIVE'); }
@@ -397,6 +618,11 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
     this.subs = new Subscription();
   }
 
+  private _extractErrorMessage(err: unknown, fallback: string): string {
+    const httpErr = err as { error?: { message?: string }; message?: string };
+    return httpErr?.error?.message || httpErr?.message || fallback;
+  }
+
   private reset(): void {
     this.activeMode.set('nlp');
     this.selectedType.set('pos');
@@ -414,6 +640,27 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
     this.agentConnected.set(false);
     this._stopTimer();
     this._clearSubs();
+
+    // Reset Document
+    this.docFile.set(null);
+    this.docGenerating.set(false);
+    this.docError.set('');
+    this.docProposals.set([]);
+    this.docExpandedId.set(null);
+    this.docSavingSelected.set(false);
+    this.docSaveErrors.set([]);
+
+    // Reset URL
+    this.urlValue = '';
+    this.urlMaxPages = 15;
+    this.urlMaxDepth = 2;
+    this.urlCrawling.set(false);
+    this.urlError.set('');
+    this.urlProposals.set([]);
+    this.urlPagesExplored.set(null);
+    this.urlExpandedId.set(null);
+    this.urlSavingSelected.set(false);
+    this.urlSaveErrors.set([]);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -480,11 +727,12 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
 
     return data;
   }
+
   private _escapeSingle(str: string): string {
-  return String(str)
-    .replace(/\\/g, '\\\\')
-    .replace(/['\u2018\u2019]/g, "\\'");
-}
+    return String(str)
+      .replace(/\\/g, '\\\\')
+      .replace(/['\u2018\u2019]/g, "\\'");
+  }
 
   private _buildNlpScript(steps: ParsedStep[], data: DataField[], name: string): string {
     const lines = [
@@ -496,12 +744,12 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
     data.forEach(d => lines.push(`  const ${d.k} = '{{${d.k}}}';`));
     if (data.length) lines.push('');
     steps.forEach(s => {
-  const sel = this._escapeSingle(s.selector);
-  if (s.type === 'nav')    lines.push(`  await page.goto('${sel}');`);
-  if (s.type === 'fill')   lines.push(`  await page.fill('${sel}', ${data[0]?.k ?? 'data'});`);
-  if (s.type === 'click')  lines.push(`  await page.click('${sel}');`);
-  if (s.type === 'assert') lines.push(`  await expect(page).toHaveURL('${sel}');`);
-});
+      const sel = this._escapeSingle(s.selector);
+      if (s.type === 'nav')    lines.push(`  await page.goto('${sel}');`);
+      if (s.type === 'fill')   lines.push(`  await page.fill('${sel}', ${data[0]?.k ?? 'data'});`);
+      if (s.type === 'click')  lines.push(`  await page.click('${sel}');`);
+      if (s.type === 'assert') lines.push(`  await expect(page).toHaveURL('${sel}');`);
+    });
     lines.push('});');
     return lines.join('\n');
   }

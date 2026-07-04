@@ -401,15 +401,32 @@
       </div>
     </div>
 
-    <div class="wizard-nav">
+     <div *ngIf="isSubmitting()" style="margin-bottom:16px">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px">
+        {{ aiStatusLabel() || 'En cours...' }}
+      </div>
+      <div class="progress-bar" style="height:8px">
+        <div class="progress-fill cyan"
+             [style.width.%]="aiProgressPct()"
+             style="transition:width 0.6s ease">
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);text-align:right;margin-top:4px;font-family:'Space Mono',monospace">
+        {{ aiProgressPct() }}%
+      </div>
+    </div>
+
+  <div class="wizard-nav">
       <button class="btn btn-ghost" (click)="prev()" [disabled]="isSubmitting()">← Précédent</button>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-secondary" (click)="saveDraft()" [disabled]="isSubmitting()">💾 Sauvegarder brouillon</button>
+        <button class="btn btn-secondary" (click)="saveDraft()" [disabled]="isSubmitting()">
+          💾 Sauvegarder brouillon
+        </button>
         <button class="btn btn-primary launch-btn" (click)="launch()" [disabled]="isSubmitting()">
-          {{ isSubmitting() ? '⏳ Création en cours...' : '🚀 Lancer l\'analyse IA' }}
+          <span *ngIf="!isSubmitting()">🚀 Lancer l'analyse IA</span>
+          <span *ngIf="isSubmitting()">⏳ {{ aiStatusLabel() || 'En cours...' }}</span>
         </button>
       </div>
     </div>
-  </div>
 
 </div>

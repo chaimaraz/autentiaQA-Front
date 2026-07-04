@@ -30,15 +30,14 @@ export class ProjectsComponent implements OnInit {
         this.projects = response.data.map((project: any) => ({
           id: project.id,
           name: project.name,
-          url: `${project.url} · ${project.framework.frameworkName}`,
+          // ── CORRECTION : frameworkName est un champ direct, plus project.framework.frameworkName ──
+          url: `${project.url} · ${project.frameworkName}`,
 
-          // 0 par défaut
-          scenarios: project.scenariosCount || 0,
+          // ── CORRECTION : vient de _count.scenarios (include ajouté côté service) ──
+          scenarios: project._count?.scenarios || 0,
 
-          // couleur par défaut
           dotColor: 'var(--success)',
 
-          // status par défaut
           status: 'passed',
           statusLabel: 'Actif',
 

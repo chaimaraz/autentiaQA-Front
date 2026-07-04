@@ -1,5 +1,6 @@
 // src/app/app.routes.ts
 import { Routes } from '@angular/router';
+import { AiReviewComponent } from './features/ai-review/ai-review.component';
 
 export const APP_ROUTES: Routes = [
   {
@@ -45,6 +46,10 @@ export const APP_ROUTES: Routes = [
           },
         ],
       },
+      {
+  path: 'projects/:id/ai-review',
+  component: AiReviewComponent,
+},
       {
         path: 'execution',
         loadComponent: () =>
