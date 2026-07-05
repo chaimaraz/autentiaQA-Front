@@ -1,0 +1,145 @@
+<!-- git-config-form.component.html -->
+<div class="gcf-page-head" *ngIf="isStandalonePage">
+  <a class="gcf-back-link" routerLink="/git-config" [queryParams]="projectId ? { projectId } : {}">← Retour à la configuration Git</a>
+  <div class="section-title" style="margin-top:8px">
+    <span class="gcf-title-icon">⎇</span>
+    {{ existing ? 'Modifier le dépôt' : 'Ajouter un dépôt Git' }}
+  </div>
+  <div class="section-sub">Connectez un dépôt pour déclencher vos scénarios automatiquement à chaque push ou pull request.</div>
+</div>
+
+<!-- Sélecteur de projet : uniquement si l'id n'est pas déjà connu -->
+<div class="gcf-card mb-14" *ngIf="!existing">
+  <div class="gcf-card-head">
+    <div class="gcf-card-head-icon">📁</div>
+    <div>
+      <div class="gcf-card-title">Projet</div>
+      <div class="gcf-card-sub">À quel projet rattacher ce dépôt ?</div>
+    </div>
+  </div>
+  <div class="gcf-card-body">
+    <select class="form-input" [(ngModel)]="projectId" name="projectId" *ngIf="!loadingProjects(); else loadingProj">
+      <option [ngValue]="null" disabled>-- Sélectionnez un projet --</option>
+      <option *ngFor="let p of projects()" [value]="p.id">{{ p.name }}</option>
+    </select>
+    <ng-template #loadingProj><div class="form-hint">Chargement des projets...</div></ng-template>
+  </div>
+</div>
+
+<!-- ① Informations du dépôt -->
+<div class="gcf-card mb-14">
+  <div class="gcf-card-head">
+    <div class="gcf-card-head-icon">🐙</div>
+    <div>
+      <div class="gcf-card-title">Informations du dépôt</div>
+      <div class="gcf-card-sub">Étape 1 — identifiez le dépôt et sa nature</div>
+    </div>
+  </div>
+  <div class="gcf-card-body">
+    <div class="form-group">
+      <label class="form-label">Nom du dépôt</label>
+      <input class="form-input" [(ngModel)]="form.name" name="name" placeholder="ex: Backend Auth Service" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Type de dépôt</label>
+      <div class="gcf-chip-grid">
+        <div class="gcf-chip" *ngFor="let r of roleOptions" [ngClass]="{ selected: form.role === r.key }" (click)="form.role = r.key">
+          <span class="gcf-chip-icon">{{ r.icon }}</span>
+          <span>{{ r.label }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Fournisseur Git</label>
+      <div class="gcf-chip-grid gcf-chip-grid-4">
+        <div class="gcf-chip" *ngFor="let p of providerOptions" [ngClass]="{ selected: form.provider === p.key }" (click)="form.provider = p.key">
+          <span class="gcf-chip-icon">{{ p.icon }}</span>
+          <span>{{ p.label }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">URL du dépôt</label>
+        <input class="form-input gcf-mono" [(ngModel)]="form.repoUrl" name="repoUrl" placeholder="https://github.com/company/repo" />
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Branche surveillée</label>
+        <input class="form-input gcf-mono" [(ngModel)]="form.branch" name="branch" placeholder="main" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ② Déclencheurs -->
+<div class="gcf-card mb-14">
+  <div class="gcf-card-head">
+    <div class="gcf-card-head-icon gcf-icon-cyan">⚡</div>
+    <div>
+      <div class="gcf-card-title">Déclencheurs</div>
+      <div class="gcf-card-sub">Étape 2 — quels événements Git lancent l'exécution des scénarios</div>
+    </div>
+  </div>
+  <div class="gcf-card-body">
+    <div class="git-events-grid">
+      <div class="git-event-toggle" [ngClass]="{ selected: form.onPush }" (click)="form.onPush = !form.onPush">
+        <span>{{ form.onPush ? '✓' : '○' }}</span> Push
+      </div>
+      <div class="git-event-toggle" [ngClass]="{ selected: form.onPr }" (click)="form.onPr = !form.onPr">
+        <span>{{ form.onPr ? '✓' : '○' }}</span> Pull Request
+      </div>
+      <div class="git-event-toggle" [ngClass]="{ selected: form.onTag }" (click)="form.onTag = !form.onTag">
+        <span>{{ form.onTag ? '✓' : '○' }}</span> Nouveau tag
+      </div>
+      <div class="git-event-toggle" [ngClass]="{ selected: form.onSchedule }" (click)="form.onSchedule = !form.onSchedule">
+        <span>{{ form.onSchedule ? '✓' : '○' }}</span> Planifié (cron)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ Décision & notifications -->
+<div class="gcf-card mb-14">
+  <div class="gcf-card-head">
+    <div class="gcf-card-head-icon gcf-icon-purple">🔔</div>
+    <div>
+      <div class="gcf-card-title">Décision & notifications</div>
+      <div class="gcf-card-sub">Étape 3 — comment réagir au résultat des scénarios</div>
+    </div>
+  </div>
+  <div class="gcf-card-body">
+    <div class="switch-row">
+      <div>
+        <div class="switch-label">Bloquer le merge si les tests échouent</div>
+        <div class="switch-sub">Le rapport indique "merge à rejeter" en cas d'échec</div>
+      </div>
+      <div class="toggle-switch" [ngClass]="{ on: form.blockMerge }" (click)="form.blockMerge = !form.blockMerge"></div>
+    </div>
+
+    <div class="switch-row">
+      <div>
+        <div class="switch-label">Envoyer un rapport par email</div>
+        <div class="switch-sub">À chaque push/PR détecté sur ce dépôt</div>
+      </div>
+      <div class="toggle-switch" [ngClass]="{ on: form.notifyEmail }" (click)="form.notifyEmail = !form.notifyEmail"></div>
+    </div>
+
+    <div class="form-group gcf-reveal" *ngIf="form.notifyEmail" style="margin-top:14px;margin-bottom:0">
+      <label class="form-label">Destinataires du rapport</label>
+      <input class="form-input" [(ngModel)]="form.notifyEmails" name="notifyEmails" placeholder="ex: lead@company.com, qa@company.com" />
+      <div class="form-hint">Emails séparés par des virgules.</div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="errorMessage()" class="gcf-error">⚠️ {{ errorMessage() }}</div>
+
+<div class="gcf-actions">
+  <button class="btn btn-ghost" (click)="cancel()">Annuler</button>
+  <button class="btn btn-primary" (click)="submit()" [disabled]="isSaving()">
+    {{ isSaving() ? '⏳ Enregistrement...' : (existing ? '💾 Enregistrer' : '🔗 Ajouter le dépôt') }}
+  </button>
+</div>

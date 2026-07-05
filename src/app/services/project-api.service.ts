@@ -11,6 +11,23 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+export interface GitRepoPayload {
+  name: string;
+  role: 'FRONTEND' | 'BACKEND' | 'MOBILE' | 'INFRA' | 'OTHER';
+  provider?: 'GITHUB' | 'GITLAB' | 'BITBUCKET' | 'OTHER';
+  repoUrl: string;
+  branch?: string;
+  onPush?: boolean;
+  onPr?: boolean;
+  onTag?: boolean;
+  onSchedule?: boolean;
+  notifyEmail?: boolean;
+  notifySlack?: boolean;
+  createJiraBug?: boolean;
+  blockMerge?: boolean;
+  notifyEmails?: string; // emails séparés par des virgules
+}
+
 export interface CreateProjectPayload {
   name: string;
   url: string;
@@ -18,6 +35,9 @@ export interface CreateProjectPayload {
   generationMode: 'URL_CRAWL' | 'SPEC_DOCUMENT';
   testTypes: string[];          // ex: ['FUNCTIONAL', 'E2E']
   frameworkName: string;        // ex: 'PLAYWRIGHT'
+  // ── NOUVEAU : plusieurs dépôts (frontend, backend, microservices...), optionnel ──
+  repos?: GitRepoPayload[];
+  // ── legacy : un seul repo (toujours supporté côté backend pour compatibilité) ──
   repoUrl?: string;
   branch?: string;
   onPush?: boolean;
@@ -77,7 +97,10 @@ export class ProjectApiService {
     fd.append('testTypes', JSON.stringify(payload.testTypes));
     fd.append('frameworkName', payload.frameworkName);
 
-    // Champs optionnels CI/CD
+    // ── NOUVEAU : plusieurs dépôts — envoyés en JSON stringifié (comme testTypes) ──
+    if (payload.repos?.length) fd.append('repos', JSON.stringify(payload.repos));
+
+    // Champs optionnels CI/CD (legacy, un seul repo)
     if (payload.repoUrl)        fd.append('repoUrl', payload.repoUrl);
     if (payload.branch)         fd.append('branch', payload.branch);
     if (payload.onPush != null)        fd.append('onPush', String(payload.onPush));
@@ -105,3 +128,5 @@ export class ProjectApiService {
     return throwError(() => new Error(message));
   }
 }
+
+

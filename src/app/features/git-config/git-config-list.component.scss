@@ -1,0 +1,326 @@
+// git-config-list.component.scss
+// Reprend l'esprit visuel des blocs "Pipeline CI/CD" existants (repo-link-card,
+// ci-run, connected-dot, tags, status-badge) adapté au module Config Git.
+// Toutes les couleurs viennent des CSS custom properties globales du thème.
+
+.gcl-title-icon { margin-right: 4px; }
+
+.gcl-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--danger);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+// ── Barre de sélection de projet ──────────────────────────────────────────
+.gcl-project-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+.gcl-project-bar-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.gcl-project-bar-field { flex: 1; max-width: 360px; }
+.gcl-project-bar-label {
+  display: block;
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+// ── En-tête de section ─────────────────────────────────────────────────
+.gcl-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.gcl-section-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gcl-count-badge {
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  padding: 1px 8px;
+  border-radius: 20px;
+}
+
+// ── État vide ──────────────────────────────────────────────────────────
+.gcl-empty {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--surface);
+  border: 1px dashed var(--border2);
+  border-radius: 12px;
+}
+.gcl-empty-icon { font-size: 28px; opacity: 0.4; margin-bottom: 8px; }
+.gcl-empty-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+.gcl-empty-sub { font-size: 12px; color: var(--text3); max-width: 420px; margin: 0 auto; line-height: 1.6; }
+
+// ── Carte dépôt (esprit repo-link-card) ───────────────────────────────
+.gcl-repo-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 14px;
+  transition: border-color 0.15s;
+}
+.gcl-repo-card:hover { border-color: var(--border2); }
+
+.gcl-repo-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.gcl-repo-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #24292f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.gcl-repo-info { flex: 1; min-width: 200px; }
+.gcl-repo-name {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.gcl-repo-url {
+  font-size: 11px;
+  color: var(--text3);
+  font-family: 'Space Mono', monospace;
+}
+.gcl-repo-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--success);
+  flex-shrink: 0;
+}
+.gcl-repo-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.gcl-danger:hover { color: var(--danger); border-color: rgba(239, 68, 68, 0.3); }
+
+.gcl-edit-wrap { margin-top: 16px; }
+
+// ── Bloc webhook (esprit code-block) ───────────────────────────────────
+.gcl-webhook-box {
+  background: var(--code-bg, #080a0e);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 14px;
+}
+.gcl-webhook-label {
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.gcl-webhook-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.gcl-code {
+  flex: 1;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--text2);
+  word-break: break-all;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+// ── Chips méta ─────────────────────────────────────────────────────────
+.gcl-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.gcl-meta-chip {
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+}
+.gcl-meta-chip.off { color: var(--text3); opacity: 0.7; }
+.gcl-meta-chip.warn { color: var(--warning); border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.06); }
+
+// ── Historique (réutilise .ci-run) ─────────────────────────────────────
+.gcl-history {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.gcl-history-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+
+.ci-run {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.ci-run:last-child { border-bottom: none; }
+.ci-run-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.ci-run-icon.pass { background: rgba(16, 185, 129, 0.1); }
+.ci-run-icon.fail { background: rgba(239, 68, 68, 0.1); }
+.ci-run-info { flex: 1; min-width: 0; }
+.ci-run-title { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.ci-run-meta { font-size: 10px; color: var(--text3); font-family: 'Space Mono', monospace; }
+.ci-run-flux { margin-top: 4px; }
+
+// ── Tags & status-badge (repris tels quels du design system) ───────────
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-family: 'Space Mono', monospace;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text3);
+}
+.tag.cyan { background: rgba(0, 229, 255, 0.08); border-color: rgba(0, 229, 255, 0.2); color: var(--accent); }
+.tag.green { background: rgba(16, 185, 129, 0.07); border-color: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+.status-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-family: 'Space Mono', monospace;
+  flex-shrink: 0;
+}
+.status-badge.running { background: rgba(0, 229, 255, 0.1); color: var(--accent); border: 1px solid rgba(0, 229, 255, 0.2); }
+.status-badge.passed { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+.status-badge.failed { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+.status-badge.idle { background: rgba(82, 93, 117, 0.2); color: var(--text3); border: 1px solid var(--border); }
+
+.connected-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+// ── Éléments communs réutilisés ─────────────────────────────────────────
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+
+.form-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: all 0.15s;
+}
+.form-input:focus { border-color: var(--accent); }
+.form-hint { font-size: 11px; color: var(--text3); }
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: #000; }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--border2); background: var(--surface2); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-xs { padding: 3px 8px; font-size: 11px; }
+
+@media (max-width: 720px) {
+  .gcl-repo-head { flex-direction: column; align-items: flex-start; }
+  .gcl-repo-actions { width: 100%; justify-content: flex-start; }
+}

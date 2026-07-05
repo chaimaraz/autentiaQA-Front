@@ -94,8 +94,9 @@ export class SidebarComponent implements OnInit {
           icon: '⎇',
           open: false,
           children: [
-            { label: 'Vue d\'ensemble', icon: '◎', route: '/reports' },
-            { label: 'Configurer CI/CD', icon: '⚙', route: '/settings' },
+            { label: 'Configuration Git', icon: '🔗', route: '/git-config' },
+            { label: 'Ajouter un dépôt', icon: '+', route: '/git-config/add-config' },
+           
           ],
         } as NavGroup,
         { label: 'Rapports', icon: '▦', route: '/reports' },

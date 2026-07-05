@@ -30,7 +30,24 @@ export const APP_ROUTES: Routes = [
         loadComponent: () =>
           import('./features/scenarios/scenarios.component').then(m => m.ScenariosComponent),
       },
+    {
+        // ── NOUVEAU : consultation/gestion de la config Git (webhooks multi-repos)
+        // Accessible depuis le menu global "Pipeline CI/CD" — le projet est
+        // choisi via un sélecteur dans la page (ou ?projectId=... dans l'URL).
+        path: 'git-config',
+        loadComponent: () =>
+          import('./features/git-config/git-config-list.component')
+            .then(m => m.GitConfigListComponent),
+        title: 'Configuration Git',
+      },
       {
+        path: 'git-config/add-config',
+        loadComponent: () =>
+          import('./features/git-config/add-config/git-config-form.component')
+            .then(m => m.GitConfigFormComponent),
+        title: 'Ajouter un dépôt Git',
+      },
+       {
         path: 'flux',
         children: [
           { path: '', redirectTo: 'list', pathMatch: 'full' },

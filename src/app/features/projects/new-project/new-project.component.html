@@ -204,36 +204,76 @@
   <div *ngIf="currentStep() === 3">
     <div class="card mb-16">
       <div class="card-header">
-        <div class="card-title">⑤ Intégration CI/CD <span class="ai-badge">🤖 Auto</span></div>
+        <div class="card-title">⑤ Dépôts Git &amp; CI/CD <span class="ai-badge">Facultatif</span></div>
+        <button class="btn btn-secondary btn-sm" (click)="addRepo()">+ Ajouter un dépôt</button>
       </div>
       <div class="card-body">
-        <div class="grid-2">
-          <div class="form-group">
-            <label class="form-label">Dépôt GitHub</label>
-            <input class="form-input" [(ngModel)]="repoUrl"
-              placeholder="https://github.com/company/repo"
-              style="font-family:'Space Mono',monospace;font-size:12px" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Branche surveillée</label>
-            <input class="form-input" [(ngModel)]="branch" />
-            <div class="form-hint">Chaque push/merge sur cette branche déclenchera les tests.</div>
-          </div>
+
+        <div *ngIf="!repos.length" class="form-hint" style="margin-bottom:12px">
+          Aucun dépôt configuré. Vous pouvez créer le projet sans intégration Git et l'ajouter plus tard
+          depuis la page du projet ("Configuration Git").
         </div>
-        <div class="form-group">
-          <label class="form-label">Événements déclencheurs</label>
-          <div class="git-events-grid">
-            <div class="git-event-toggle" [ngClass]="{ selected: onPush }" (click)="onPush = !onPush">
-              {{ onPush ? '✓' : '○' }} Push sur main
+
+        <div class="repo-card" *ngFor="let repo of repos; let i = index" style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="switch-label">Dépôt #{{ i + 1 }}</div>
+            <button class="btn btn-ghost btn-sm" (click)="removeRepo(i)">✕ Retirer</button>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Nom du dépôt</label>
+              <input class="form-input" [(ngModel)]="repo.name" [name]="'repoName' + i"
+                placeholder="ex: Backend Auth Service" />
             </div>
-            <div class="git-event-toggle" [ngClass]="{ selected: onPr }" (click)="onPr = !onPr">
-              {{ onPr ? '✓' : '○' }} Merge Pull Request
+            <div class="form-group">
+              <label class="form-label">Type</label>
+              <select class="form-input" [(ngModel)]="repo.role" [name]="'repoRole' + i">
+                <option *ngFor="let r of repoRoleOptions" [value]="r.key">{{ r.label }}</option>
+              </select>
             </div>
-            <div class="git-event-toggle" [ngClass]="{ selected: onTag }" (click)="onTag = !onTag">
-              {{ onTag ? '✓' : '○' }} Nouveau tag
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">URL du dépôt</label>
+              <input class="form-input" [(ngModel)]="repo.repoUrl" [name]="'repoUrl' + i"
+                placeholder="https://github.com/company/repo"
+                style="font-family:'Space Mono',monospace;font-size:12px" />
             </div>
-            <div class="git-event-toggle" [ngClass]="{ selected: onSchedule }" (click)="onSchedule = !onSchedule">
-              {{ onSchedule ? '✓' : '○' }} Planifié (cron)
+            <div class="form-group">
+              <label class="form-label">Branche surveillée</label>
+              <input class="form-input" [(ngModel)]="repo.branch" [name]="'repoBranch' + i" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Événements déclencheurs</label>
+            <div class="git-events-grid">
+              <div class="git-event-toggle" [ngClass]="{ selected: repo.onPush }" (click)="repo.onPush = !repo.onPush">
+                {{ repo.onPush ? '✓' : '○' }} Push
+              </div>
+              <div class="git-event-toggle" [ngClass]="{ selected: repo.onPr }" (click)="repo.onPr = !repo.onPr">
+                {{ repo.onPr ? '✓' : '○' }} Pull Request
+              </div>
+              <div class="git-event-toggle" [ngClass]="{ selected: repo.onTag }" (click)="repo.onTag = !repo.onTag">
+                {{ repo.onTag ? '✓' : '○' }} Nouveau tag
+              </div>
+              <div class="git-event-toggle" [ngClass]="{ selected: repo.onSchedule }" (click)="repo.onSchedule = !repo.onSchedule">
+                {{ repo.onSchedule ? '✓' : '○' }} Planifié (cron)
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Bloquer le merge si tests échouent</label>
+              <div class="toggle-switch" [ngClass]="{ on: repo.blockMerge }" (click)="repo.blockMerge = !repo.blockMerge"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Emails de notification (rapport de merge)</label>
+              <input class="form-input" [(ngModel)]="repo.notifyEmails" [name]="'repoEmails' + i"
+                placeholder="ex: lead@company.com, qa@company.com" />
             </div>
           </div>
         </div>
@@ -242,7 +282,7 @@
 
     <div class="card mb-16">
       <div class="card-header">
-        <div class="card-title">⑥ Notifications</div>
+        <div class="card-title">⑥ Notifications (réglages par défaut du projet)</div>
       </div>
       <div class="card-body">
         <div class="switch-row">
@@ -268,7 +308,7 @@
         </div>
         <div class="switch-row">
           <div>
-            <div class="switch-label">Bloquer le merge si tests échouent</div>
+            <div class="switch-label">Bloquer le merge si tests échouent (défaut nouveaux dépôts)</div>
             <div class="switch-sub">Required status check GitHub</div>
           </div>
           <div class="toggle-switch" [ngClass]="{ on: blockMerge }" (click)="blockMerge = !blockMerge"></div>
@@ -430,3 +470,4 @@
     </div>
 
 </div>
+

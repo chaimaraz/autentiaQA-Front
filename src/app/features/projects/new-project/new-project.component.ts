@@ -19,6 +19,27 @@ export interface Framework  { key: FrameworkKey; name: string;  desc: string;  s
 export interface GenerationMode { key: GenerationModeKey; icon: string; title: string; desc: string; colorClass: string; selected: boolean; }
 export interface UploadedFileItem { file: File; name: string; sizeLabel: string; mimeType: string; }
 
+// ── NOUVEAU : un projet peut avoir plusieurs dépôts Git (frontend, backend,
+// microservice1, microservice2...). Tous les champs de config sont optionnels
+// à part name/repoUrl qui sont juste des chaînes vides par défaut — un dépôt
+// "vide" est simplement ignoré côté backend, pas d'obligation de remplir.
+export type RepoRoleKey = 'FRONTEND' | 'BACKEND' | 'MOBILE' | 'INFRA' | 'OTHER';
+export interface GitRepoDraft {
+  name: string;
+  role: RepoRoleKey;
+  repoUrl: string;
+  branch: string;
+  onPush: boolean;
+  onPr: boolean;
+  onTag: boolean;
+  onSchedule: boolean;
+  notifyEmail: boolean;
+  notifySlack: boolean;
+  createJiraBug: boolean;
+  blockMerge: boolean;
+  notifyEmails: string; // emails séparés par des virgules
+}
+
 @Component({
   selector: 'app-new-project',
   standalone: true,
@@ -64,8 +85,18 @@ export class NewProjectComponent {
     { key: 'SELENIUM',   name: 'Selenium',   desc: 'Compatibilité maximale',      selected: false },
   ];
 
-  repoUrl = ''; branch = 'main';
-  onPush = true; onPr = true; onTag = false; onSchedule = false;
+  // ── NOUVEAU : liste de dépôts (remplace les anciens champs repoUrl/branch/...
+  // uniques). Vide par défaut → ajouter un dépôt reste entièrement optionnel.
+  repoRoleOptions: { key: RepoRoleKey; label: string }[] = [
+    { key: 'FRONTEND', label: 'Frontend' },
+    { key: 'BACKEND',  label: 'Backend / Microservice' },
+    { key: 'MOBILE',   label: 'Mobile' },
+    { key: 'INFRA',    label: 'Infra' },
+    { key: 'OTHER',    label: 'Autre' },
+  ];
+  repos: GitRepoDraft[] = [];
+
+  // Réglages transverses au projet (indépendants des dépôts), inchangés.
   notifyEmail = true; notifySlack = true; createJiraBug = true; blockMerge = false;
 
   isSubmitting   = signal(false);
@@ -130,6 +161,17 @@ export class NewProjectComponent {
     return b < 1024 ? `${b} B` : b < 1024*1024 ? `${(b/1024).toFixed(1)} KB` : `${(b/1024/1024).toFixed(1)} MB`;
   }
 
+  // ── NOUVEAU : gestion de la liste dynamique de dépôts (facultative) ────────
+  addRepo(): void {
+    this.repos.push({
+      name: '', role: 'OTHER', repoUrl: '', branch: 'main',
+      onPush: true, onPr: true, onTag: false, onSchedule: false,
+      notifyEmail: true, notifySlack: false, createJiraBug: false, blockMerge: false,
+      notifyEmails: '',
+    });
+  }
+  removeRepo(i: number): void { this.repos.splice(i, 1); }
+
   next(): void {
     if (!this.validateCurrentStep()) return;
     const c = this.currentStep();
@@ -170,8 +212,8 @@ export class NewProjectComponent {
       generationMode: this.selectedMode!.key,
       testTypes: this.selectedTestTypes.map(t => t.key),
       frameworkName: this.selectedFramework!.key,
-      repoUrl: this.repoUrl || undefined, branch: this.branch,
-      onPush: this.onPush, onPr: this.onPr, onTag: this.onTag, onSchedule: this.onSchedule,
+      // ── NOUVEAU : plusieurs dépôts, tous optionnels (tableau vide accepté) ──
+      repos: this.repos.filter(r => r.name.trim() || r.repoUrl.trim()),
       notifyEmail: this.notifyEmail, notifySlack: this.notifySlack,
       createJiraBug: this.createJiraBug, blockMerge: this.blockMerge,
       files: this.isSpecMode ? this.uploadedFiles.map(f => f.file) : [],

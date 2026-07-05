@@ -1,0 +1,123 @@
+<!-- git-config-list.component.html -->
+<div class="section-title"><span class="gcl-title-icon">⎇</span> Configuration Git</div>
+<div class="section-sub">
+  Chaque dépôt configuré ici déclenche l'exécution de tous les scénarios du projet
+  dès qu'un push ou une pull request est détecté, puis envoie un rapport par email
+  pour décider si le merge doit être accepté ou non.
+</div>
+
+<div *ngIf="errorMessage()" class="gcl-error">⚠️ {{ errorMessage() }}</div>
+
+<!-- Sélecteur de projet -->
+<div class="gcl-project-bar">
+  <div class="gcl-project-bar-icon">📁</div>
+  <div class="gcl-project-bar-field">
+    <label class="gcl-project-bar-label">Projet actif</label>
+    <select class="form-input" [ngModel]="projectId()" (ngModelChange)="onProjectChange($event)" *ngIf="!loadingProjects(); else loadingProj">
+      <option *ngFor="let p of projects()" [value]="p.id">{{ p.name }}</option>
+    </select>
+    <ng-template #loadingProj><div class="form-hint">Chargement des projets...</div></ng-template>
+  </div>
+</div>
+
+<div *ngIf="projectId()">
+
+  <div class="gcl-section-head">
+    <div class="gcl-section-title">Dépôts connectés <span class="gcl-count-badge">{{ repos().length }}</span></div>
+    <a class="btn btn-primary btn-sm" routerLink="/git-config/add-config" [queryParams]="{ projectId: projectId() }">
+      + Ajouter un dépôt
+    </a>
+  </div>
+
+  <div *ngIf="loading()" class="form-hint">Chargement...</div>
+
+  <div *ngIf="!loading() && !repos().length" class="gcl-empty">
+    <div class="gcl-empty-icon">⎇</div>
+    <div class="gcl-empty-title">Aucun dépôt configuré</div>
+    <div class="gcl-empty-sub">Ajoutez-en un ou plusieurs (frontend, backend, microservices...) à tout moment — c'est entièrement optionnel et sans impact sur le reste du projet.</div>
+  </div>
+
+  <div class="gcl-repo-card" *ngFor="let repo of repos()">
+
+    <!-- Ligne résumé façon repo-link-card -->
+    <div class="gcl-repo-head">
+      <div class="gcl-repo-icon">{{ providerIcon(repo.provider) }}</div>
+      <div class="gcl-repo-info">
+        <div class="gcl-repo-name">
+          {{ repo.name }}
+          <span class="tag cyan">{{ roleIcon(repo.role) }} {{ repo.role }}</span>
+        </div>
+        <div class="gcl-repo-url">{{ repo.repoUrl }}</div>
+      </div>
+      <div class="gcl-repo-status">
+        <div class="connected-dot"></div>
+        <span>Connecté</span>
+      </div>
+      <div class="gcl-repo-actions">
+        <button class="btn btn-ghost btn-sm" (click)="toggleEvents(repo)">
+          {{ expandedRepoId() === repo.id ? 'Masquer' : '📜 Historique' }}
+        </button>
+        <button class="btn btn-ghost btn-sm" (click)="startEdit(repo)">✏ Modifier</button>
+        <button class="btn btn-ghost btn-sm gcl-danger" (click)="removeRepo(repo)">🗑 Supprimer</button>
+      </div>
+    </div>
+
+    <!-- Édition inline -->
+    <div *ngIf="editingRepo()?.id === repo.id" class="gcl-edit-wrap">
+      <app-git-config-form
+        [projectId]="projectId()"
+        [existing]="editingRepo()"
+        [embedded]="true"
+        (saved)="onFormSaved()"
+        (cancelled)="onFormCancelled()">
+      </app-git-config-form>
+    </div>
+
+    <ng-container *ngIf="editingRepo()?.id !== repo.id">
+
+      <!-- Webhook : URL + secret, façon code-block -->
+      <div class="gcl-webhook-box">
+        <div class="gcl-webhook-label">URL de webhook — à coller côté {{ repo.provider }}</div>
+        <div class="gcl-webhook-row">
+          <code class="gcl-code">{{ webhookUrl(repo) }}</code>
+          <button class="btn btn-ghost btn-xs" (click)="copyToClipboard(webhookUrl(repo))">📋 Copier</button>
+        </div>
+        <div class="gcl-webhook-label" style="margin-top:10px">Secret de signature</div>
+        <div class="gcl-webhook-row">
+          <code class="gcl-code">{{ repo.webhookSecret }}</code>
+          <button class="btn btn-ghost btn-xs" (click)="regenerateSecret(repo)">🔄 Régénérer</button>
+        </div>
+      </div>
+
+      <!-- Chips méta -->
+      <div class="gcl-meta-row">
+        <span class="gcl-meta-chip">🌿 {{ repo.branch || 'toutes branches' }}</span>
+        <span class="gcl-meta-chip" [ngClass]="{ off: !repo.onPush }">⬆ Push {{ repo.onPush ? 'actif' : 'inactif' }}</span>
+        <span class="gcl-meta-chip" [ngClass]="{ off: !repo.onPr }">⬇ PR {{ repo.onPr ? 'actif' : 'inactif' }}</span>
+        <span class="gcl-meta-chip" [ngClass]="{ warn: repo.blockMerge }">{{ repo.blockMerge ? '🚫 Merge bloqué si échec' : '✅ Merge non bloquant' }}</span>
+        <span class="gcl-meta-chip" *ngIf="repo.notifyEmail">✉️ {{ repo.notifyEmails || 'aucun destinataire' }}</span>
+        <span class="gcl-meta-chip" *ngIf="repo.lastEventAt">🕓 Dernier event : {{ repo.lastEventAt | date:'short' }}</span>
+      </div>
+
+      <!-- Historique -->
+      <div *ngIf="expandedRepoId() === repo.id" class="gcl-history">
+        <div class="gcl-history-title">Historique des events</div>
+        <div *ngIf="!events().length" class="form-hint">Aucun event reçu pour l'instant.</div>
+
+        <div class="ci-run" *ngFor="let ev of events()">
+          <div class="ci-run-icon" [ngClass]="ev.decision === 'REJECTED' ? 'fail' : 'pass'">
+            {{ ev.decision === 'REJECTED' ? '❌' : ev.decision === 'PENDING' ? '⏳' : ev.decision === 'SKIPPED' ? 'ℹ️' : '✅' }}
+          </div>
+          <div class="ci-run-info">
+            <div class="ci-run-title">{{ ev.eventType }} — {{ ev.branch || '—' }} · {{ ev.commitSha ? ev.commitSha.slice(0,8) : '—' }}</div>
+            <div class="ci-run-meta">{{ ev.commitMessage }} — {{ ev.authorName }} · {{ ev.createdAt | date:'short' }}</div>
+            <div class="ci-run-flux" *ngIf="ev.batchExecution">
+              <span class="tag green">{{ ev.batchExecution.passCount }}/{{ ev.batchExecution.totalCount }} scénarios réussis</span>
+            </div>
+          </div>
+          <span class="status-badge" [ngClass]="decisionClass(ev.decision)">{{ decisionLabel(ev.decision) }}</span>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>
