@@ -1,0 +1,1825 @@
+// src/app/services/execution.service.ts
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+// ════════════════════════════════════════════════════════════════════════
+// Types alignés sur le nouveau schéma Prisma
+// ════════════════════════════════════════════════════════════════════════
+
+export type CaptureMode = 'NEVER' | 'ON_FAILURE' | 'ON_SUCCESS' | 'ALWAYS';
+export type TraceMode   = 'NEVER' | 'ON_FAILURE' | 'ALWAYS';
+
+export interface ExecutionCaptureConfig {
+  screenshotMode: CaptureMode;
+  videoMode:      CaptureMode;
+  traceMode:      TraceMode;
+}
+
+export type ExecutionResultType = 'RUNNING' | 'PASS' | 'FAIL' | 'ERROR';
+export type StepResultType      = 'RUNNING' | 'PASS' | 'FAIL' | 'SKIP';
+export type ArtifactType        = 'SCREENSHOT' | 'VIDEO' | 'TRACE' | 'REPORT_JSON';
+
+export interface ExecutionArtifact {
+  id:        string;
+  type:      ArtifactType;
+  filePath:  string;
+  createdAt: string;
+}
+
+export interface ExecutionStep {
+  id?:           string;
+  stepIndex:     number;
+  action:        string;
+  selector?:     string;
+  value?:        string;
+  result:        StepResultType;
+  startedAt?:    string;
+  finishedAt?:   string;
+  durationMs?:   number;
+  errorMessage?: string | null;
+  errorStack?:   string | null;
+  artifacts?:    ExecutionArtifact[];
+}
+
+export interface HistoryRun {
+  id:          string;
+  result:      ExecutionResultType;
+  durationMs:  number | null;
+  passCount:   number;
+  failCount:   number;
+  totalCount:  number;
+  errorMessage: string | null;
+  startedAt:   string;
+  finishedAt:  string | null;
+  triggeredByUser?: { id: string; name: string } | null;
+  scenario: {
+    id: string; name: string; type: string; projectId: string;
+    project: { name: string };
+  };
+  steps:     ExecutionStep[];
+  artifacts: ExecutionArtifact[];
+}
+
+export interface ExecutionDetail extends HistoryRun {
+  captureConfig?: ExecutionCaptureConfig;
+}
+
+export interface HistoryResponse {
+  data: HistoryRun[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface HistoryParams {
+  page: number;
+  limit: number;
+  projectId?: string;
+  status?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface GlobalStats {
+  totalRuns: number;
+  passRate: number;
+  failedRuns: number;
+  avgDuration: number;
+  jiraBugs: number;
+}
+
+// ── Événements Socket.IO temps réel ────────────────────────────────────────
+
+export interface LogEntry {
+  time:  string;
+  level: 'info' | 'pass' | 'fail' | 'error' | 'detail' | 'ai';
+  msg:   string;
+}
+
+export interface StepUpdateEvent {
+  stepId?:       string;
+  stepIndex:     number;
+  action:        string;
+  result:        StepResultType;
+  startedAt?:    number;
+  durationMs?:   number;
+  errorMessage?: string | null;
+}
+
+export interface ExecCompleteEvent {
+  executionId: string;
+  result:      ExecutionResultType;
+  durationMs:  number;
+  stats:       { pass: number; fail: number; skipped: number; total: number };
+  errorMessage: string | null;
+  artifacts:   { type: ArtifactType; url: string }[];
+}
+
+@Injectable({ providedIn: 'root' })
+export class ExecutionService {
+  private readonly SERVER = 'http://localhost:3000';
+  private http = inject(HttpClient);
+
+  getHistory(params: HistoryParams): Observable<HistoryResponse> {
+    const query = new URLSearchParams({
+      page: String(params.page),
+      limit: String(params.limit),
+      projectId: params.projectId || '',
+      status: params.status || '',
+      search: params.search || '',
+      dateFrom: params.dateFrom || '',
+      dateTo: params.dateTo || '',
+    });
+    return this.http.get<any>(`${this.SERVER}/api/executions/history?${query}`);
+  }
+
+  getExecutionDetail(executionId: string): Observable<ExecutionDetail> {
+    return this.http
+      .get<{ data: ExecutionDetail }>(`${this.SERVER}/api/executions/${executionId}`)
+      .pipe(map(r => r.data));
+  }
+
+  getSteps(executionId: string): Observable<ExecutionStep[]> {
+    return this.http
+      .get<{ data: ExecutionStep[] }>(`${this.SERVER}/api/executions/${executionId}/steps`)
+      .pipe(map(r => r.data));
+  }
+
+  getArtifacts(executionId: string): Observable<ExecutionArtifact[]> {
+    return this.http
+      .get<{ data: ExecutionArtifact[] }>(`${this.SERVER}/api/executions/${executionId}/artifacts`)
+      .pipe(map(r => r.data));
+  }
+
+  /** URL du Trace Viewer Playwright hébergé, pointant vers notre trace.zip */
+  getTraceViewerUrl(traceFilePath: string): string {
+    const absoluteUrl = `${this.SERVER}${traceFilePath}`;
+    return `https://trace.playwright.dev/?trace=${encodeURIComponent(absoluteUrl)}`;
+  }
+
+  computeStats(runs: HistoryRun[], totalRuns: number): GlobalStats {
+    const total = runs.length;
+    const passed = runs.filter(r => r.result === 'PASS').length;
+    const failed = runs.filter(r => r.result === 'FAIL' || r.result === 'ERROR').length;
+    const avgDur = total > 0
+      ? Math.round(runs.reduce((s, r) => s + (r.durationMs || 0), 0) / total / 1000)
+      : 0;
+    return {
+      totalRuns,
+      passRate: total > 0 ? Math.round((passed / total) * 100) : 0,
+      failedRuns: failed,
+      avgDuration: avgDur,
+      jiraBugs: failed,
+    };
+  }
+
+  getPassWidth(r: HistoryRun): number {
+    return r.totalCount > 0 ? Math.round((r.passCount / r.totalCount) * 100) : 0;
+  }
+
+  getFailWidth(r: HistoryRun): number {
+    return r.totalCount > 0 ? Math.round((r.failCount / r.totalCount) * 100) : 0;
+  }
+
+  getRate(r: HistoryRun): number {
+    return r.totalCount > 0
+      ? Math.round((r.passCount / r.totalCount) * 100)
+      : r.result === 'PASS' ? 100 : 0;
+  }
+
+  formatDuration(ms: number | null | undefined): string {
+    if (!ms) return '—';
+    return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+  }
+
+  getArtifactUrl(path: string): string {
+    return `${this.SERVER}${path}`;
+  }
+
+  findArtifact(artifacts: ExecutionArtifact[], type: ArtifactType): ExecutionArtifact | undefined {
+    return artifacts.find(a => a.type === type);
+  }
+
+  getTypeClass(type: string): string {
+    return ({ POSITIVE: 'positive', NEGATIVE: 'negative', SECURITY: 'security', PERFORMANCE: 'perf' } as any)[type] || 'positive';
+  }
+
+  getTypeLabel(type: string): string {
+    return ({ POSITIVE: 'POSITIF', NEGATIVE: 'NÉGATIF', SECURITY: 'SÉCURITÉ', PERFORMANCE: 'PERF' } as any)[type] || type;
+  }
+}
+
+
+// src/app/services/scenario.service.ts
+import { Injectable }   from '@angular/core';
+import { HttpClient }   from '@angular/common/http';
+import { Observable }   from 'rxjs';
+import { map }          from 'rxjs/operators';
+import { ExecutionCaptureConfig } from './execution.service';
+
+// ─── Interfaces ────────────────────────────────────────────────────────────────
+
+export interface ScenarioVariable {
+  id:       string;
+  key:      string;
+  value:    string;
+  isSecret: boolean;
+  // ── NOUVEAU (Sprint 2 backend) ──────────────────────────────────────────
+  type?:            'STRING' | 'EMAIL' | 'PASSWORD' | 'URL' | 'PHONE' | 'IBAN' | 'OTP' | 'NUMBER' | 'DATE' | 'TIMEOUT';
+  generator?:       'MANUAL' | 'FAKER' | 'PROJECT' | 'SYSTEM' | 'AI';
+  isGenerated?:     boolean;
+  lastGeneratedAt?: string | null;
+}
+
+export interface Scenario {
+  id:             string;
+  projectId:      string;
+  name:           string;
+  type:           'POSITIVE' | 'NEGATIVE' | 'SECURITY' | 'PERFORMANCE';
+  creationMode:   'NLP' | 'RECORD';
+  nlpText?:       string;
+  scriptTemplate: string;
+  status:         'DRAFT' | 'ACTIVE';
+  createdAt:      string;
+  updatedAt:      string;
+  variables?:     ScenarioVariable[];
+  _count?:        { executions: number };
+}
+
+export interface PaginatedScenarios {
+  success:    boolean;
+  data:       Scenario[];
+  total:      number;
+  page:       number;
+  limit:      number;
+  totalPages: number;
+}
+
+export interface ScenarioExecutionRef {
+  id:         string;
+  scenarioId: string;
+  result:     'PASS' | 'FAIL' | 'ERROR' | 'RUNNING';
+  startedAt:  string;
+}
+
+export interface BatchExecutionRef {
+  id:         string;
+  projectId:  string;
+  status:     string;
+  totalCount: number;
+}
+
+export interface CreateScenarioPayload {
+  name:           string;
+  type:           Scenario['type'];
+  creationMode:   Scenario['creationMode'];
+  nlpText?:       string;
+  scriptTemplate: string;
+  variables?:     Omit<ScenarioVariable, 'id'>[];
+}
+
+export interface ScenarioFilterParams {
+  page?:     number;
+  limit?:    number;
+  search?:   string;
+  type?:     string;
+  status?:   string;
+  mode?:     string;
+  dateFrom?: string;
+  dateTo?:   string;
+}
+
+export interface ProjectEnvVar {
+  id:        string;
+  key:       string;
+  value:     string;
+  isSecret:  boolean;
+  createdAt: string;
+}
+
+// ─── Service ───────────────────────────────────────────────────────────────────
+
+@Injectable({ providedIn: 'root' })
+export class ScenarioService {
+  private readonly base = 'http://localhost:3000/api';
+
+  constructor(private http: HttpClient) {}
+
+  // ── CRUD Scénarios ──────────────────────────────────────────────────────────
+
+  getAll(projectId: string, params: ScenarioFilterParams = {}): Observable<PaginatedScenarios> {
+    const {
+      page = 1, limit = 10, search = '', type = '', status = '', mode = '',
+      dateFrom = '', dateTo = '',
+    } = params;
+
+    const query = new URLSearchParams({
+      page: String(page), limit: String(limit), search, type, status, mode, dateFrom, dateTo,
+    });
+
+    return this.http.get<PaginatedScenarios>(`${this.base}/projects/${projectId}/scenarios?${query}`);
+  }
+
+  getOne(projectId: string, scenarioId: string): Observable<Scenario> {
+    return this.http
+      .get<{ data: Scenario }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}`)
+      .pipe(map(r => r.data));
+  }
+
+  create(projectId: string, payload: CreateScenarioPayload): Observable<Scenario> {
+    return this.http
+      .post<{ data: Scenario }>(`${this.base}/projects/${projectId}/scenarios`, payload)
+      .pipe(map(r => r.data));
+  }
+
+  update(projectId: string, scenarioId: string, payload: Partial<CreateScenarioPayload>): Observable<Scenario> {
+    return this.http
+      .put<{ data: Scenario }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}`, payload)
+      .pipe(map(r => r.data));
+  }
+
+  remove(projectId: string, scenarioId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}`);
+  }
+
+  // ── Variables ───────────────────────────────────────────────────────────────
+
+  getVariables(projectId: string, scenarioId: string): Observable<ScenarioVariable[]> {
+    return this.http
+      .get<{ data: ScenarioVariable[] }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables`)
+      .pipe(map(r => r.data));
+  }
+
+  regenerateVariables(projectId: string, scenarioId: string, variables: Omit<ScenarioVariable, 'id'>[]): Observable<ScenarioVariable[]> {
+    return this.http
+      .put<{ data: ScenarioVariable[] }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables`, { variables })
+      .pipe(map(r => r.data));
+  }
+
+  copyVariablesFrom(projectId: string, targetScenarioId: string, sourceScenarioId: string): Observable<ScenarioVariable[]> {
+    return this.http
+      .post<{ data: ScenarioVariable[] }>(`${this.base}/projects/${projectId}/scenarios/${targetScenarioId}/copy-variables`, { sourceScenarioId })
+      .pipe(map(r => r.data));
+  }
+
+  /** NOUVEAU (Sprint 2) : resynchronise les {{placeholders}} détectés dans le script (ajoute/retire, ne touche pas aux valeurs saisies). */
+  syncVariables(projectId: string, scenarioId: string): Observable<{ variables: ScenarioVariable[]; created: string[]; removed: string[]; needsValue: string[] }> {
+    return this.http
+      .post<{ data: { variables: ScenarioVariable[]; created: string[]; removed: string[]; needsValue: string[] } }>(
+        `${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables/sync`, {}
+      )
+      .pipe(map(r => r.data));
+  }
+
+  /** NOUVEAU (Sprint 2) : régénère UNE variable via le Data Generator serveur (Faker/Project/System). Ignore les variables MANUAL (422). */
+  regenerateOneVariable(projectId: string, scenarioId: string, variableId: string): Observable<ScenarioVariable> {
+    return this.http
+      .post<{ data: ScenarioVariable }>(
+        `${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables/${variableId}/regenerate`, {}
+      )
+      .pipe(map(r => r.data));
+  }
+
+  /** NOUVEAU (Sprint 2) : régénère TOUTES les variables non-MANUAL d'un scénario via le Data Generator serveur. */
+  regenerateAllVariablesServerSide(projectId: string, scenarioId: string): Observable<ScenarioVariable[]> {
+    return this.http
+      .post<{ data: ScenarioVariable[] }>(
+        `${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables/regenerate-all`, {}
+      )
+      .pipe(map(r => r.data));
+  }
+
+  /** NOUVEAU (Sprint 2) : alias clair pour persister des variables éditées manuellement (upsert complet). */
+  saveVariables(projectId: string, scenarioId: string, variables: Omit<ScenarioVariable, 'id'>[]): Observable<ScenarioVariable[]> {
+    return this.regenerateVariables(projectId, scenarioId, variables);
+  }
+
+  // ⚠️ ATTENTION (relevé pendant l'audit) : la méthode `regenerateVariables()`
+  // ci-dessus ne régénère rien côté serveur — c'est un simple upsert
+  // (PUT .../variables) qui écrase les variables avec ce que tu lui passes.
+  // Utilisée aujourd'hui par `add-scenario-modal.component.ts` avec des
+  // données calculées localement (this.parsedData()), pas par un vrai
+  // générateur. Je ne l'ai pas renommée/supprimée pour ne rien casser —
+  // mais pour une vraie régénération serveur, utilise
+  // `regenerateOneVariable` / `regenerateAllVariablesServerSide` ci-dessus.
+
+  // ── Script ──────────────────────────────────────────────────────────────────
+
+  updateScript(projectId: string, scenarioId: string, scriptTemplate: string): Observable<Scenario> {
+    return this.http
+      .put<{ data: Scenario }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/script`, { scriptTemplate })
+      .pipe(map(r => r.data));
+  }
+
+  // ── Exécutions ──────────────────────────────────────────────────────────────
+
+  /** Lance un scénario unique avec la config de capture choisie dans la popup */
+  execute(projectId: string, scenarioId: string, captureConfig: ExecutionCaptureConfig): Observable<ScenarioExecutionRef> {
+    return this.http
+      .post<{ data: ScenarioExecutionRef }>(
+        `${this.base}/projects/${projectId}/scenarios/${scenarioId}/executions`,
+        { captureConfig }
+      )
+      .pipe(map(r => r.data));
+  }
+
+  /** Lance tous les scénarios actifs du projet avec la config de capture choisie */
+  executeAll(projectId: string, captureConfig: ExecutionCaptureConfig): Observable<BatchExecutionRef> {
+    return this.http
+      .post<{ data: BatchExecutionRef }>(
+        `${this.base}/projects/${projectId}/scenarios/execute-all`,
+        { captureConfig }
+      )
+      .pipe(map(r => r.data));
+  }
+
+  getExecutions(projectId: string, scenarioId: string): Observable<ScenarioExecutionRef[]> {
+    return this.http
+      .get<{ data: ScenarioExecutionRef[] }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/executions`)
+      .pipe(map(r => r.data));
+  }
+
+  // ── ProjectEnvVar ───────────────────────────────────────────────────────────
+
+  getEnvVars(projectId: string): Observable<ProjectEnvVar[]> {
+    return this.http
+      .get<{ data: ProjectEnvVar[] }>(`${this.base}/projects/${projectId}/env-vars`)
+      .pipe(map(r => r.data));
+  }
+
+  createEnvVar(projectId: string, payload: Omit<ProjectEnvVar, 'id' | 'createdAt'>): Observable<ProjectEnvVar> {
+    return this.http
+      .post<{ data: ProjectEnvVar }>(`${this.base}/projects/${projectId}/env-vars`, payload)
+      .pipe(map(r => r.data));
+  }
+
+  updateEnvVar(projectId: string, envVarId: string, payload: Partial<ProjectEnvVar>): Observable<ProjectEnvVar> {
+    return this.http
+      .put<{ data: ProjectEnvVar }>(`${this.base}/projects/${projectId}/env-vars/${envVarId}`, payload)
+      .pipe(map(r => r.data));
+  }
+
+  removeEnvVar(projectId: string, envVarId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/projects/${projectId}/env-vars/${envVarId}`);
+  }
+}
+
+
+// src/app/services/modal-socket.service.ts
+import { Injectable }  from '@angular/core';
+import { io, Socket }  from 'socket.io-client';
+import { Subject }     from 'rxjs';
+
+export interface AgentStatus {
+  connected: boolean;
+  agentId: string | null;
+}
+
+@Injectable({ providedIn: 'root' })
+export class ModalSocketService {
+  private socket: Socket | null = null;
+  private readonly MODAL_NS = '/modal';
+
+  // Subjects publics pour que le composant puisse s'abonner
+  readonly scriptLine$        = new Subject<{ line: string }>();
+  readonly recordingEvent$    = new Subject<any>();
+  readonly recordingStarted$  = new Subject<{ message: string }>();
+  readonly recordingStopped$  = new Subject<{ script: string; events: any[] }>();
+  readonly recordingError$    = new Subject<{ message: string }>();
+  readonly agentStatus$       = new Subject<AgentStatus>();
+  readonly associationOk$     = new Subject<{ agentId: string }>();
+  readonly associationError$  = new Subject<{ message: string }>();
+
+  connect(serverUrl: string): void {
+    if (this.socket?.connected) return;
+
+    this.socket = io(`${serverUrl}${this.MODAL_NS}`, {
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionDelay: 3000,
+    });
+
+    // Brancher tous les événements sur les Subjects
+    this.socket.on('recording_started',  (d) => this.recordingStarted$.next(d));
+    this.socket.on('script_line',        (d) => this.scriptLine$.next(d));
+    this.socket.on('recording_event',    (d) => this.recordingEvent$.next(d));
+    this.socket.on('recording_stopped',  (d) => this.recordingStopped$.next(d));
+    this.socket.on('recording_error',    (d) => this.recordingError$.next(d));
+    this.socket.on('agent_status',       (d) => this.agentStatus$.next(d));
+    this.socket.on('association_ok',     (d) => this.associationOk$.next(d));
+    this.socket.on('association_error',  (d) => this.associationError$.next(d));
+  }
+
+  emit(event: string, data: unknown): void {
+    this.socket?.emit(event, data);
+  }
+
+  checkAgent(agentToken: string): void {
+    this.emit('modal_check_agent', { agentToken });
+  }
+
+  associateAgent(agentToken: string): void {
+    this.emit('modal_associate_agent', { agentToken });
+  }
+
+  startRecording(payload: {
+    agentToken: string;
+    scenarioName: string;
+    startUrl: string;
+    browser: string;
+  }): void {
+    this.emit('start_recording', payload);
+  }
+
+  stopRecording(agentToken: string): void {
+    this.emit('stop_recording', { agentToken });
+  }
+
+  disconnect(): void {
+    this.socket?.disconnect();
+    this.socket = null;
+  }
+
+  get isConnected(): boolean {
+    return this.socket?.connected ?? false;
+  }
+}
+
+
+// src/app/features/scenarios/scenarios.component.ts
+import {
+  Component, signal, ViewChild, inject, OnInit, OnDestroy,
+} from '@angular/core';
+import { NgFor, NgClass, NgIf }       from '@angular/common';
+import { FormsModule }                from '@angular/forms';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+
+import { AddScenarioModalComponent }  from './add-scenario-modal/add-scenario-modal.component';
+import {
+  ExecutionConfigModalComponent,
+  ExecutionConfigResult,
+} from '../../shared/components/execution-config-modal/execution-config-modal.component';
+import {
+  ScenarioService,
+  Scenario as BackendScenario,
+} from '../../services/scenario.service';
+
+// ─── Interfaces locales ────────────────────────────────────────────────────────
+
+export interface ScenarioData {
+  k: string;
+  v: string;
+}
+
+export interface ScenarioDisplay {
+  id:        string;
+  type:      'pos' | 'neg' | 'sec' | 'perf';
+  typeLabel: string;
+  typeClass: string;
+  name:      string;
+  status:    'DRAFT' | 'ACTIVE';
+  mode:      'NLP' | 'RECORD';
+  createdAt: string;
+  page:      string;
+  data:      ScenarioData[];
+  dataOpen:  boolean;
+  execCount: number;
+}
+
+const TYPE_LABEL: Record<string, string> = {
+  POSITIVE: 'POSITIF', NEGATIVE: 'NÉGATIF', SECURITY: 'SÉCURITÉ', PERFORMANCE: 'PERF',
+};
+const TYPE_CLASS: Record<string, string> = {
+  POSITIVE: 'positive', NEGATIVE: 'negative', SECURITY: 'security', PERFORMANCE: 'perf',
+};
+const TYPE_SHORT: Record<string, 'pos' | 'neg' | 'sec' | 'perf'> = {
+  POSITIVE: 'pos', NEGATIVE: 'neg', SECURITY: 'sec', PERFORMANCE: 'perf',
+};
+const TYPE_BACKEND: Record<string, string> = {
+  all: '', pos: 'POSITIVE', neg: 'NEGATIVE', sec: 'SECURITY', perf: 'PERFORMANCE',
+};
+
+@Component({
+  selector:    'app-scenarios',
+  standalone:  true,
+  imports:     [NgFor, NgClass, NgIf, FormsModule, RouterLink, AddScenarioModalComponent, ExecutionConfigModalComponent],
+  templateUrl: './scenarios.component.html',
+  styleUrl:    './scenarios.component.scss',
+})
+export class ScenariosComponent implements OnInit, OnDestroy {
+
+  projectId!: string;
+
+  private route    = inject(ActivatedRoute);
+  private svc      = inject(ScenarioService);
+  private router   = inject(Router);
+  private destroy$ = new Subject<void>();
+  private search$  = new Subject<string>();
+
+  @ViewChild(AddScenarioModalComponent) addModal!: AddScenarioModalComponent;
+  @ViewChild(ExecutionConfigModalComponent) execConfigModal!: ExecutionConfigModalComponent;
+
+  // Mémorise le scénario ciblé tant que la popup de config est ouverte
+  private pendingScenario: ScenarioDisplay | null = null;
+
+  scenarios:  ScenarioDisplay[] = [];
+  loading     = false;
+  deleteError = '';
+  searchQuery = '';
+
+  activeTab = signal<'all' | 'pos' | 'neg' | 'sec' | 'perf'>('all');
+
+  currentPage  = 1;
+  totalPages   = 1;
+  total        = 0;
+  pageSizeOptions = [5, 10, 25, 50];
+  pageSize     = signal<number>(10);
+
+  filtersOpen    = false;
+  filterStatus   = signal<'' | 'DRAFT' | 'ACTIVE'>('');
+  filterMode     = signal<'' | 'NLP' | 'RECORD'>('');
+  filterDateFrom = '';
+  filterDateTo   = '';
+
+  executingAll = signal(false);
+  executingOne = signal<string | null>(null); // id du scénario en cours de lancement
+
+  ngOnInit(): void {
+    this.projectId = this.route.snapshot.params['id'];
+
+    this.search$.pipe(
+      debounceTime(350),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$),
+    ).subscribe(() => {
+      this.currentPage = 1;
+      this.loadScenarios();
+    });
+
+    this.loadScenarios();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadScenarios(): void {
+    this.loading     = true;
+    this.deleteError = '';
+
+    this.svc.getAll(this.projectId, {
+      page:     this.currentPage,
+      limit:    this.pageSize(),
+      search:   this.searchQuery,
+      type:     TYPE_BACKEND[this.activeTab()],
+      status:   this.filterStatus(),
+      mode:     this.filterMode(),
+      dateFrom: this.filterDateFrom,
+      dateTo:   this.filterDateTo,
+    })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: res => {
+        this.scenarios  = res.data.map(s => this.toDisplay(s));
+        this.total      = res.total;
+        this.totalPages = res.totalPages;
+        this.loading    = false;
+      },
+      error: () => { this.loading = false; },
+    });
+  }
+
+  private toDisplay(s: BackendScenario): ScenarioDisplay {
+    const date = new Date(s.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return {
+      id:        s.id,
+      type:      TYPE_SHORT[s.type] ?? 'pos',
+      typeLabel: TYPE_LABEL[s.type] ?? s.type,
+      typeClass: TYPE_CLASS[s.type] ?? 'positive',
+      name:      s.name,
+      status:    s.status as 'DRAFT' | 'ACTIVE',
+      mode:      s.creationMode,
+      createdAt: date,
+      page:      `${s.creationMode === 'NLP' ? '🤖 NLP' : '⏺ RECORD'} · ${date}`,
+      dataOpen:  false,
+      data:      (s.variables ?? []).map(v => ({ k: v.key, v: v.value })),
+      execCount: s._count?.executions ?? 0,
+    };
+  }
+
+  // ── Tabs / Recherche / Pagination / Filtres (inchangés) ────────────────────
+
+  setTab(tab: 'all' | 'pos' | 'neg' | 'sec' | 'perf'): void {
+    this.activeTab.set(tab);
+    this.currentPage = 1;
+    this.loadScenarios();
+  }
+
+  onSearch(value: string): void {
+    this.searchQuery = value;
+    this.search$.next(value);
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.currentPage = 1;
+    this.loadScenarios();
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) return;
+    this.currentPage = page;
+    this.loadScenarios();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(Number(size));
+    this.currentPage = 1;
+    this.loadScenarios();
+  }
+
+  get pageEnd(): number { return Math.min(this.currentPage * this.pageSize(), this.total); }
+  get pageStart(): number { return this.total === 0 ? 0 : (this.currentPage - 1) * this.pageSize() + 1; }
+
+  get pages(): (number | '...')[] {
+    const total = this.totalPages, cur = this.currentPage, delta = 1;
+    const result: (number | '...')[] = [];
+    const range = new Set<number>([1, total]);
+    for (let i = Math.max(2, cur - delta); i <= Math.min(total - 1, cur + delta); i++) range.add(i);
+    let prev = 0;
+    for (const p of Array.from(range).sort((a, b) => a - b)) {
+      if (p - prev > 1) result.push('...');
+      result.push(p);
+      prev = p;
+    }
+    return result;
+  }
+
+  toggleFilters(): void { this.filtersOpen = !this.filtersOpen; }
+  applyFilters(): void { this.currentPage = 1; this.loadScenarios(); }
+
+  resetFilters(): void {
+    this.filterStatus.set('');
+    this.filterMode.set('');
+    this.filterDateFrom = '';
+    this.filterDateTo   = '';
+    this.searchQuery    = '';
+    this.currentPage    = 1;
+    this.loadScenarios();
+  }
+
+  get activeFiltersCount(): number {
+    return [
+      this.filterStatus()  !== '',
+      this.filterMode()    !== '',
+      this.filterDateFrom  !== '',
+      this.filterDateTo    !== '',
+      this.searchQuery     !== '',
+    ].filter(Boolean).length;
+  }
+
+  toggleData(s: ScenarioDisplay): void { s.dataOpen = !s.dataOpen; }
+
+  openAddModal(): void { this.addModal.open(); }
+
+  onScenarioSaved(_scenario: BackendScenario): void {
+    this.currentPage = 1;
+    this.loadScenarios();
+  }
+
+  // ── Exécution — ouverture de la popup de config ────────────────────────────
+
+  /** Bouton "Exécuter" sur une ligne de scénario */
+  executeScenario(s: ScenarioDisplay): void {
+    this.pendingScenario = s;
+    this.execConfigModal.open(s.name, false);
+  }
+
+  /** Bouton "Exécuter tous" */
+  executeAllScenarios(): void {
+    this.pendingScenario = null;
+    this.execConfigModal.open('Tous les scénarios actifs', true);
+  }
+
+  /** Callback unique de la modal, qu'il s'agisse d'un run simple ou batch */
+  onExecutionConfigConfirmed(res: ExecutionConfigResult): void {
+    if (res.isBatch) {
+      this._launchBatch(res);
+    } else if (this.pendingScenario) {
+      this._launchSingle(this.pendingScenario, res);
+    }
+  }
+
+  private _launchSingle(s: ScenarioDisplay, res: ExecutionConfigResult): void {
+    this.executingOne.set(s.id);
+    this.svc.execute(this.projectId, s.id, res.captureConfig).subscribe({
+      next: (exec) => {
+        this.executingOne.set(null);
+        this.router.navigate(['/execution'], {
+          queryParams: {
+            executionId:  exec.id,
+            scenarioName: s.name,
+            projectId:    this.projectId,
+          },
+        });
+      },
+      error: () => {
+        this.executingOne.set(null);
+        alert("Erreur lors du lancement de l'exécution.");
+      },
+    });
+  }
+
+  private _launchBatch(res: ExecutionConfigResult): void {
+    this.executingAll.set(true);
+    this.svc.executeAll(this.projectId, res.captureConfig).subscribe({
+      next: (batch) => {
+        this.executingAll.set(false);
+        this.router.navigate(['/execution'], {
+          queryParams: { batchId: batch.id, projectId: this.projectId },
+        });
+      },
+      error: () => {
+        this.executingAll.set(false);
+        alert("Erreur lors de l'exécution groupée.");
+      },
+    });
+  }
+
+  deleteScenario(s: ScenarioDisplay): void {
+    if (!confirm(`Supprimer le scénario "${s.name}" ?\nCette action est irréversible.`)) return;
+
+    this.svc.remove(this.projectId, s.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          if (this.scenarios.length === 1 && this.currentPage > 1) this.currentPage--;
+          this.loadScenarios();
+        },
+        error: () => {
+          this.deleteError = `Impossible de supprimer "${s.name}". Veuillez réessayer.`;
+        },
+      });
+  }
+
+  isEllipsis(p: number | '...'): p is '...' { return p === '...'; }
+}
+
+<!-- ==================== MODALS ==================== -->
+<app-add-scenario-modal
+  [projectId]="projectId"
+  (saved)="onScenarioSaved($event)"
+/>
+
+<app-execution-config-modal
+  (confirmed)="onExecutionConfigConfirmed($event)"
+/>
+
+<!-- ==================== HEADER ==================== -->
+<div class="page-header">
+  <div>
+    <div class="section-title">
+      Scénarios générés par l'IA
+      <span class="ai-badge">🤖 {{ total }} scénario{{ total > 1 ? 's' : '' }}</span>
+    </div>
+    <div class="section-sub" style="margin-bottom:0">
+      Projet · {{ projectId }}
+    </div>
+  </div>
+ <div class="page-actions">
+  <button class="btn btn-ghost btn-sm">⬇ Exporter JSON</button>
+  <button class="btn btn-purple btn-sm" (click)="openAddModal()">✦ Ajouter un scénario</button>
+
+  <button class="btn btn-primary btn-sm"
+       [disabled]="executingAll()"
+      (click)="executeAllScenarios()">
+    <span *ngIf="!executingAll()">▷ Exécuter tous</span>
+    <span *ngIf="executingAll()"><span class="loading-spinner">⟳</span> Lancement...</span>
+  </button>
+ </div>
+</div>
+
+<!-- ==================== TOOLBAR ==================== -->
+<div class="toolbar">
+
+  <div class="search-bar">
+    <span class="search-icon">🔍</span>
+    <input
+      class="search-input"
+      type="text"
+      placeholder="Rechercher un scénario..."
+      [value]="searchQuery"
+      (input)="onSearch($any($event.target).value)"
+    />
+    <button *ngIf="searchQuery" class="search-clear" (click)="clearSearch()" title="Effacer">✕</button>
+  </div>
+
+  <button class="btn btn-ghost btn-sm filter-toggle" (click)="toggleFilters()">
+    <span>⚙ Filtres</span>
+    <span *ngIf="activeFiltersCount > 0" class="filter-badge">{{ activeFiltersCount }}</span>
+    <span class="filter-arrow">{{ filtersOpen ? '▴' : '▾' }}</span>
+  </button>
+
+  <div class="page-size-selector">
+    <span class="page-size-label">Afficher</span>
+    <select [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)">
+      <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+    </select>
+    <span class="page-size-label">/ page</span>
+  </div>
+
+</div>
+
+<!-- ==================== FILTRES AVANCÉS ==================== -->
+<div class="filters-panel" [ngClass]="{ open: filtersOpen }">
+  <div class="filters-grid">
+
+    <div class="filter-group">
+      <label class="filter-label">Statut</label>
+      <div class="filter-pills">
+        <button class="pill" [ngClass]="{ active: filterStatus() === '' }"
+          (click)="filterStatus.set(''); applyFilters()">Tous</button>
+        <button class="pill" [ngClass]="{ active: filterStatus() === 'ACTIVE' }"
+          (click)="filterStatus.set('ACTIVE'); applyFilters()">● Actif</button>
+        <button class="pill" [ngClass]="{ active: filterStatus() === 'DRAFT' }"
+          (click)="filterStatus.set('DRAFT'); applyFilters()">○ Brouillon</button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label class="filter-label">Mode de création</label>
+      <div class="filter-pills">
+        <button class="pill" [ngClass]="{ active: filterMode() === '' }"
+          (click)="filterMode.set(''); applyFilters()">Tous</button>
+        <button class="pill" [ngClass]="{ active: filterMode() === 'NLP' }"
+          (click)="filterMode.set('NLP'); applyFilters()">🤖 NLP</button>
+        <button class="pill" [ngClass]="{ active: filterMode() === 'RECORD' }"
+          (click)="filterMode.set('RECORD'); applyFilters()">⏺ Enregistrement</button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label class="filter-label">Date de création</label>
+      <div class="filter-dates">
+        <input type="date" class="date-input" [(ngModel)]="filterDateFrom" (change)="applyFilters()" />
+        <span class="date-sep">→</span>
+        <input type="date" class="date-input" [(ngModel)]="filterDateTo" (change)="applyFilters()" />
+      </div>
+    </div>
+
+  </div>
+
+  <div class="filters-footer">
+    <span class="filters-summary">
+      {{ activeFiltersCount === 0 ? 'Aucun filtre actif' : activeFiltersCount + ' filtre(s) actif(s)' }}
+    </span>
+    <button class="btn btn-ghost btn-xs" (click)="resetFilters()">✕ Réinitialiser tout</button>
+  </div>
+</div>
+
+<!-- ==================== ERREUR SUPPRESSION ==================== -->
+<div *ngIf="deleteError" class="alert-error">
+  ⚠ {{ deleteError }}
+  <button class="alert-close" (click)="deleteError = ''">✕</button>
+</div>
+
+<!-- ==================== TABS ==================== -->
+<div class="tabs">
+  <div class="tab" [ngClass]="{ active: activeTab() === 'all' }"  (click)="setTab('all')">
+    Tous{{ activeTab() === 'all' ? ' (' + total + ')' : '' }}
+  </div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'pos' }"  (click)="setTab('pos')">
+    Positifs{{ activeTab() === 'pos' ? ' (' + total + ')' : '' }}
+  </div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'neg' }"  (click)="setTab('neg')">
+    Négatifs{{ activeTab() === 'neg' ? ' (' + total + ')' : '' }}
+  </div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'sec' }"  (click)="setTab('sec')">
+    Sécurité{{ activeTab() === 'sec' ? ' (' + total + ')' : '' }}
+  </div>
+  <div class="tab" [ngClass]="{ active: activeTab() === 'perf' }" (click)="setTab('perf')">
+    Performance{{ activeTab() === 'perf' ? ' (' + total + ')' : '' }}
+  </div>
+</div>
+
+<!-- ==================== LISTE ==================== -->
+<div class="scenarios-list">
+
+  <div *ngIf="loading" class="empty-state">
+    <span class="loading-spinner">⟳</span>&nbsp;Chargement...
+  </div>
+
+  <div *ngIf="!loading && scenarios.length === 0" class="empty-state">
+    <div class="empty-icon">🔍</div>
+    <div>Aucun scénario trouvé.</div>
+    <div class="empty-sub" *ngIf="activeFiltersCount > 0 || searchQuery">
+      <button class="btn btn-ghost btn-xs" (click)="resetFilters()">
+        Réinitialiser les filtres
+      </button>
+    </div>
+  </div>
+
+  <div class="scenario-item" *ngFor="let s of scenarios">
+    <div class="scenario-row">
+
+      <span class="scenario-type" [ngClass]="s.typeClass">{{ s.typeLabel }}</span>
+
+      <div class="scenario-info">
+        <div class="scenario-name">
+          {{ s.name }}
+          <span class="status-badge" [ngClass]="'status-' + s.status.toLowerCase()">
+            {{ s.status === 'ACTIVE' ? '● Actif' : '○ Brouillon' }}
+          </span>
+        </div>
+        <div class="scenario-meta">
+          <span class="scenario-page">{{ s.page }}</span>
+          <span class="exec-count" *ngIf="s.execCount > 0">
+            ▷ {{ s.execCount }} exécution{{ s.execCount > 1 ? 's' : '' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="scenario-actions">
+        <button class="btn btn-ghost btn-sm" (click)="toggleData(s)">
+          {{ s.dataOpen ? '▴ Données' : '⚙ Données' }}
+        </button>
+        <button class="btn btn-ghost btn-sm">✏ Modifier</button>
+        <button class="btn btn-ghost btn-sm"
+                [disabled]="executingOne() === s.id"
+                (click)="executeScenario(s)">
+          <span *ngIf="executingOne() !== s.id">▷ Exécuter</span>
+          <span *ngIf="executingOne() === s.id"><span class="loading-spinner">⟳</span> ...</span>
+        </button>
+        <button
+          class="btn btn-danger btn-sm"
+          (click)="deleteScenario(s)"
+          title="Supprimer ce scénario"
+        >🗑</button>
+      </div>
+    </div>
+
+    <div class="scenario-data-panel" [ngClass]="{ open: s.dataOpen }">
+      <div class="data-header">
+        <span>🤖 DONNÉES DE TEST GÉNÉRÉES AUTOMATIQUEMENT</span>
+      </div>
+      <div class="data-fields">
+        <div *ngIf="s.data.length === 0" class="no-data">
+          Aucune variable définie pour ce scénario.
+        </div>
+        <div class="data-field" *ngFor="let d of s.data">
+          <span class="data-key">{{ d.k }}</span>
+          <span class="data-val">
+            <input [(ngModel)]="d.v" [placeholder]="!d.v ? '(vide)' : ''" />
+          </span>
+        </div>
+      </div>
+      <div class="data-actions">
+        <button class="btn btn-ghost btn-xs">🎲 Régénérer les données</button>
+        <button class="btn btn-ghost btn-xs">+ Ajouter un champ</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== BARRE PAGINATION ==================== -->
+<div class="pagination-bar" *ngIf="!loading && total > 0">
+
+  <span class="pagination-info">
+    {{ pageStart }}–{{ pageEnd }} sur <strong>{{ total }}</strong> scénario{{ total > 1 ? 's' : '' }}
+  </span>
+
+  <div class="pagination-controls">
+
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === 1" (click)="goToPage(1)" title="Première page">«</button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)" title="Page précédente">‹</button>
+
+    <ng-container *ngFor="let p of pages">
+      <span *ngIf="isEllipsis(p)" class="page-ellipsis">…</span>
+      <button *ngIf="!isEllipsis(p)" class="page-btn" [ngClass]="{ active: p === currentPage }" (click)="goToPage(+p)">{{ p }}</button>
+    </ng-container>
+
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)" title="Page suivante">›</button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)" title="Dernière page">»</button>
+
+  </div>
+</div>
+
+// src/app/features/execution/execution.component.ts
+import {
+  Component, OnInit, OnDestroy, signal, inject, ViewChild, ElementRef, AfterViewChecked,
+} from '@angular/core';
+import { NgFor, NgClass, NgIf, DecimalPipe, DatePipe } from '@angular/common';
+import { RouterLink, ActivatedRoute, Router }          from '@angular/router';
+import { io, Socket }                                  from 'socket.io-client';
+import { HttpClient }                                  from '@angular/common/http';
+import {
+  ExecutionService,
+  ExecutionStep,
+  StepUpdateEvent,
+  LogEntry,
+  ExecCompleteEvent,
+  ArtifactType,
+} from '../../services/execution.service';
+
+export interface ExecStats {
+  pass: number; fail: number; running: number; skipped: number; total: number;
+}
+
+export interface ScenarioResult {
+  scenarioId:   string;
+  scenarioName: string;
+  executionId:  string;
+  result:       'PASS' | 'FAIL' | 'ERROR';
+  durationMs:   number;
+  passCount:    number;
+  failCount:    number;
+  totalCount:   number;
+}
+
+export interface BatchProgress {
+  batchId:             string;
+  pass:                number;
+  fail:                number;
+  total:               number;
+  done:                number;
+  currentScenario?:    string;
+  currentExecutionId?: string;
+  status?:             string;
+  durationMs?:         number;
+  scenarioResults?:    ScenarioResult[];
+}
+
+export type ExecResult = 'RUNNING' | 'PASS' | 'FAIL' | 'ERROR';
+export type ExecMode   = 'single' | 'batch';
+
+@Component({
+  selector:    'app-execution',
+  standalone:  true,
+  imports:     [NgFor, NgClass, NgIf, DecimalPipe, DatePipe, RouterLink],
+  templateUrl: './execution.component.html',
+  styleUrl:    './execution.component.scss',
+})
+export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
+
+  @ViewChild('logContainer') logContainer!: ElementRef;
+
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private execSvc = inject(ExecutionService);
+  private http = inject(HttpClient);
+  private socket: Socket | null = null;
+
+  readonly SERVER = 'http://localhost:3000';
+
+  mode         = signal<ExecMode>('single');
+  executionId  = signal<string | null>(null);
+  batchId      = signal<string | null>(null);
+  scenarioName = signal('Scénario');
+  projectId    = signal('');
+
+  result      = signal<ExecResult>('RUNNING');
+  logs        = signal<LogEntry[]>([]);
+  stats       = signal<ExecStats>({ pass: 0, fail: 0, running: 0, skipped: 0, total: 0 });
+  durationMs  = signal<number | null>(null);
+  errorMessage = signal<string | null>(null);
+
+  screenshotUrl = signal<string | null>(null);
+  videoUrl      = signal<string | null>(null);
+  traceUrl      = signal<string | null>(null);
+
+  private stepsMap = new Map<number, ExecutionStep>();
+  steps = signal<ExecutionStep[]>([]);
+
+  showReport   = signal(false);
+  expandedStep = signal<number | null>(null);
+
+  batchProgress     = signal<BatchProgress | null>(null);
+  batchDone         = signal(false);
+  expandedScenario  = signal<string | null>(null);
+
+  stages = signal([
+    { icon: '▷',  label: 'Lancement\nPlaywright', state: 'running' },
+    { icon: '⚙',  label: 'Exécution\ntests',      state: 'pending' },
+    { icon: '📊', label: 'Rapport\nfinal',         state: 'pending' },
+  ]);
+
+  private shouldScroll = false;
+
+  // ── NOUVEAU : suivi de l'exécution actuellement affichée dans la console
+  // en mode batch — évite de rester abonné à une room exec:<id> obsolète et
+  // permet d'afficher les logs/steps de CHAQUE scénario du batch, pas juste
+  // la barre de progression globale (c'était le bug "exécuter tous"). ──────
+  private currentBatchExecId: string | null = null;
+
+  ngOnInit(): void {
+    const p = this.route.snapshot.queryParams;
+    this.scenarioName.set(p['scenarioName'] || 'Scénario');
+    this.projectId.set(p['projectId'] || '');
+
+    if (p['batchId']) {
+      this.mode.set('batch');
+      this.batchId.set(p['batchId']);
+      this._connectSocket();
+    } else if (p['executionId']) {
+      this.mode.set('single');
+      this.executionId.set(p['executionId']);
+      this._connectSocket();
+    } else {
+      this.result.set('ERROR');
+      this.logs.set([{ time: '--:--:--', level: 'error', msg: 'Aucune exécution en cours.' }]);
+    }
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.shouldScroll && this.logContainer) {
+      const el = this.logContainer.nativeElement;
+      el.scrollTop = el.scrollHeight;
+      this.shouldScroll = false;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.socket?.disconnect();
+    this.socket = null;
+  }
+
+  private _connectSocket(): void {
+    const query: Record<string, string> = {};
+    if (this.executionId()) query['executionId'] = this.executionId()!;
+    if (this.batchId())     query['batchId']     = this.batchId()!;
+
+    this.socket = io(`${this.SERVER}/execution`, { transports: ['websocket'], query });
+
+    this.socket.on('connect', () => {
+      if (this.executionId()) this.socket?.emit('subscribe', { executionId: this.executionId() });
+      if (this.batchId())     this.socket?.emit('subscribeBatch', { batchId: this.batchId() });
+      this._addLog({ time: this._now(), level: 'info', msg: "🔌 Connecté — en attente de l'exécution..." });
+    });
+
+    this.socket.on('exec_log', (entry: LogEntry) => this._addLog(entry));
+
+    this.socket.on('exec_step_update', (ev: StepUpdateEvent) => {
+      const existing = this.stepsMap.get(ev.stepIndex) || { stepIndex: ev.stepIndex, action: ev.action, result: 'RUNNING' };
+      const merged: ExecutionStep = {
+        ...existing,
+        action:        ev.action,
+        result:        ev.result,
+        durationMs:    ev.durationMs ?? existing.durationMs,
+        errorMessage:  ev.errorMessage ?? existing.errorMessage,
+      };
+      this.stepsMap.set(ev.stepIndex, merged);
+      this.steps.set(Array.from(this.stepsMap.values()).sort((a, b) => a.stepIndex - b.stepIndex));
+
+      const s = this.stats();
+      const running = Array.from(this.stepsMap.values()).filter(x => x.result === 'RUNNING').length;
+      const pass    = Array.from(this.stepsMap.values()).filter(x => x.result === 'PASS').length;
+      const fail    = Array.from(this.stepsMap.values()).filter(x => x.result === 'FAIL').length;
+      this.stats.set({ ...s, running, pass, fail, total: this.stepsMap.size });
+
+      this.stages.update(st => st.map((stage, i) => ({
+        ...stage, state: i === 0 ? 'done' : i === 1 ? 'running' : 'pending',
+      })));
+    });
+
+    // ── NOUVEAU : la progression du batch pilote maintenant l'abonnement
+    // à l'exécution courante, pour afficher console + steps en direct
+    // pour CHAQUE scénario, et pas juste à la fin. ─────────────────────────
+    this.socket.on('batch_progress', (data: BatchProgress) => {
+      this.batchProgress.set(data);
+
+      if (data.currentExecutionId && data.currentExecutionId !== this.currentBatchExecId) {
+        // on quitte l'ancienne room avant de rejoindre la nouvelle pour ne
+        // pas continuer à recevoir les events du scénario précédent
+        if (this.currentBatchExecId) {
+          this.socket?.emit('unsubscribe', { executionId: this.currentBatchExecId });
+        }
+        this.currentBatchExecId = data.currentExecutionId;
+        this.socket?.emit('subscribe', { executionId: data.currentExecutionId });
+
+        // reset des steps affichés pour le nouveau scénario du batch
+        this.stepsMap.clear();
+        this.steps.set([]);
+
+        this._addLog({
+          time: this._now(), level: 'info',
+          msg: `▶ Scénario ${data.done + 1}/${data.total} : ${data.currentScenario}`,
+        });
+      }
+
+      if (data.status === 'DONE') {
+        this.batchDone.set(true);
+        this.showReport.set(true);
+        this.socket?.disconnect();
+      }
+    });
+
+    this.socket.on('exec_complete', (data: ExecCompleteEvent) => {
+      // ── NOUVEAU : en mode batch, exec_complete arrive pour CHAQUE scénario,
+      // pas seulement le dernier. On loggue le résultat individuel sans écraser
+      // les stats/result globaux du batch (gérés par batch_progress). ────────
+      if (this.mode() === 'batch') {
+        const icon = data.result === 'PASS' ? '✓' : '✗';
+        this._addLog({
+          time: this._now(),
+          level: data.result === 'PASS' ? 'pass' : 'fail',
+          msg: `${icon} Scénario terminé — ${data.result} en ${(data.durationMs / 1000).toFixed(1)}s`,
+        });
+        return;
+      }
+
+      this.result.set(data.result as ExecResult);
+      this.stats.set({
+        pass: data.stats.pass, fail: data.stats.fail,
+        running: 0, skipped: data.stats.skipped, total: data.stats.total,
+      });
+      this.durationMs.set(data.durationMs);
+      this.errorMessage.set(data.errorMessage);
+
+      const shot  = data.artifacts.find(a => a.type === 'SCREENSHOT' as ArtifactType);
+      const video = data.artifacts.find(a => a.type === 'VIDEO' as ArtifactType);
+      const trace = data.artifacts.find(a => a.type === 'TRACE' as ArtifactType);
+
+      if (shot)  this.screenshotUrl.set(`${this.SERVER}${shot.url}`);
+      if (video) this.videoUrl.set(`${this.SERVER}${video.url}`);
+      if (trace) this.traceUrl.set(this.execSvc.getTraceViewerUrl(trace.url));
+
+      const lastState = data.result === 'PASS' ? 'done' : 'fail';
+      this.stages.update(st => st.map((s, i) => ({ ...s, state: i < st.length - 1 ? 'done' : lastState })));
+
+      this.showReport.set(true);
+      this.socket?.disconnect();
+
+      if (this.stepsMap.size === 0 && data.executionId) this._loadSteps(data.executionId);
+    });
+
+    this.socket.on('connect_error', () => {
+      this._addLog({ time: this._now(), level: 'error', msg: '⚠ Connexion au serveur perdue.' });
+    });
+  }
+
+  private _loadSteps(executionId: string): void {
+    this.execSvc.getSteps(executionId).subscribe({
+      next: (steps) => {
+        if (steps.length) {
+          steps.forEach(s => this.stepsMap.set(s.stepIndex, s));
+          this.steps.set(Array.from(this.stepsMap.values()).sort((a, b) => a.stepIndex - b.stepIndex));
+        }
+      },
+      error: () => {},
+    });
+  }
+
+  toggleStep(index: number): void { this.expandedStep.update(v => v === index ? null : index); }
+  toggleScenarioDetail(scenarioId: string): void { this.expandedScenario.update(v => v === scenarioId ? null : scenarioId); }
+
+  goBack(): void {
+    const projId = this.projectId();
+    this.router.navigate(projId ? ['/projects', projId, 'scenarios'] : ['/']);
+  }
+
+  goToHistory(): void {
+    const projId = this.projectId();
+    this.router.navigate(projId ? ['/projects', projId, 'history'] : ['/history']);
+  }
+
+  openTraceViewer(): void {
+    const url = this.traceUrl();
+    if (url) window.open(url, '_blank');
+  }
+
+  private _addLog(entry: LogEntry): void {
+    this.logs.update(l => [...l, entry]);
+    this.shouldScroll = true;
+  }
+
+  private _now(): string {
+    return new Date().toLocaleTimeString('fr-FR', { hour12: false });
+  }
+
+  get progress(): number {
+    const s = this.stats();
+    if (!s.total) return 0;
+    return Math.round(((s.pass + s.fail + s.skipped) / s.total) * 100);
+  }
+
+  get batchProgress_pct(): number {
+    const b = this.batchProgress();
+    if (!b?.total) return 0;
+    return Math.round((b.done / b.total) * 100);
+  }
+
+  get durationLabel(): string {
+    return this.execSvc.formatDuration(this.durationMs());
+  }
+
+  get passSteps(): ExecutionStep[] { return this.steps().filter(s => s.result === 'PASS'); }
+  get failSteps(): ExecutionStep[] { return this.steps().filter(s => s.result === 'FAIL'); }
+
+  get batchPassRate(): number {
+    const b = this.batchProgress();
+    if (!b?.total) return 0;
+    return Math.round((b.pass / b.total) * 100);
+  }
+
+  formatDuration(ms: number | null): string { return this.execSvc.formatDuration(ms); }
+
+  getBatchTotalDuration(): string {
+    return this.execSvc.formatDuration(this.batchProgress()?.durationMs ?? null);
+  }
+}
+
+<!-- src/app/features/execution/execution.component.html -->
+
+<!-- HEADER -->
+<div class="page-header">
+  <div>
+    <div class="section-title">
+      {{ mode() === 'batch' ? 'Exécution groupée' : 'Exécution en cours' }}
+      <span class="exec-result-badge" [ngClass]="result().toLowerCase()"
+            *ngIf="mode() === 'single'">
+        {{ result() === 'RUNNING' ? '⟳ EN COURS'
+         : result() === 'PASS'    ? '✓ PASSÉ'
+         : result() === 'FAIL'    ? '✗ ÉCHOUÉ' : '⚠ ERREUR' }}
+      </span>
+    </div>
+    <div class="section-sub">
+      {{ mode() === 'batch' ? 'Exécution de tous les scénarios actifs' : scenarioName() }}
+      <span *ngIf="mode() === 'single' && durationMs() !== null" class="duration-label">
+        · {{ durationLabel }}
+      </span>
+    </div>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-ghost btn-sm" (click)="goBack()">← Retour aux scénarios</button>
+    <button class="btn btn-ghost btn-sm" (click)="goToHistory()">📜 Historique</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODE BATCH — Progression
+     ═══════════════════════════════════════════════════════════ -->
+<ng-container *ngIf="mode() === 'batch'">
+
+  <div class="card mb-16" *ngIf="batchProgress() as bp">
+    <div class="card-header">
+      <div class="card-title">
+        Exécution groupée
+        <span class="batch-count">{{ bp.total }} scénario{{ bp.total > 1 ? 's' : '' }}</span>
+      </div>
+      <span class="status-badge"
+        [ngClass]="bp.status === 'DONE' ? (bp.fail > 0 ? 'fail' : 'pass') : 'running'">
+        {{ bp.status === 'DONE'
+            ? (bp.fail > 0 ? '✗ TERMINÉ AVEC ÉCHECS' : '✓ TOUT RÉUSSI')
+            : '⟳ EN COURS' }}
+      </span>
+    </div>
+    <div class="card-body">
+
+      <div class="current-scenario" *ngIf="bp.currentScenario && bp.status !== 'DONE'">
+        <span class="spin">⟳</span>
+        <span>En cours : <strong>{{ bp.currentScenario }}</strong></span>
+        <span class="current-count">{{ bp.done + 1 }}/{{ bp.total }}</span>
+      </div>
+
+      <div class="exec-stats">
+        <div class="exec-stat">
+          <div class="exec-stat-val" style="color:var(--success)">{{ bp.pass }}</div>
+          <div class="exec-stat-label">✓ Passés</div>
+        </div>
+        <div class="exec-stat">
+          <div class="exec-stat-val" style="color:var(--danger)">{{ bp.fail }}</div>
+          <div class="exec-stat-label">✗ Échoués</div>
+        </div>
+        <div class="exec-stat">
+          <div class="exec-stat-val" style="color:var(--text3)">{{ bp.total }}</div>
+          <div class="exec-stat-label">Total</div>
+        </div>
+        <div class="exec-stat">
+          <div class="exec-stat-val" style="color:var(--accent)">{{ bp.done }}</div>
+          <div class="exec-stat-label">Terminés</div>
+        </div>
+      </div>
+
+      <div class="progress-bar" style="margin-top:16px;height:10px">
+        <div class="progress-fill" [ngClass]="bp.fail > 0 ? 'red' : 'cyan'" [style.width.%]="batchProgress_pct"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:6px;font-family:'Space Mono',monospace">
+        <span>{{ bp.done }}/{{ bp.total }} scénarios</span>
+        <span>{{ batchProgress_pct }}%</span>
+      </div>
+
+    </div>
+  </div>
+
+</ng-container>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODE SINGLE — Pipeline
+     ═══════════════════════════════════════════════════════════ -->
+<ng-container *ngIf="mode() === 'single'">
+
+  <div class="card mb-16">
+    <div class="card-header"><div class="card-title">Pipeline d'exécution</div></div>
+    <div class="card-body">
+      <div class="pipeline-stages">
+        <ng-container *ngFor="let stage of stages(); let i = index; let last = last">
+          <div class="pipeline-stage">
+            <div class="stage-node" [ngClass]="stage.state">
+              <span *ngIf="stage.state === 'running'" class="spin">⟳</span>
+              <span *ngIf="stage.state !== 'running'">{{ stage.icon }}</span>
+            </div>
+            <div class="stage-label" style="white-space:pre-line;text-align:center">{{ stage.label }}</div>
+          </div>
+          <div *ngIf="!last" class="stage-connector"
+            [ngClass]="{ done: stage.state === 'done', running: stage.state === 'running' }">
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="exec-stats">
+        <div class="exec-stat"><div class="exec-stat-val" style="color:var(--success)">{{ stats().pass }}</div><div class="exec-stat-label">Passés</div></div>
+        <div class="exec-stat"><div class="exec-stat-val" style="color:var(--danger)">{{ stats().fail }}</div><div class="exec-stat-label">Échoués</div></div>
+        <div class="exec-stat"><div class="exec-stat-val" style="color:var(--accent)">{{ stats().running }}</div><div class="exec-stat-label">En cours</div></div>
+        <div class="exec-stat"><div class="exec-stat-val" style="color:var(--text3)">{{ stats().skipped }}</div><div class="exec-stat-label">Ignorés</div></div>
+      </div>
+
+      <div *ngIf="stats().total > 0">
+        <div class="progress-bar" style="margin-top:16px">
+          <div class="progress-fill" [ngClass]="result() === 'FAIL' ? 'red' : 'cyan'" [style.width.%]="progress"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px;text-align:right">
+          {{ stats().pass + stats().fail }}/{{ stats().total }} étapes · {{ progress }}%
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ÉTAPES EN TEMPS RÉEL ═══ -->
+  <div class="card mb-16" *ngIf="steps().length > 0">
+    <div class="card-header">
+      <div class="card-title">🔍 Étapes en cours d'exécution</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="step-summary-badge pass">✓ {{ passSteps.length }}</span>
+        <span class="step-summary-badge fail">✗ {{ failSteps.length }}</span>
+      </div>
+    </div>
+    <div class="card-body" style="padding:12px 16px">
+      <div class="steps-list">
+        <div class="step-item"
+             *ngFor="let step of steps(); let i = index"
+             [ngClass]="{ 'step-fail': step.result === 'FAIL', 'step-pass': step.result === 'PASS', 'step-running': step.result === 'RUNNING' }"
+             (click)="toggleStep(i)">
+          <div class="step-row">
+            <div class="step-index">{{ i + 1 }}</div>
+            <div class="step-indicator" [ngClass]="step.result.toLowerCase()">
+              <span *ngIf="step.result === 'RUNNING'" class="spin">⟳</span>
+              <span *ngIf="step.result === 'PASS'">✓</span>
+              <span *ngIf="step.result === 'FAIL'">✗</span>
+              <span *ngIf="step.result === 'SKIP'">—</span>
+            </div>
+            <div class="step-content">
+              <div class="step-action">{{ step.action }}</div>
+            </div>
+            <div class="step-dur" *ngIf="step.durationMs">{{ step.durationMs }}ms</div>
+            <span class="step-result-badge" [ngClass]="step.result.toLowerCase()">{{ step.result }}</span>
+            <span class="step-toggle" *ngIf="step.errorMessage">{{ expandedStep() === i ? '▴' : '▾' }}</span>
+          </div>
+          <div class="step-detail" *ngIf="expandedStep() === i && step.errorMessage">
+            <div class="step-error-block">
+              <div class="step-error-label">⚠ Message d'erreur</div>
+              <pre class="step-error-msg">{{ step.errorMessage }}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</ng-container>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CONSOLE D'EXÉCUTION
+     ═══════════════════════════════════════════════════════════ -->
+<div class="card mb-16">
+  <div class="card-header">
+    <div class="card-title">Console d'exécution</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span *ngIf="mode() === 'single'" class="status-badge"
+        [ngClass]="result() === 'RUNNING' ? 'running' : result() === 'PASS' ? 'pass' : 'fail'">
+        {{ result() }}
+      </span>
+    </div>
+  </div>
+
+  <div class="execution-log" #logContainer>
+    <div *ngIf="logs().length === 0" class="log-empty">⟳ En attente des logs...</div>
+    <div class="log-line" *ngFor="let log of logs()" [ngClass]="'log-line-' + log.level">
+      <span class="log-time">{{ log.time }}</span>
+      <span class="log-level" [ngClass]="log.level">{{ log.level.toUpperCase() }}</span>
+      <span class="log-msg">{{ log.msg }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     RAPPORT FINAL — MODE SINGLE
+     ═══════════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showReport() && mode() === 'single'">
+
+  <div class="rapport-card mb-16">
+    <div class="rapport-header">
+      <span class="rapport-icon">📊</span>
+      <div>
+        <div class="rapport-title">Rapport d'exécution</div>
+        <div class="rapport-sub">{{ scenarioName() }} · {{ durationLabel }}</div>
+      </div>
+      <span class="rapport-result" [ngClass]="result().toLowerCase()">
+        {{ result() === 'PASS' ? '✓ SUCCÈS' : '✗ ÉCHEC' }}
+      </span>
+    </div>
+
+    <div class="rapport-stats">
+      <div class="rapport-stat green">
+        <div class="rapport-stat-val">{{ stats().pass }}</div>
+        <div class="rapport-stat-label">Étapes passées</div>
+      </div>
+      <div class="rapport-stat red">
+        <div class="rapport-stat-val">{{ stats().fail }}</div>
+        <div class="rapport-stat-label">Étapes échouées</div>
+      </div>
+      <div class="rapport-stat gray">
+        <div class="rapport-stat-val">{{ stats().total }}</div>
+        <div class="rapport-stat-label">Total</div>
+      </div>
+      <div class="rapport-stat blue">
+        <div class="rapport-stat-val">{{ durationLabel }}</div>
+        <div class="rapport-stat-label">Durée</div>
+      </div>
+      <div class="rapport-stat purple">
+        <div class="rapport-stat-val">
+          {{ stats().total > 0 ? (stats().pass / stats().total * 100 | number:'1.0-0') : (result() === 'PASS' ? 100 : 0) }}%
+        </div>
+        <div class="rapport-stat-label">Taux succès</div>
+      </div>
+    </div>
+
+    <div style="padding:0 20px 16px" *ngIf="stats().total > 0">
+      <div class="progress-bar" style="height:8px">
+        <div class="progress-fill" [ngClass]="result() === 'PASS' ? 'cyan' : 'red'" [style.width.%]="progress"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text3);font-family:'Space Mono',monospace">
+        <span>{{ stats().pass }} / {{ stats().total }} étapes passées</span>
+        <span>{{ progress }}%</span>
+      </div>
+    </div>
+
+    <div *ngIf="errorMessage()" class="rapport-error">
+      <div class="rapport-error-title">⚠ Détail de l'erreur</div>
+      <pre class="rapport-error-log">{{ errorMessage() }}</pre>
+    </div>
+
+    <div class="rapport-actions">
+      <button class="btn btn-ghost btn-sm" (click)="goBack()">← Retour aux scénarios</button>
+      <button class="btn btn-ghost btn-sm" (click)="goToHistory()">📜 Voir l'historique</button>
+      <button class="btn btn-ghost btn-sm">⬇ Exporter PDF</button>
+      <button *ngIf="result() === 'FAIL' || result() === 'ERROR'"
+              class="btn btn-ghost btn-sm" style="color:var(--danger)">
+        🐛 Créer bug Jira
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ ARTEFACTS : Trace Viewer / Vidéo / Screenshot ═══ -->
+
+  <!-- Trace Playwright — outil principal de diagnostic -->
+  <div class="card mb-16 trace-highlight" *ngIf="traceUrl()">
+    <div class="card-header">
+      <div class="card-title">🧭 Trace Playwright <span class="temp-badge trace-badge">Trace Viewer</span></div>
+    </div>
+    <div class="card-body trace-cta">
+      <p class="trace-desc">
+        Inspectez chaque action, le DOM, les requêtes réseau et la timeline complète
+        de cette exécution dans le Trace Viewer officiel de Playwright.
+      </p>
+      <div class="trace-actions">
+        <button class="btn btn-primary btn-sm" (click)="openTraceViewer()">
+          🧭 Ouvrir dans Trace Viewer
+        </button>
+        <a [href]="traceUrl()!" target="_blank" class="btn btn-ghost btn-sm">↗ Nouvel onglet</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vidéo -->
+  <div class="card mb-16" *ngIf="videoUrl()">
+    <div class="card-header">
+      <div class="card-title">🎥 Vidéo d'exécution</div>
+      <a [href]="videoUrl()!" target="_blank" class="btn btn-ghost btn-sm">⬇ Télécharger</a>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="media-container">
+        <video controls class="exec-video" [src]="videoUrl()!">
+          Votre navigateur ne supporte pas la vidéo.
+        </video>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screenshot -->
+  <div class="card mb-16" *ngIf="screenshotUrl()">
+    <div class="card-header">
+      <div class="card-title">📸 Capture</div>
+      <a [href]="screenshotUrl()!" target="_blank" class="btn btn-ghost btn-sm">⬇ Télécharger</a>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="screenshot-browser">
+        <div class="screenshot-bar">
+          <div class="scr-dots">
+            <div class="scr-dot r"></div><div class="scr-dot y"></div><div class="scr-dot g"></div>
+          </div>
+          <div class="scr-url">🔒 Capture automatique</div>
+          <span class="fail-badge" *ngIf="result() === 'FAIL'">⚠ Échec détecté</span>
+        </div>
+        <img [src]="screenshotUrl()!" alt="Screenshot" class="exec-screenshot">
+        <div class="screenshot-overlay" [ngClass]="result() === 'PASS' ? 'success' : 'error'">
+          <span>{{ result() === 'PASS' ? '✅ Tests passés' : '❌ Échec — voir les étapes ci-dessus' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-16" *ngIf="steps().length === 0 && result() !== 'RUNNING'">
+    <div class="card-body" style="text-align:center;padding:32px;color:var(--text3)">
+      <div style="font-size:24px;margin-bottom:10px;opacity:0.5">🔍</div>
+      <div style="font-size:13px">Aucune étape enregistrée pour cette exécution.</div>
+    </div>
+  </div>
+
+</ng-container>
+
+<!-- ═══════════════════════════════════════════════════════════
+     RAPPORT FINAL — MODE BATCH
+     ═══════════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showReport() && mode() === 'batch'">
+
+  <div class="rapport-card mb-16" *ngIf="batchProgress() as bp">
+    <div class="rapport-header">
+      <span class="rapport-icon">📦</span>
+      <div>
+        <div class="rapport-title">Rapport d'exécution groupée</div>
+        <div class="rapport-sub">{{ bp.total }} scénarios · {{ getBatchTotalDuration() }}</div>
+      </div>
+      <span class="rapport-result" [ngClass]="bp.fail > 0 ? 'fail' : 'pass'">
+        {{ bp.fail > 0 ? '✗ ' + bp.fail + ' ÉCHEC(S)' : '✓ TOUS RÉUSSIS' }}
+      </span>
+    </div>
+
+    <div class="rapport-stats">
+      <div class="rapport-stat green">
+        <div class="rapport-stat-val">{{ bp.pass }}</div>
+        <div class="rapport-stat-label">Scénarios passés</div>
+      </div>
+      <div class="rapport-stat red">
+        <div class="rapport-stat-val">{{ bp.fail }}</div>
+        <div class="rapport-stat-label">Scénarios échoués</div>
+      </div>
+      <div class="rapport-stat gray">
+        <div class="rapport-stat-val">{{ bp.total }}</div>
+        <div class="rapport-stat-label">Total</div>
+      </div>
+      <div class="rapport-stat blue">
+        <div class="rapport-stat-val">{{ getBatchTotalDuration() }}</div>
+        <div class="rapport-stat-label">Durée totale</div>
+      </div>
+      <div class="rapport-stat purple">
+        <div class="rapport-stat-val">{{ batchPassRate }}%</div>
+        <div class="rapport-stat-label">Taux de succès</div>
+      </div>
+    </div>
+
+    <div style="padding:0 20px 16px">
+      <div class="progress-bar" style="height:8px">
+        <div class="progress-fill" [ngClass]="bp.fail > 0 ? 'red' : 'cyan'" [style.width.%]="batchPassRate"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--text3);font-family:'Space Mono',monospace">
+        <span>{{ bp.pass }} / {{ bp.total }} scénarios passés</span>
+        <span>{{ batchPassRate }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="rapport-card mb-16">
+    <div class="rapport-actions">
+      <button class="btn btn-ghost btn-sm" (click)="goBack()">← Retour aux scénarios</button>
+      <button class="btn btn-ghost btn-sm" (click)="goToHistory()">📜 Voir l'historique</button>
+    </div>
+  </div>
+
+</ng-container>

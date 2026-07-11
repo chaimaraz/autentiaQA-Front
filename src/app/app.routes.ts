@@ -1,10 +1,11 @@
-// src/app/app.routes.ts
 import { Routes } from '@angular/router';
 import { AiReviewComponent } from './features/ai-review/ai-review.component';
+import { authGuard } from './core/guards/auth.guard'; // ── NOUVEAU : protection des routes authentifiées
 
 export const APP_ROUTES: Routes = [
   {
     path: '',
+    canActivate: [authGuard], // ── NOUVEAU : redirige vers /auth/login si non connecté
     loadComponent: () =>
       import('./core/layout/shell/shell.component').then(m => m.ShellComponent),
     children: [
@@ -105,6 +106,7 @@ export const APP_ROUTES: Routes = [
     ],
   },
   {
+    // ── Publiques : pas de authGuard ici (accès avant connexion / via lien d'invitation)
     path: 'auth',
     children: [
       {

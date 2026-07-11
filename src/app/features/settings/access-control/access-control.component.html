@@ -1,0 +1,59 @@
+<div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement de la matrice des permissions...</div>
+
+<div class="auth-alert error show" *ngIf="error()"><span>⚠️</span> {{ error() }}</div>
+
+<div class="access-control-wrap" *ngIf="!loading()">
+  <div class="ac-legend">
+    <div class="section-sub">
+      Chaque case correspond à une permission accordée au rôle. Toute modification s'applique
+      immédiatement à tous les membres portant ce rôle, sur l'ensemble des projets.
+    </div>
+  </div>
+
+  <div class="card mb-16" *ngFor="let category of categories()">
+    <div class="card-header">
+      <div class="card-title">{{ category }}</div>
+    </div>
+    <div class="card-body">
+      <table class="ac-table">
+        <thead>
+          <tr>
+            <th class="ac-perm-col">Permission</th>
+            <th *ngFor="let role of roles" class="ac-role-col">{{ roleLabels[role] }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let perm of catalogue()[category]">
+            <td class="ac-perm-label">
+              {{ perm.label }}
+              <div class="ac-perm-desc" *ngIf="perm.description">{{ perm.description }}</div>
+            </td>
+            <td *ngFor="let role of roles" class="ac-checkbox-cell">
+              <input
+                type="checkbox"
+                [checked]="isChecked(role, perm.code)"
+                [disabled]="role === 'ADMIN'"
+                (change)="toggle(role, perm.code)"
+                [title]="role === 'ADMIN' ? 'Le rôle Administrateur a toujours accès complet' : ''"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ac-save-bar">
+    <div *ngFor="let role of roles">
+      <button
+        class="btn btn-primary btn-sm"
+        *ngIf="role !== 'ADMIN' && hasChanges(role)"
+        [disabled]="saving() === role"
+        (click)="save(role)"
+      >
+        {{ saving() === role ? '⏳ Enregistrement...' : '💾 Enregistrer — ' + roleLabels[role] }}
+      </button>
+      <span class="ac-saved-tag" *ngIf="savedRole() === role">✅ Permissions mises à jour</span>
+    </div>
+  </div>
+</div>

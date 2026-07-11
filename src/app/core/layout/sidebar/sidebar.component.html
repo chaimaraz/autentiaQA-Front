@@ -19,7 +19,7 @@
 
   <!-- NAV -->
   <nav class="nav">
-    <ng-container *ngFor="let section of navSections">
+    <ng-container *ngFor="let section of navSections()">
       <div class="nav-section">
         <div class="nav-label">{{ section.label }}</div>
 
@@ -82,10 +82,10 @@
 
     <!-- USER CARD -->
     <div class="user-card" (click)="toggleUserDropdown()">
-      <div class="avatar">AS</div>
+      <div class="avatar">{{ userInitials() }}</div>
       <div class="user-info">
-        <div class="user-name">Chaima Razgui</div>
-        <div class="user-role">QA Engineer</div>
+        <div class="user-name">{{ userName() }}</div>
+        <div class="user-role">{{ userRoleLabel() }}</div>
       </div>
       <span style="color:var(--text3);font-size:16px">⋮</span>
 

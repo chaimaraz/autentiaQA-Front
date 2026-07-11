@@ -178,34 +178,44 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
     // ── NOUVEAU : la progression du batch pilote maintenant l'abonnement
     // à l'exécution courante, pour afficher console + steps en direct
     // pour CHAQUE scénario, et pas juste à la fin. ─────────────────────────
-    this.socket.on('batch_progress', (data: BatchProgress) => {
-      this.batchProgress.set(data);
 
-      if (data.currentExecutionId && data.currentExecutionId !== this.currentBatchExecId) {
-        // on quitte l'ancienne room avant de rejoindre la nouvelle pour ne
-        // pas continuer à recevoir les events du scénario précédent
-        if (this.currentBatchExecId) {
-          this.socket?.emit('unsubscribe', { executionId: this.currentBatchExecId });
-        }
-        this.currentBatchExecId = data.currentExecutionId;
-        this.socket?.emit('subscribe', { executionId: data.currentExecutionId });
+    console.log("Listening batch_progress");
+  this.socket.on('batch_progress', (data: BatchProgress) => {
 
-        // reset des steps affichés pour le nouveau scénario du batch
-        this.stepsMap.clear();
-        this.steps.set([]);
+  console.log("========== BATCH_PROGRESS ==========");
+  console.log(data);
 
-        this._addLog({
-          time: this._now(), level: 'info',
-          msg: `▶ Scénario ${data.done + 1}/${data.total} : ${data.currentScenario}`,
-        });
-      }
+  this.batchProgress.set(data);
 
-      if (data.status === 'DONE') {
-        this.batchDone.set(true);
-        this.showReport.set(true);
-        this.socket?.disconnect();
-      }
+  if (data.currentExecutionId && data.currentExecutionId !== this.currentBatchExecId) {
+
+    console.log("currentExecutionId =", data.currentExecutionId);
+
+    if (this.currentBatchExecId) {
+      this.socket?.emit('unsubscribe', {
+        executionId: this.currentBatchExecId
+      });
+    }
+
+    this.currentBatchExecId = data.currentExecutionId;
+
+    this.socket?.emit('subscribe', {
+      executionId: data.currentExecutionId
     });
+
+    console.log("subscribe exec =", data.currentExecutionId);
+
+    this.stepsMap.clear();
+    this.steps.set([]);
+
+    this._addLog({
+      time: this._now(),
+      level: 'info',
+      msg: `▶ ${data.currentScenario}`
+    });
+  }
+
+});
 
     this.socket.on('exec_complete', (data: ExecCompleteEvent) => {
       // ── NOUVEAU : en mode batch, exec_complete arrive pour CHAQUE scénario,

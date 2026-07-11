@@ -114,7 +114,7 @@ export class GitConfigListComponent implements OnInit {
     this.editingRepo.set(null);
     this.loadRepos();
   }
-
+ 
   onFormCancelled(): void {
     this.editingRepo.set(null);
   }
@@ -149,9 +149,13 @@ export class GitConfigListComponent implements OnInit {
   }
 
   /** Icône d'affichage par fournisseur — purement cosmétique, aucun impact fonctionnel */
-  providerIcon(provider: string): string {
-    return { GITHUB: '🐙', GITLAB: '🦊', BITBUCKET: '🪣' }[provider] || '🔗';
-  }
+  providerIcon(provider?: string): string {
+  return {
+    GITHUB: '🐙',
+    GITLAB: '🦊',
+    BITBUCKET: '🪣'
+  }[provider ?? ''] || '🔗';
+}
 
   /** Icône d'affichage par type de dépôt — purement cosmétique */
   roleIcon(role: string): string {

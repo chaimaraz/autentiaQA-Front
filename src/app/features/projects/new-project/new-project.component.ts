@@ -143,14 +143,24 @@ export class NewProjectComponent {
   }
   removeFile(i: number): void { this.uploadedFiles.splice(i, 1); }
 
+  private static readonly ALLOWED_SPEC_TYPES: Record<string, string> = {
+    'application/pdf': 'PDF',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+    'application/msword': 'DOC',
+    'text/plain': 'TXT',
+    'text/csv': 'CSV',
+    'application/csv': 'CSV',
+    'application/vnd.ms-excel': 'XLS',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+  };
+ 
   private addFiles(rawFiles: File[]): void {
-    const ALLOWED = ['application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword'];
     const MAX = 20 * 1024 * 1024;
     rawFiles.forEach(file => {
-      if (!ALLOWED.includes(file.type)) { alert(`❌ Type non supporté : ${file.name}`); return; }
-      if (file.size > MAX)              { alert(`❌ Fichier trop volumineux : ${file.name}`); return; }
+      if (!NewProjectComponent.ALLOWED_SPEC_TYPES[file.type]) {
+        alert(`❌ Type non supporté : ${file.name}`); return;
+      }
+      if (file.size > MAX) { alert(`❌ Fichier trop volumineux : ${file.name}`); return; }
       if (this.uploadedFiles.find(f => f.name === file.name && f.file.size === file.size)) return;
       this.uploadedFiles.push({ file, name: file.name,
         sizeLabel: this.formatBytes(file.size), mimeType: file.type });

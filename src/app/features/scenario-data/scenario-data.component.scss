@@ -1,0 +1,32 @@
+// src/app/features/scenario-data/scenario-data.component.scss
+
+.scenario-data-card {
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .page-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .secret-badge {
+    margin-left: 4px;
+    opacity: 0.7;
+  }
+
+  .form-input {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .alert-error {
+    color: var(--danger, #e5484d);
+    font-size: 13px;
+  }
+}

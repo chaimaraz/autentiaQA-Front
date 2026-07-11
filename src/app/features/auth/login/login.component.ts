@@ -1,21 +1,23 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { inject } from '@angular/core';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, RouterLink, NgClass],
+  imports: [FormsModule, NgClass],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
 export class LoginComponent {
   private router = inject(Router);
+  private auth = inject(AuthService);
 
-  email = 'chaima.razgui@autentia.io';
-  password = 'password123';
+  email = '';
+  password = '';
   showPassword = signal(false);
   loading = signal(false);
   error = signal('');
@@ -30,10 +32,10 @@ export class LoginComponent {
   }
 
   togglePassword(): void {
-    this.showPassword.update(v => !v);
+    this.showPassword.update((v) => !v);
   }
 
-  async handleLogin(): Promise<void> {
+  handleLogin(): void {
     this.error.set('');
     if (!this.email || !this.password) {
       this.error.set('Veuillez remplir tous les champs.');
@@ -43,13 +45,17 @@ export class LoginComponent {
       this.error.set('Adresse email invalide.');
       return;
     }
-    this.loading.set(true);
-    await new Promise(r => setTimeout(r, 1200));
-    this.loading.set(false);
-    this.router.navigate(['/dashboard']);
-  }
 
-  handleSocialLogin(provider: string): void {
-    setTimeout(() => this.router.navigate(['/dashboard']), 1000);
+    this.loading.set(true);
+    this.auth.login(this.email, this.password).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.router.navigate(['/dashboard']);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set(err.message || 'Identifiants invalides.');
+      },
+    });
   }
 }

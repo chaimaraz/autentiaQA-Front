@@ -1,0 +1,44 @@
+.invite-form {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.rbac-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    text-align: left;
+    color: var(--text2);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  .cell-strong {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .cell-muted {
+    color: var(--text2);
+  }
+}

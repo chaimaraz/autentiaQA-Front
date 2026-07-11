@@ -331,16 +331,15 @@
       <div class="rec-setup-card">
         <div class="rec-setup-title"><span class="rec-step-badge">1</span> Uploader le document de spécification</div>
 
-        <div class="upload-zone-ai" (click)="docFileInput.click()">
-          <input #docFileInput type="file" style="display:none"
-            accept=".pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-            (change)="onDocFileSelected($event)" />
+      <input #docFileInput type="file" style="display:none"
+  accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  (change)="onDocFileSelected($event)" />
 
-          <div *ngIf="!docFile()" class="drop-zone-empty">
-            <span class="drop-icon">📄</span>
-            <div class="drop-title">Cliquez pour choisir un fichier</div>
-            <div class="drop-hint">PDF, DOCX ou TXT — max 20 MB</div>
-          </div>
+<div *ngIf="!docFile()" class="drop-zone-empty" (click)="docFileInput.click()">
+  <span class="drop-icon">📄</span>
+  <div class="drop-title">Cliquez pour choisir un fichier</div>
+  <div class="drop-hint">PDF, DOCX, TXT, CSV ou Excel — max 20 MB</div>
+</div>
 
           <div *ngIf="docFile()" class="file-item" (click)="$event.stopPropagation()">
             <span class="file-icon">📄</span>
@@ -362,7 +361,7 @@
         </div>
 
         <div class="rec-error-msg" *ngIf="docError()">⚠️ {{ docError() }}</div>
-      </div>
+    
 
       <!-- Propositions -->
       <div class="rec-setup-card" *ngIf="docProposals().length > 0">
@@ -538,7 +537,7 @@
   </div>
 
   <!-- ══ FOOTER ══ -->
-  <div class="modal-footer">
+  <div class="add-scenario-modal-footer">
     <button class="btn btn-ghost" (click)="close()" [disabled]="saving()">Fermer</button>
     <div style="display:flex;gap:8px" *ngIf="activeMode()==='nlp' || activeMode()==='record'">
       <button class="btn btn-secondary btn-sm" (click)="saveDraft()" [disabled]="saving()">
@@ -551,6 +550,7 @@
       </button>
     </div>
   </div>
+  </div>
 
 </div>
-</div>
+

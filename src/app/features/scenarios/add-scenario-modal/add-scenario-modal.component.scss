@@ -78,13 +78,15 @@
 // ── BODY ──────────────────────────────────────────────────────────────────────
 .modal-body {
   flex: 1;
+   min-height: 0;  
   overflow-y: auto;
   padding: 24px;
   background: var(--bg);
 }
 
-// ── FOOTER ────────────────────────────────────────────────────────────────────
-.modal-footer {
+// SCSS — remplace .modal-footer par un nom unique + position!important en filet de sécurité
+.add-scenario-modal-footer {
+  position: static !important;   // empêche toute règle externe de le sortir du flux
   display: flex;
   align-items: center;
   justify-content: space-between;

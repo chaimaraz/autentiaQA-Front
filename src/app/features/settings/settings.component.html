@@ -1,1 +1,48 @@
-<p>settings works!</p>
+<div class="page-header">
+  <div>
+    <div class="section-title">Paramètres</div>
+    <div class="section-sub">Gérez les utilisateurs et les droits d'accès de vos projets</div>
+  </div>
+</div>
+
+<div class="settings-tabs">
+  <button class="settings-tab" [ngClass]="{ active: activeTab() === 'users' }" (click)="setTab('users')">
+    👥 Gestion des utilisateurs
+  </button>
+  <button
+    class="settings-tab"
+    *ngIf="canManageAccessControl()"
+    [ngClass]="{ active: activeTab() === 'access-control' }"
+    (click)="setTab('access-control')"
+  >
+    🔐 Contrôle d'accès
+  </button>
+  <button
+    class="settings-tab"
+    *ngIf="isSuperAdmin()"
+    [ngClass]="{ active: activeTab() === 'platform-admins' }"
+    (click)="setTab('platform-admins')"
+  >
+    🛡️ Comptes plateforme
+  </button>
+</div>
+
+<!-- Sélecteur de projet — la gestion des membres est scopée à un projet -->
+<div class="form-group settings-project-picker" *ngIf="activeTab() === 'users'">
+  <label class="form-label">Projet</label>
+  <select class="form-input" [ngModel]="selectedProjectId()" (ngModelChange)="onProjectChange($event)">
+    <option *ngFor="let p of adminProjects()" [value]="p.projectId">{{ p.projectName }}</option>
+  </select>
+  <div class="empty-state" *ngIf="adminProjects().length === 0" style="margin-top:12px">
+    Vous n'administrez aucun projet pour le moment.
+  </div>
+</div>
+
+<app-users-management
+  *ngIf="activeTab() === 'users' && selectedProjectId()"
+  [projectId]="selectedProjectId()"
+/>
+
+<app-access-control *ngIf="activeTab() === 'access-control'" />
+
+<app-platform-admins *ngIf="activeTab() === 'platform-admins'" />

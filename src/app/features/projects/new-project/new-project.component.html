@@ -93,7 +93,7 @@
 
         <!-- ===== UPLOAD ZONE — visible uniquement si SPEC_DOCUMENT ===== -->
         <div *ngIf="isSpecMode" class="upload-section">
-          <label class="form-label">Documents de spécification * <span class="form-hint-inline">(PDF, DOCX — max 20 MB / fichier)</span></label>
+          <label class="form-label">Documents de spécification * <span class="form-hint-inline">(PDF, DOCX, TXT, CSV, Excel — max 20 MB / fichier)</span></label>
 
           <!-- Drop zone -->
           <div
@@ -105,19 +105,18 @@
             (click)="fileInput.click()"
           >
             <input
-              #fileInput
-              type="file"
-              multiple
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              style="display:none"
-              (change)="onFilesSelected($event)"
-            />
+  #fileInput
+  type="file"
+  multiple
+  accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  style="display:none"
+  (change)="onFilesSelected($event)"
+/>
             <div *ngIf="uploadedFiles.length === 0" class="drop-zone-empty">
               <span class="drop-icon">📁</span>
               <div class="drop-title">Glissez vos fichiers ici</div>
               <div class="drop-sub">ou <span class="drop-link">cliquez pour parcourir</span></div>
-              <div class="drop-hint">PDF, DOCX — jusqu'à 10 fichiers, 20 MB chacun</div>
-            </div>
+<div class="drop-hint">PDF, DOCX, TXT, CSV, Excel — jusqu'à 10 fichiers, 20 MB chacun</div>            </div>
             <div *ngIf="uploadedFiles.length > 0" class="drop-zone-has-files" (click)="$event.stopPropagation()">
               <div class="file-list">
                 <div class="file-item" *ngFor="let item of uploadedFiles; let i = index">

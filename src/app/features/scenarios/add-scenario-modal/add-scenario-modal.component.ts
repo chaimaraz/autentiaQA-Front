@@ -169,20 +169,57 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
   // ─────────────────────────────────────────────────────────────────────────
   // NLP
   // ─────────────────────────────────────────────────────────────────────────
-  parseNLP(): void {
-    if (!this.nlpText.trim()) return;
-    this.parsing.set(true);
-    this.parsedPreviewVisible.set(false);
-    setTimeout(() => {
-      const steps = this._generateSteps(this.nlpText);
-      const data  = this._generateData(this.nlpText);
+// REMPLACER la méthode parseNLP existante par celle-ci :
+parseNLP(): void {
+  if (!this.nlpText.trim()) return;
+  this.parsing.set(true);
+  this.parsedPreviewVisible.set(false);
+  this.errorMessage.set('');
+
+  this.aiSvc.generateScriptFromNlp(this.projectId, {
+    title: this.nlpName || 'Scénario généré',
+    description: this.nlpText,
+    steps: '',
+    expectedResult: '',
+  }).subscribe({
+    next: (result) => {
+      // Reconstruit les signaux existants à partir de la VRAIE réponse IA
+      const steps: ParsedStep[] = (result.steps ?? []).map((s, i) => ({
+        num: i + 1,
+        action: s.description || s.action,
+        selector: s.selector ?? s.value ?? '',
+        type: this._mapActionToParsedType(s.action),
+      }));
+      const data: DataField[] = (result.variables ?? []).map(v => ({
+        k: v.key, 
+        v: v.value, 
+        isSecret: v.isSecret,
+      }));
+
       this.parsedSteps.set(steps);
       this.parsedData.set(data);
-      this.parsedScript.set(this._buildNlpScript(steps, data, this.nlpName));
+      this.parsedScript.set(result.scriptTemplate);
       this.parsing.set(false);
       this.parsedPreviewVisible.set(true);
-    }, 1600);
-  }
+    },
+    error: (err) => {
+      this.parsing.set(false);
+      this.errorMessage.set(
+        err?.error?.message || 'Erreur lors de la génération IA. Réessaie ou reformule ta description.'
+      );
+    },
+  });
+}
+
+// AJOUTER cette méthode privée (juste après parseNLP) :
+/** Traduit l'action ScenarioDTO vers le type visuel existant du template */
+private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'nav' {
+  if (action === 'goto') return 'nav';
+  if (action.startsWith('assert')) return 'assert';
+  if (['fill', 'press', 'selectOption', 'check', 'uncheck'].includes(action)) return 'fill';
+  return 'click';
+}
+
 
   regenerateData(scenarioId: string): void {
     const vars = this.parsedData().map(d => ({ key: d.k, value: d.v, isSecret: d.isSecret ?? false }));
@@ -702,55 +739,12 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
     return steps;
   }
 
-  private _generateData(text: string): DataField[] {
-    const t = text.toLowerCase();
-    const data: DataField[] = [];
-
-    if (t.includes('email') || t.includes('identifiant'))
-      data.push({ k: 'email', v: `test.qa+${Math.floor(Math.random() * 9999)}@mail.io`, isSecret: false });
-
-    if (t.includes('mot de passe') || t.includes('password') || t.includes('mdp')) {
-      const isNeg = t.includes('vide') || t.includes('incorrect');
-      data.push({ k: 'password', v: isNeg ? '' : 'S3cur3P@ss!', isSecret: true });
-    }
-
-    if (t.includes('admin')) {
-      data.push({ k: 'target_url',    v: '/admin', isSecret: false });
-      data.push({ k: 'expected_code', v: '401',    isSecret: false });
-    }
-
-    if (t.includes('recherch'))
-      data.push({ k: 'search_query', v: 'test produit', isSecret: false });
-
-    if (!data.length)
-      data.push({ k: 'test_data', v: 'valeur_auto_générée', isSecret: false });
-
-    return data;
-  }
-
+ 
   private _escapeSingle(str: string): string {
     return String(str)
       .replace(/\\/g, '\\\\')
       .replace(/['\u2018\u2019]/g, "\\'");
   }
 
-  private _buildNlpScript(steps: ParsedStep[], data: DataField[], name: string): string {
-    const lines = [
-      `// Généré par Autentia QA — ${new Date().toLocaleDateString('fr-FR')}`,
-      `import { test, expect } from '@playwright/test';`,
-      '',
-      `test('${name || 'Scénario généré'}', async ({ page }) => {`,
-    ];
-    data.forEach(d => lines.push(`  const ${d.k} = '{{${d.k}}}';`));
-    if (data.length) lines.push('');
-    steps.forEach(s => {
-      const sel = this._escapeSingle(s.selector);
-      if (s.type === 'nav')    lines.push(`  await page.goto('${sel}');`);
-      if (s.type === 'fill')   lines.push(`  await page.fill('${sel}', ${data[0]?.k ?? 'data'});`);
-      if (s.type === 'click')  lines.push(`  await page.click('${sel}');`);
-      if (s.type === 'assert') lines.push(`  await expect(page).toHaveURL('${sel}');`);
-    });
-    lines.push('});');
-    return lines.join('\n');
-  }
+ 
 }

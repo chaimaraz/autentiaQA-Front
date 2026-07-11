@@ -8,6 +8,8 @@ import { io, Socket } from 'socket.io-client';
 export interface AIScenarioStep {
   action: string;
   selector: string | null;
+  value?: string | null;      // NOUVEAU : texte à saisir pour fill/press
+  description?: string | null; // NOUVEAU : libellé humain court
 }
 
 export interface AIScenarioVariable {
@@ -42,6 +44,9 @@ export interface NlpScriptResult {
   name: string;
   nlpText: string;
   scriptTemplate: string;
+  type?: 'POSITIVE' | 'NEGATIVE' | 'SECURITY' | 'PERFORMANCE';
+  steps?: AIScenarioStep[];      // NOUVEAU
+  variables?: AIScenarioVariable[]; // NOUVEAU
 }
 
 export interface BulkCreateResult {

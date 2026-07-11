@@ -1,3 +1,4 @@
+
 // src/app/services/scenario.service.ts
 import { Injectable }   from '@angular/core';
 import { HttpClient }   from '@angular/common/http';
@@ -12,6 +13,11 @@ export interface ScenarioVariable {
   key:      string;
   value:    string;
   isSecret: boolean;
+  // ── NOUVEAU (Sprint 2 backend) ──────────────────────────────────────────
+  type?:            'STRING' | 'EMAIL' | 'PASSWORD' | 'URL' | 'PHONE' | 'IBAN' | 'OTP' | 'NUMBER' | 'DATE' | 'TIMEOUT';
+  generator?:       'MANUAL' | 'FAKER' | 'PROJECT' | 'SYSTEM' | 'AI';
+  isGenerated?:     boolean;
+  lastGeneratedAt?: string | null;
 }
 
 export interface Scenario {
@@ -144,6 +150,47 @@ export class ScenarioService {
       .post<{ data: ScenarioVariable[] }>(`${this.base}/projects/${projectId}/scenarios/${targetScenarioId}/copy-variables`, { sourceScenarioId })
       .pipe(map(r => r.data));
   }
+
+  /** NOUVEAU (Sprint 2) : resynchronise les {{placeholders}} détectés dans le script (ajoute/retire, ne touche pas aux valeurs saisies). */
+  syncVariables(projectId: string, scenarioId: string): Observable<{ variables: ScenarioVariable[]; created: string[]; removed: string[]; needsValue: string[] }> {
+    return this.http
+      .post<{ data: { variables: ScenarioVariable[]; created: string[]; removed: string[]; needsValue: string[] } }>(
+        `${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables/sync`, {}
+      )
+      .pipe(map(r => r.data));
+  }
+
+  /** NOUVEAU (Sprint 2) : régénère UNE variable via le Data Generator serveur (Faker/Project/System). Ignore les variables MANUAL (422). */
+  regenerateOneVariable(projectId: string, scenarioId: string, variableId: string): Observable<ScenarioVariable> {
+    return this.http
+      .post<{ data: ScenarioVariable }>(
+        `${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables/${variableId}/regenerate`, {}
+      )
+      .pipe(map(r => r.data));
+  }
+
+  /** NOUVEAU (Sprint 2) : régénère TOUTES les variables non-MANUAL d'un scénario via le Data Generator serveur. */
+  regenerateAllVariablesServerSide(projectId: string, scenarioId: string): Observable<ScenarioVariable[]> {
+    return this.http
+      .post<{ data: ScenarioVariable[] }>(
+        `${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables/regenerate-all`, {}
+      )
+      .pipe(map(r => r.data));
+  }
+
+  /** NOUVEAU (Sprint 2) : alias clair pour persister des variables éditées manuellement (upsert complet). */
+  saveVariables(projectId: string, scenarioId: string, variables: Omit<ScenarioVariable, 'id'>[]): Observable<ScenarioVariable[]> {
+    return this.regenerateVariables(projectId, scenarioId, variables);
+  }
+
+  // ⚠️ ATTENTION (relevé pendant l'audit) : la méthode `regenerateVariables()`
+  // ci-dessus ne régénère rien côté serveur — c'est un simple upsert
+  // (PUT .../variables) qui écrase les variables avec ce que tu lui passes.
+  // Utilisée aujourd'hui par `add-scenario-modal.component.ts` avec des
+  // données calculées localement (this.parsedData()), pas par un vrai
+  // générateur. Je ne l'ai pas renommée/supprimée pour ne rien casser —
+  // mais pour une vraie régénération serveur, utilise
+  // `regenerateOneVariable` / `regenerateAllVariablesServerSide` ci-dessus.
 
   // ── Script ──────────────────────────────────────────────────────────────────
 
