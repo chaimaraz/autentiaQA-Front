@@ -1,1 +1,133 @@
-<p>profile works!</p>
+<div class="profile-hero">
+  <div class="profile-avatar-lg">
+    {{ initials() }}
+    <div class="edit-overlay" title="Changer l'avatar">✏️</div>
+  </div>
+  <div class="profile-hero-info">
+    <div class="profile-name">{{ user()?.name }}</div>
+    <div class="profile-role">
+      <span class="tag green">● En ligne</span>
+      {{ roleLabel() }} · Autentia Team
+    </div>
+    <div class="profile-stats">
+      <div class="profile-stat">
+        <div class="profile-stat-val">{{ stats().projectsCount }}</div>
+        <div class="profile-stat-lbl">Projets</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-val" style="color:var(--success)">{{ stats().scenariosCount }}</div>
+        <div class="profile-stat-lbl">Scénarios</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-val" style="color:var(--accent2)">{{ stats().executionsCount }}</div>
+        <div class="profile-stat-lbl">Exécutions</div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <button class="btn btn-primary btn-sm" (click)="toggleEdit()">
+      {{ editing() ? '✕ Annuler' : '✏️ Modifier profil' }}
+    </button>
+  </div>
+</div>
+
+<div class="auth-alert error show" *ngIf="error()"><span>⚠️</span> {{ error() }}</div>
+<div class="auth-alert success show" *ngIf="success()"><span>✅</span> {{ success() }}</div>
+
+<div class="profile-grid">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">👤 Informations personnelles</div>
+      <button class="btn btn-ghost btn-sm" (click)="toggleEdit()" *ngIf="!editing()">✏️ Modifier</button>
+    </div>
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label">Nom</label>
+        <input class="form-input" [(ngModel)]="form.name" [disabled]="!editing()" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" [(ngModel)]="form.email" type="email" [disabled]="!editing()" />
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Rôle</label>
+        <input class="form-input" [value]="roleLabel()" readonly style="opacity:0.7;cursor:not-allowed" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:16px" *ngIf="editing()" [disabled]="saving()" (click)="saveProfile()">
+        {{ saving() ? '⏳ Sauvegarde...' : '💾 Enregistrer' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">⚙️ Préférences</div></div>
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label">Langue de l'interface</label>
+        <select class="form-input" [(ngModel)]="form.language">
+          <option value="fr">🇫🇷 Français</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="ar">🇦🇷 العربية</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Framework par défaut</label>
+        <select class="form-input" [(ngModel)]="form.defaultFramework">
+          <option value="PLAYWRIGHT">Playwright</option>
+          <option value="CYPRESS">Cypress</option>
+          <option value="SELENIUM">Selenium</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Thème</label>
+        <div style="display:flex;gap:8px">
+          <div class="theme-choice" [class.active]="theme() === 'dark'" (click)="setTheme('dark')">🌙 Sombre</div>
+          <div class="theme-choice" [class.active]="theme() === 'light'" (click)="setTheme('light')">☀️ Clair</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-16">
+  <div class="card-header">
+    <div class="card-title">📊 Activité de test — Dernières 52 semaines</div>
+    <span style="font-size:11px;color:var(--text3)">{{ stats().executionsCount }} exécutions</span>
+  </div>
+  <div class="card-body">
+    <div class="activity-heatmap">
+      <div class="heat-cell" *ngFor="let cell of heatmapCells" [ngClass]="cell"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:10px;color:var(--text3)">
+      <span>Moins</span>
+      <div class="heat-cell" style="width:12px;height:12px;flex-shrink:0"></div>
+      <div class="heat-cell l1" style="width:12px;height:12px;flex-shrink:0"></div>
+      <div class="heat-cell l2" style="width:12px;height:12px;flex-shrink:0"></div>
+      <div class="heat-cell l3" style="width:12px;height:12px;flex-shrink:0"></div>
+      <div class="heat-cell l4" style="width:12px;height:12px;flex-shrink:0"></div>
+      <span>Plus</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><div class="card-title">🔐 Sécurité du compte</div></div>
+  <div class="card-body">
+    <div class="form-group">
+      <label class="form-label">Mot de passe actuel</label>
+      <input class="form-input" type="password" placeholder="••••••••" [(ngModel)]="pwForm.current" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nouveau mot de passe</label>
+      <input class="form-input" type="password" placeholder="Min. 8 caractères" [(ngModel)]="pwForm.next" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Confirmer</label>
+      <input class="form-input" type="password" placeholder="Répétez le nouveau mot de passe" [(ngModel)]="pwForm.confirm" />
+    </div>
+    <div class="auth-alert error show" *ngIf="pwError()"><span>⚠️</span> {{ pwError() }}</div>
+    <button class="btn btn-primary" style="width:100%" [disabled]="pwSaving()" (click)="changePassword()">
+      {{ pwSaving() ? '⏳ Mise à jour...' : '🔐 Mettre à jour' }}
+    </button>
+  </div>
+</div>

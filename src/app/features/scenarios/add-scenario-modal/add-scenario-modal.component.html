@@ -46,6 +46,10 @@
           <label class="form-label">Nom du scénario</label>
           <input class="form-input" [(ngModel)]="nlpName" placeholder="Ex: Connexion avec 2FA activée"/>
         </div>
+<div class="form-group">
+  <label class="form-label">Description <span class="form-hint-inline">(optionnel)</span></label>
+  <input class="form-input" [(ngModel)]="nlpDescription" placeholder="Contexte court du scénario"/>
+</div>
         <div class="form-group" style="flex:0 0 auto">
           <label class="form-label">Type</label>
           <div class="type-row">
@@ -163,6 +167,12 @@
               placeholder="Ex: Test ajout produit panier"
               [disabled]="!agentConnected() || recStatus()==='recording'"/>
           </div>
+          <!-- Section Record, juste après "Nom du scénario" -->
+<div class="form-group">
+  <label class="form-label">Description <span class="form-hint-inline">(optionnel)</span></label>
+  <input class="form-input" [(ngModel)]="recDescription" placeholder="Contexte court du scénario"
+         [disabled]="recStatus()==='recording'"/>
+</div>
           <div class="form-group" style="flex:0 0 auto">
             <label class="form-label">Type</label>
             <div class="type-row">

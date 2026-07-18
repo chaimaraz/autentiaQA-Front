@@ -42,6 +42,10 @@ export const APP_ROUTES: Routes = [
         title: 'Configuration Git',
       },
       {
+  path: 'projects/:id/scenarios/:scenarioId/edit',
+  loadComponent: () => import('./features/scenarios/edit-scenario/edit-scenario.component').then(m => m.EditScenarioComponent),
+},
+      {
         path: 'git-config/add-config',
         loadComponent: () =>
           import('./features/git-config/add-config/git-config-form.component')

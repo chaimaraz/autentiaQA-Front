@@ -1,94 +1,90 @@
-<div class="card mb-16">
-  <div class="card-header">
-    <div class="card-title">Membres du projet</div>
-    <button class="btn btn-primary btn-sm" (click)="toggleInviteForm()">
-      {{ showInviteForm() ? '✕ Fermer' : '+ Inviter un membre' }}
-    </button>
-  </div>
+<div class="settings-section-title">Gestion des utilisateurs</div>
+<div class="settings-section-sub">Invitez des membres et gérez leurs rôles sur ce projet.</div>
 
-  <div class="card-body" *ngIf="showInviteForm()">
-    <div class="invite-form">
-      <div class="form-group" style="flex:2">
-        <label class="form-label">Email de l'invité(e)</label>
-        <input class="form-input" type="email" placeholder="collegue@exemple.com" [(ngModel)]="inviteEmail" />
-      </div>
-      <div class="form-group" style="flex:1">
-        <label class="form-label">Rôle</label>
-        <select class="form-input" [(ngModel)]="inviteRole">
+<div class="invite-row">
+  <input class="form-input" type="email" placeholder="✉️  email@entreprise.com" [(ngModel)]="inviteEmail" style="flex:2" />
+  <select class="form-input" [(ngModel)]="inviteRole" style="flex:1;min-width:140px">
+    <option *ngFor="let r of roles" [value]="r">{{ roleLabels[r] }}</option>
+  </select>
+  <button class="btn btn-primary" [disabled]="inviting()" (click)="sendInvite()">
+    {{ inviting() ? '⏳ Envoi...' : '+ Inviter' }}
+  </button>
+</div>
+
+<div class="auth-alert error show" *ngIf="inviteError()"><span>⚠️</span> {{ inviteError() }}</div>
+<div class="auth-alert success show" *ngIf="inviteSuccess()"><span>✅</span> {{ inviteSuccess() }}</div>
+<div class="auth-alert error show" *ngIf="error()"><span>⚠️</span> {{ error() }}</div>
+
+<div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement...</div>
+
+<div *ngIf="!loading() && rows().length === 0" class="empty-state">
+  <div class="empty-icon">👥</div>
+  <div>Aucun utilisateur pour le moment.</div>
+</div>
+
+<table class="user-table" *ngIf="!loading() && rows().length > 0">
+  <thead>
+    <tr>
+      <th>Utilisateur</th>
+      <th>Email</th>
+      <th>Rôle</th>
+      <th>Statut</th>
+      <th>Dernière activité</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let row of rows()">
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="user-avatar-sm" [style.background]="row.avatarGradient">{{ row.initials }}</div>
+          <div>
+            <div style="font-weight:600;font-size:12px">{{ row.name }}</div>
+            <div style="font-size:10px;color:var(--text3)">{{ row.kind === 'member' ? 'Membre' : 'Invité(e)' }}</div>
+          </div>
+        </div>
+      </td>
+      <td style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text3)">{{ row.email }}</td>
+      <td>
+        <select
+          *ngIf="row.kind === 'member'"
+          class="form-input"
+          style="font-size:11px;padding:4px 8px;width:auto"
+          [ngModel]="row.role"
+          (ngModelChange)="updateRole(row, $event)"
+        >
           <option *ngFor="let r of roles" [value]="r">{{ roleLabels[r] }}</option>
         </select>
-      </div>
-      <button class="btn btn-primary" [disabled]="inviting()" (click)="sendInvite()">
-        {{ inviting() ? '⏳ Envoi...' : '✉️ Envoyer' }}
-      </button>
-    </div>
-    <div class="auth-alert error show" *ngIf="inviteError()" style="margin-top:12px"><span>⚠️</span> {{ inviteError() }}</div>
-    <div class="auth-alert success show" *ngIf="inviteSuccess()" style="margin-top:12px"><span>✅</span> {{ inviteSuccess() }}</div>
-  </div>
-
-  <div class="card-body">
-    <div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement...</div>
-
-    <div *ngIf="!loading() && members().length === 0" class="empty-state">
-      <div class="empty-icon">👥</div>
-      <div>Aucun membre pour le moment.</div>
-    </div>
-
-    <div class="table-wrap" *ngIf="!loading() && members().length > 0">
-      <table class="rbac-table">
-        <thead>
-          <tr>
-            <th>Utilisateur</th>
-            <th>Email</th>
-            <th style="width:200px">Rôle</th>
-            <th style="width:60px"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let m of members()">
-            <td class="cell-strong">{{ m.user.name }}</td>
-            <td class="cell-muted">{{ m.user.email }}</td>
-            <td>
-              <select class="form-input" style="font-size:12.5px" [ngModel]="m.role" (ngModelChange)="updateRole(m, $event)">
-                <option *ngFor="let r of roles" [value]="r">{{ roleLabels[r] }}</option>
-              </select>
-            </td>
-            <td>
-              <button class="btn btn-danger btn-xs" (click)="removeMember(m)" title="Retirer du projet">🗑</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<div class="card" *ngIf="invitations().length > 0">
-  <div class="card-header">
-    <div class="card-title">Invitations en attente</div>
-  </div>
-  <div class="card-body">
-    <div class="table-wrap">
-      <table class="rbac-table">
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th style="width:160px">Rôle</th>
-            <th style="width:140px">Expire le</th>
-            <th style="width:60px"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let inv of invitations()">
-            <td class="cell-strong">{{ inv.email }}</td>
-            <td><span class="tag cyan">{{ roleLabels[inv.role] }}</span></td>
-            <td class="cell-muted">{{ inv.expiresAt | date: 'dd/MM/yyyy' }}</td>
-            <td>
-              <button class="btn btn-ghost btn-xs" (click)="revokeInvitation(inv.id)" title="Révoquer">✕</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
+        <span *ngIf="row.kind === 'invitation'" class="role-badge" [ngClass]="roleBadgeClass(row.role)">{{ roleLabels[row.role] }}</span>
+      </td>
+      <td>
+        <span class="tag green" *ngIf="row.kind === 'member'">● Actif</span>
+        <span class="tag" *ngIf="row.kind === 'invitation'" style="color:var(--warning);border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.06)">
+          ⏳ En attente
+        </span>
+      </td>
+      <td style="font-size:11px;color:var(--text3)">{{ row.date | date: 'dd/MM/yyyy' }}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button
+            *ngIf="row.kind === 'invitation'"
+            class="btn btn-ghost btn-xs"
+            (click)="resendInvite(row)"
+          >↺ Renvoyer</button>
+          <button
+            *ngIf="row.kind === 'invitation'"
+            class="btn btn-ghost btn-xs"
+            style="color:var(--danger)"
+            (click)="revokeInvitation(row)"
+          >✕</button>
+          <button
+            *ngIf="row.kind === 'member'"
+            class="btn btn-ghost btn-xs"
+            style="color:var(--danger)"
+            (click)="removeMember(row)"
+          >✕</button>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>

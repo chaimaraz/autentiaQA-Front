@@ -90,13 +90,13 @@
           <div class="data-header"><span>🤖 ÉTAPES (texte NLP)</span></div>
           <div class="ai-step-list">
             <div class="ai-step-row" *ngFor="let step of p.steps; let i = index">
-              <span class="ai-step-num">{{ i + 1 }}</span>
-              <input class="form-input" style="flex:2" [(ngModel)]="step.action"
-                     placeholder="Action (ex: Remplir le champ email)" [disabled]="stage()!=='review'"/>
-              <input class="form-input form-input-mono" style="flex:1" [(ngModel)]="step.selector"
-                     placeholder="Sélecteur / URL (optionnel)" [disabled]="stage()!=='review'"/>
-              <button class="btn btn-ghost btn-xs" (click)="removeStep(p, step)" *ngIf="stage()==='review'">✕</button>
-            </div>
+  <span class="ai-step-num">{{ i + 1 }}</span>
+  <input class="form-input" style="flex:2" [(ngModel)]="step.description"
+         placeholder="Étape métier (ex: Saisir l'email)" [disabled]="stage()!=='review'"/>
+  <input class="form-input form-input-mono" style="flex:1" [(ngModel)]="step.selector"
+         placeholder="Sélecteur / URL (optionnel)" [disabled]="stage()!=='review'"/>
+  <button class="btn btn-ghost btn-xs" (click)="removeStep(p, step)" *ngIf="stage()==='review'">✕</button>
+</div>
           </div>
           <button class="btn btn-ghost btn-xs" (click)="addStep(p)" *ngIf="stage()==='review'" style="margin-top:6px">
             + Ajouter une étape

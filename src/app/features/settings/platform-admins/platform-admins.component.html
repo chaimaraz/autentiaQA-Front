@@ -1,55 +1,51 @@
-<div class="card mb-16">
-  <div class="card-header">
-    <div class="card-title">Comptes plateforme</div>
-    <button class="btn btn-primary btn-sm" (click)="toggleCreateForm()">
-      {{ showCreateForm() ? '✕ Fermer' : '+ Créer un Administrateur' }}
+<div class="settings-section-title">Comptes plateforme</div>
+<div class="settings-section-sub">Gestion des comptes Super Admin / Administrateur globaux.</div>
+
+<div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+  <button class="btn btn-primary btn-sm" (click)="toggleCreateForm()">
+    {{ showCreateForm() ? '✕ Fermer' : '+ Créer un Administrateur' }}
+  </button>
+</div>
+
+<div class="jira-card" *ngIf="showCreateForm()" style="margin-bottom:16px">
+  <div class="invite-row">
+    <div class="form-group" style="flex:1;margin-bottom:0">
+      <label class="form-label">Nom</label>
+      <input class="form-input" type="text" placeholder="Chaima Razgui" [(ngModel)]="newName" />
+    </div>
+    <div class="form-group" style="flex:1;margin-bottom:0">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" placeholder="chaima@autentia.qa" [(ngModel)]="newEmail" />
+    </div>
+    <div class="form-group" style="flex:1;margin-bottom:0">
+      <label class="form-label">Mot de passe</label>
+      <input class="form-input" type="password" placeholder="Min. 8 caractères" [(ngModel)]="newPassword" />
+    </div>
+    <button class="btn btn-primary" [disabled]="creating()" (click)="createAdmin()">
+      {{ creating() ? '⏳ Création...' : '✅ Créer' }}
     </button>
   </div>
-
-  <div class="card-body" *ngIf="showCreateForm()">
-    <div class="invite-form">
-      <div class="form-group" style="flex:1">
-        <label class="form-label">Nom</label>
-        <input class="form-input" type="text" placeholder="Chaima Razgui" [(ngModel)]="newName" />
-      </div>
-      <div class="form-group" style="flex:1">
-        <label class="form-label">Email</label>
-        <input class="form-input" type="email" placeholder="chaima@autentia.qa" [(ngModel)]="newEmail" />
-      </div>
-      <div class="form-group" style="flex:1">
-        <label class="form-label">Mot de passe</label>
-        <input class="form-input" type="password" placeholder="Min. 8 caractères" [(ngModel)]="newPassword" />
-      </div>
-      <button class="btn btn-primary" [disabled]="creating()" (click)="createAdmin()">
-        {{ creating() ? '⏳ Création...' : '✅ Créer' }}
-      </button>
-    </div>
-    <div class="auth-alert error show" *ngIf="createError()" style="margin-top:12px"><span>⚠️</span> {{ createError() }}</div>
-    <div class="auth-alert success show" *ngIf="createSuccess()" style="margin-top:12px"><span>✅</span> {{ createSuccess() }}</div>
-  </div>
-
-  <div class="card-body">
-    <div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement...</div>
-
-    <div class="table-wrap" *ngIf="!loading() && users().length > 0">
-      <table class="rbac-table">
-        <thead>
-          <tr>
-            <th>Nom</th>
-            <th>Email</th>
-            <th style="width:160px">Rôle</th>
-            <th style="width:140px">Créé le</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let u of users()">
-            <td class="cell-strong">{{ u.name }}</td>
-            <td class="cell-muted">{{ u.email }}</td>
-            <td><span class="tag cyan">{{ roleLabels[u.globalRole] }}</span></td>
-            <td class="cell-muted">{{ u.createdAt | date: 'dd/MM/yyyy' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <div class="auth-alert error show" *ngIf="createError()" style="margin-top:12px"><span>⚠️</span> {{ createError() }}</div>
+  <div class="auth-alert success show" *ngIf="createSuccess()" style="margin-top:12px"><span>✅</span> {{ createSuccess() }}</div>
 </div>
+
+<div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement...</div>
+
+<table class="user-table" *ngIf="!loading() && users().length > 0">
+  <thead>
+    <tr>
+      <th>Nom</th>
+      <th>Email</th>
+      <th>Rôle</th>
+      <th>Créé le</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let u of users()">
+      <td style="font-weight:600">{{ u.name }}</td>
+      <td style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text3)">{{ u.email }}</td>
+      <td><span class="tag cyan">{{ roleLabels[u.globalRole] }}</span></td>
+      <td style="font-size:11px;color:var(--text3)">{{ u.createdAt | date: 'dd/MM/yyyy' }}</td>
+    </tr>
+  </tbody>
+</table>

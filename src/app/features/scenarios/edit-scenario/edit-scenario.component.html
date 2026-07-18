@@ -1,0 +1,86 @@
+<!-- src/app/features/scenarios/edit-scenario/edit-scenario.component.html -->
+
+<div class="page-header">
+  <div>
+    <div class="section-title">Modifier le scénario</div>
+    <div class="section-sub">{{ name || '...' }}</div>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-ghost btn-sm" (click)="goBack()">← Retour aux scénarios</button>
+  </div>
+</div>
+
+<div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement...</div>
+
+<div class="alert-error" *ngIf="error()">⚠ {{ error() }}</div>
+<div class="alert-success" *ngIf="saveOk()">✅ Scénario enregistré.</div>
+
+<ng-container *ngIf="!loading()">
+
+  <!-- ══ Nom + Description ══ -->
+  <div class="card mb-16">
+    <div class="card-header"><div class="card-title">Informations générales</div></div>
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label">Nom du scénario</label>
+        <input class="form-input" [(ngModel)]="name"/>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Description <span class="form-hint-inline">(optionnel)</span></label>
+        <textarea class="form-input" rows="2" [(ngModel)]="description"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Résultat attendu ══ -->
+  <div class="card mb-16">
+    <div class="card-header"><div class="card-title">Résultat attendu</div></div>
+    <div class="card-body">
+      <textarea class="form-input" rows="2" [(ngModel)]="expectedResult"></textarea>
+    </div>
+  </div>
+
+  <!-- ══ Étapes métier ══ -->
+  <div class="card mb-16">
+    <div class="card-header">
+      <div class="card-title">Étapes métier</div>
+      <button class="btn btn-ghost btn-xs" (click)="addStep()">+ Ajouter une étape</button>
+    </div>
+    <div class="card-body">
+      <div *ngIf="steps().length === 0" class="no-data">Aucune étape définie.</div>
+      <div class="ai-step-row" *ngFor="let step of steps(); let i = index" style="margin-bottom:8px">
+        <span class="ai-step-num">{{ i + 1 }}</span>
+        <input class="form-input" style="flex:2" [(ngModel)]="step.description" placeholder="Étape métier (ex: Saisir l'email)"/>
+        <input class="form-input form-input-mono" style="flex:1" [(ngModel)]="step.selector" placeholder="Sélecteur (optionnel)"/>
+        <button class="btn btn-ghost btn-xs" (click)="removeStep(step)">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Script ══ -->
+  <div class="card mb-16">
+    <div class="card-header">
+      <div class="card-title">Script Playwright</div>
+      <button class="btn btn-primary btn-sm" [disabled]="regenerating()" (click)="regenerateScript()">
+        <span *ngIf="!regenerating()">🔁 Régénérer le script</span>
+        <span *ngIf="regenerating()">⏳ Régénération...</span>
+      </button>
+    </div>
+    <div class="card-body">
+      <div class="form-hint" style="margin-bottom:8px">
+        Vous pouvez éditer le script directement — cette édition n'est jamais écrasée par "Enregistrer".
+        Seul "Régénérer le script" recalcule le script depuis la description/étapes ci-dessus.
+      </div>
+      <textarea class="form-input script-edit-textarea" rows="16" [ngModel]="scriptTemplate()" (ngModelChange)="scriptTemplate.set($event)"></textarea>
+    </div>
+  </div>
+
+  <div class="wizard-nav">
+    <button class="btn btn-ghost" (click)="goBack()">Annuler</button>
+    <button class="btn btn-primary" [disabled]="saving()" (click)="save()">
+      <span *ngIf="!saving()">💾 Enregistrer</span>
+      <span *ngIf="saving()">⏳ Enregistrement...</span>
+    </button>
+  </div>
+
+</ng-container>

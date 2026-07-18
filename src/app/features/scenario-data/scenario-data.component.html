@@ -41,6 +41,7 @@
         <th>Valeur</th>
         <th style="width:110px">Type</th>
         <th style="width:120px">Source</th>
+        <th style="width:90px">Conserver</th>
         <th style="width:70px"></th>
       </tr>
     </thead>
@@ -64,6 +65,9 @@
         <td>
           <span class="type-badge">{{ generatorLabel(v.generator) }}</span>
         </td>
+        <td class="cell-toggle">
+  <input type="checkbox" [checked]="v.locked" (change)="toggleLock(v)" title="Conserver cette donnée (ne plus régénérer)"/>
+</td>
         <td class="cell-toggle">
           <button
             class="btn btn-ghost btn-xs"

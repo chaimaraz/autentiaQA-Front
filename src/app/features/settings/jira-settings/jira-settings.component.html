@@ -1,0 +1,81 @@
+<div class="settings-section-title">Intégration Jira</div>
+<div class="settings-section-sub">
+  Configurez la connexion à Jira pour que les échecs de tests créent automatiquement des bugs dans votre board.
+</div>
+
+<div class="jira-card">
+  <div class="jira-logo-row">
+    <div class="jira-logo-icon">🟦</div>
+    <div>
+      <div class="jira-logo-text">Atlassian Jira</div>
+      <div class="jira-logo-sub">Connexion API REST</div>
+    </div>
+    <div style="margin-left:auto">
+      <div class="jira-disconnected-banner" *ngIf="!connected()"><span>⚠️</span> Non connecté</div>
+      <div class="jira-connected-banner" *ngIf="connected()"><span>✅</span> Connecté à {{ form.jiraUrl }}</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="form-group">
+      <label class="form-label">URL Jira</label>
+      <input class="form-input" placeholder="https://votrecompany.atlassian.net" [(ngModel)]="form.jiraUrl" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email Jira</label>
+      <input class="form-input" placeholder="qa@company.com" [(ngModel)]="form.jiraEmail" />
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">API Token Jira <span style="font-size:10px;color:var(--text3);font-weight:400">(Générez-le sur id.atlassian.com)</span></label>
+    <div style="display:flex;gap:8px">
+      <input class="form-input" type="password" placeholder="ATAT..." [(ngModel)]="form.apiToken" />
+      <button class="btn btn-ghost btn-sm" [disabled]="testing()" (click)="testConnection()">
+        {{ testing() ? '⏳ Test...' : '🔍 Tester' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Clé du projet Jira</label>
+    <input class="form-input" placeholder="PROJ" [(ngModel)]="form.projectKey" style="font-family:'Space Mono',monospace" />
+    <div class="form-hint">Ex: PROJ, QA, BUG — la clé apparaît devant chaque ticket (PROJ-123)</div>
+  </div>
+
+  <button class="btn btn-primary" [disabled]="saving()" (click)="saveConfig()">
+    {{ saving() ? '⏳ Sauvegarde...' : '💾 Sauvegarder la configuration Jira' }}
+  </button>
+  <div class="auth-alert error show" *ngIf="error()" style="margin-top:12px"><span>⚠️</span> {{ error() }}</div>
+  <div class="auth-alert success show" *ngIf="success()" style="margin-top:12px"><span>✅</span> {{ success() }}</div>
+</div>
+
+<div class="jira-card" style="margin-top:16px">
+  <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px">🗺️ Mapping des sévérités</div>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:16px">
+    Définissez comment les échecs Autentia QA se mappent vers les types et priorités Jira.
+  </div>
+
+  <div class="bug-mapping-row" *ngFor="let m of severityMapping">
+    <div class="bug-source"><span class="vuln-severity" [ngClass]="m.badgeClass" style="font-size:10px">{{ m.sourceLabel }}</span> {{ m.sourceType }}</div>
+    <div class="bug-arrow">→</div>
+    <div class="bug-target">
+      <select [(ngModel)]="m.target">
+        <option *ngFor="let opt of m.options" [value]="opt">{{ opt }}</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="jira-card" style="margin-top:16px">
+  <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px">🔧 Options avancées</div>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Personnalisez le contenu et les champs des tickets créés automatiquement.</div>
+
+  <div class="switch-row" *ngFor="let opt of advancedOptions">
+    <div>
+      <div class="switch-label">{{ opt.label }}</div>
+      <div class="switch-sub">{{ opt.sub }}</div>
+    </div>
+    <div class="toggle-switch" [class.on]="opt.enabled" (click)="opt.enabled = !opt.enabled"></div>
+  </div>
+</div>

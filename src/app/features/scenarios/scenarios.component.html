@@ -176,8 +176,7 @@
         <button class="btn btn-ghost btn-sm" (click)="toggleData(s)">
           {{ s.dataOpen ? '▴ Données' : '⚙ Données' }}
         </button>
-        <button class="btn btn-ghost btn-sm">✏ Modifier</button>
-        <button class="btn btn-ghost btn-sm"
+<button class="btn btn-ghost btn-sm" [routerLink]="['/projects', projectId, 'scenarios', s.id, 'edit']">✏ Modifier</button>        <button class="btn btn-ghost btn-sm"
                 [disabled]="executingOne() === s.id"
                 (click)="executeScenario(s)">
           <span *ngIf="executingOne() !== s.id">▷ Exécuter</span>
@@ -195,21 +194,23 @@
       <div class="data-header">
         <span>🤖 DONNÉES DE TEST GÉNÉRÉES AUTOMATIQUEMENT</span>
       </div>
-      <div class="data-fields">
-        <div *ngIf="s.data.length === 0" class="no-data">
-          Aucune variable définie pour ce scénario.
-        </div>
-        <div class="data-field" *ngFor="let d of s.data">
-          <span class="data-key">{{ d.k }}</span>
-          <span class="data-val">
-            <input [(ngModel)]="d.v" [placeholder]="!d.v ? '(vide)' : ''" />
-          </span>
-        </div>
-      </div>
-      <div class="data-actions">
-        <button class="btn btn-ghost btn-xs">🎲 Régénérer les données</button>
-        <button class="btn btn-ghost btn-xs">+ Ajouter un champ</button>
-      </div>
+     <div class="data-field" *ngFor="let d of s.data">
+  <span class="data-key">{{ d.k }}</span>
+  <span class="data-val">
+    <input [(ngModel)]="d.v" [placeholder]="!d.v ? '(vide)' : ''" />
+  </span>
+  <label class="lock-check" title="Conserver cette donnée (ne plus régénérer)">
+    <input type="checkbox" [checked]="d.locked" (change)="toggleLock(s, d)"/>
+    🔒
+  </label>
+  <button class="btn btn-ghost btn-xs" [disabled]="d.locked" (click)="regenerateOneData(s, d)">🎲</button>
+</div>
+     <div class="data-actions">
+  <button class="btn btn-ghost btn-xs" [disabled]="regeneratingScenarioId() === s.id" (click)="regenerateAllData(s)">
+    <span *ngIf="regeneratingScenarioId() !== s.id">🎲 Régénérer les données</span>
+    <span *ngIf="regeneratingScenarioId() === s.id">⏳ Régénération...</span>
+  </button>
+</div>
     </div>
   </div>
 

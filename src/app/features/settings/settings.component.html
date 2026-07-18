@@ -1,48 +1,79 @@
-<div class="page-header">
-  <div>
-    <div class="section-title">Paramètres</div>
-    <div class="section-sub">Gérez les utilisateurs et les droits d'accès de vos projets</div>
-  </div>
-</div>
+<div class="section-title">Paramètres</div>
+<div class="section-sub">Configuration globale du projet, gestion des accès et intégrations.</div>
 
-<div class="settings-tabs">
-  <button class="settings-tab" [ngClass]="{ active: activeTab() === 'users' }" (click)="setTab('users')">
-    👥 Gestion des utilisateurs
-  </button>
-  <button
-    class="settings-tab"
-    *ngIf="canManageAccessControl()"
-    [ngClass]="{ active: activeTab() === 'access-control' }"
-    (click)="setTab('access-control')"
-  >
-    🔐 Contrôle d'accès
-  </button>
-  <button
-    class="settings-tab"
-    *ngIf="isSuperAdmin()"
-    [ngClass]="{ active: activeTab() === 'platform-admins' }"
-    (click)="setTab('platform-admins')"
-  >
-    🛡️ Comptes plateforme
-  </button>
-</div>
-
-<!-- Sélecteur de projet — la gestion des membres est scopée à un projet -->
-<div class="form-group settings-project-picker" *ngIf="activeTab() === 'users'">
+<!-- Sélecteur de projet — la gestion des membres / config est scopée à un projet -->
+<div class="form-group settings-project-picker" *ngIf="adminProjects().length > 1">
   <label class="form-label">Projet</label>
   <select class="form-input" [ngModel]="selectedProjectId()" (ngModelChange)="onProjectChange($event)">
     <option *ngFor="let p of adminProjects()" [value]="p.projectId">{{ p.projectName }}</option>
   </select>
-  <div class="empty-state" *ngIf="adminProjects().length === 0" style="margin-top:12px">
-    Vous n'administrez aucun projet pour le moment.
-  </div>
 </div>
 
-<app-users-management
-  *ngIf="activeTab() === 'users' && selectedProjectId()"
-  [projectId]="selectedProjectId()"
-/>
+<div class="empty-state" *ngIf="adminProjects().length === 0">
+  Vous n'administrez aucun projet pour le moment.
+</div>
 
-<app-access-control *ngIf="activeTab() === 'access-control'" />
+<div class="settings-layout" *ngIf="adminProjects().length > 0">
+  <div class="settings-sidebar">
+    <div class="settings-nav-item" [class.active]="activeTab() === 'general'" (click)="setTab('general')">
+      <span class="settings-nav-icon">⚙️</span> Général
+    </div>
+    <div class="settings-nav-item" [class.active]="activeTab() === 'users'" (click)="setTab('users')">
+      <span class="settings-nav-icon">👥</span> Utilisateurs
+    </div>
+    <div
+      class="settings-nav-item"
+      *ngIf="canManageAccessControl()"
+      [class.active]="activeTab() === 'access-control'"
+      (click)="setTab('access-control')"
+    >
+      <span class="settings-nav-icon">🔒</span> Contrôle d'accès
+    </div>
+    <div class="settings-nav-item" [class.active]="activeTab() === 'jira'" (click)="setTab('jira')">
+      <span class="settings-nav-icon">🐛</span> Intégration Jira
+    </div>
+    <div class="settings-nav-item" [class.active]="activeTab() === 'notifications'" (click)="setTab('notifications')">
+      <span class="settings-nav-icon">🔔</span> Notifications
+    </div>
+    <div
+      class="settings-nav-item"
+      *ngIf="isSuperAdmin()"
+      [class.active]="activeTab() === 'platform-admins'"
+      (click)="setTab('platform-admins')"
+    >
+      <span class="settings-nav-icon">🛡️</span> Comptes plateforme
+    </div>
+  </div>
 
-<app-platform-admins *ngIf="activeTab() === 'platform-admins'" />
+  <div class="settings-content">
+    <!-- GÉNÉRAL -->
+    <div class="settings-panel" [class.active]="activeTab() === 'general'">
+      <app-general-settings *ngIf="activeTab() === 'general' && selectedProjectId()" [projectId]="selectedProjectId()" />
+    </div>
+
+    <!-- UTILISATEURS -->
+    <div class="settings-panel" [class.active]="activeTab() === 'users'">
+      <app-users-management *ngIf="activeTab() === 'users' && selectedProjectId()" [projectId]="selectedProjectId()" />
+    </div>
+
+    <!-- CONTRÔLE D'ACCÈS -->
+    <div class="settings-panel" [class.active]="activeTab() === 'access-control'">
+      <app-access-control *ngIf="activeTab() === 'access-control'" />
+    </div>
+
+    <!-- JIRA -->
+    <div class="settings-panel" [class.active]="activeTab() === 'jira'">
+      <app-jira-settings *ngIf="activeTab() === 'jira' && selectedProjectId()" [projectId]="selectedProjectId()" />
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="settings-panel" [class.active]="activeTab() === 'notifications'">
+      <app-notification-settings *ngIf="activeTab() === 'notifications' && selectedProjectId()" [projectId]="selectedProjectId()" />
+    </div>
+
+    <!-- COMPTES PLATEFORME -->
+    <div class="settings-panel" [class.active]="activeTab() === 'platform-admins'">
+      <app-platform-admins *ngIf="activeTab() === 'platform-admins'" />
+    </div>
+  </div>
+</div>

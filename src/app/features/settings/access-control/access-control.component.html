@@ -1,50 +1,45 @@
-<div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement de la matrice des permissions...</div>
+<div class="settings-section-title">Contrôle d'accès par rôle</div>
+<div class="settings-section-sub">
+  Définissez les permissions de chaque rôle sur ce projet. Les modifications s'appliquent immédiatement
+  à tous les membres portant ce rôle, sur l'ensemble des projets.
+</div>
 
+<div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement de la matrice des permissions...</div>
 <div class="auth-alert error show" *ngIf="error()"><span>⚠️</span> {{ error() }}</div>
 
-<div class="access-control-wrap" *ngIf="!loading()">
-  <div class="ac-legend">
-    <div class="section-sub">
-      Chaque case correspond à une permission accordée au rôle. Toute modification s'applique
-      immédiatement à tous les membres portant ce rôle, sur l'ensemble des projets.
+<div *ngIf="!loading()">
+  <div *ngFor="let category of categories()" style="margin-bottom:20px">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:1px">
+      {{ category }}
     </div>
-  </div>
 
-  <div class="card mb-16" *ngFor="let category of categories()">
-    <div class="card-header">
-      <div class="card-title">{{ category }}</div>
-    </div>
-    <div class="card-body">
-      <table class="ac-table">
-        <thead>
-          <tr>
-            <th class="ac-perm-col">Permission</th>
-            <th *ngFor="let role of roles" class="ac-role-col">{{ roleLabels[role] }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let perm of catalogue()[category]">
-            <td class="ac-perm-label">
-              {{ perm.label }}
-              <div class="ac-perm-desc" *ngIf="perm.description">{{ perm.description }}</div>
-            </td>
-            <td *ngFor="let role of roles" class="ac-checkbox-cell">
-              <input
-                type="checkbox"
-                [checked]="isChecked(role, perm.code)"
-                [disabled]="role === 'ADMIN'"
-                (change)="toggle(role, perm.code)"
-                [title]="role === 'ADMIN' ? 'Le rôle Administrateur a toujours accès complet' : ''"
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="access-matrix">
+      <div class="access-matrix-header">
+        <div class="am-cell header label">Permission</div>
+        <div class="am-cell header" *ngFor="let role of roles">{{ roleLabels[role] }}</div>
+      </div>
+
+      <div class="access-matrix-row" *ngFor="let perm of catalogue()[category]">
+        <div class="am-cell label">
+          {{ perm.label }}
+          <div class="am-perm-desc" *ngIf="perm.description">{{ perm.description }}</div>
+        </div>
+        <div class="am-cell" *ngFor="let role of roles">
+          <div
+            class="access-check"
+            [class.checked]="isChecked(role, perm.code)"
+            [class.danger]="role === 'ADMIN'"
+            [class.disabled]="role === 'ADMIN'"
+            [title]="role === 'ADMIN' ? 'Le rôle Administrateur a toujours accès complet' : ''"
+            (click)="toggle(role, perm.code)"
+          >{{ isChecked(role, perm.code) ? '✓' : '' }}</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="ac-save-bar">
-    <div *ngFor="let role of roles">
+    <div *ngFor="let role of roles" style="display:flex;align-items:center;gap:10px">
       <button
         class="btn btn-primary btn-sm"
         *ngIf="role !== 'ADMIN' && hasChanges(role)"

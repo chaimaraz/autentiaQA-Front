@@ -171,4 +171,12 @@ export class ScenarioDataComponent implements OnInit {
     };
     reader.readAsText(file);
   }
+
+  toggleLock(v: ScenarioVariable): void {
+  const newLocked = !v.locked;
+  this.scenarioSvc.setVariableLock(this.projectId, this.scenarioId, v.id, newLocked).subscribe({
+    next: (updated) => this.variables.update(list => list.map(x => x.id === updated.id ? updated : x)),
+    error: () => this.error.set('Erreur lors du verrouillage.'),
+  });
+}
 }

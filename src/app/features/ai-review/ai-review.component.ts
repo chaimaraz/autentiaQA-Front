@@ -84,9 +84,9 @@ export class AiReviewComponent implements OnInit {
   toggleExpanded(p: AIScenarioProposal): void { this.expandedId.update(v => v === p.tempId ? null : p.tempId); }
   removeProposal(p: AIScenarioProposal): void { this.proposals.update(list => list.filter(x => x.tempId !== p.tempId)); }
 
-  addStep(p: AIScenarioProposal): void {
-    p.steps = [...p.steps, { action: '', selector: '' }];
-  }
+ addStep(p: AIScenarioProposal): void {
+  p.steps = [...p.steps, { action: 'click', selector: '', description: '' }];
+}
   removeStep(p: AIScenarioProposal, step: AIScenarioStep): void {
     p.steps = p.steps.filter(s => s !== step);
   }

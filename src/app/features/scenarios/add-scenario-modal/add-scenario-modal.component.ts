@@ -1,7 +1,7 @@
-// add-scenario-modal.component.ts — v3.0
+// add-scenario-modal.component.ts — v3.1
 // Ajout des onglets "Document" et "URL" (module IA), branchés sur
-// AIGenerationService. Les onglets NLP et Record existants ne sont pas
-// modifiés (mêmes méthodes, même comportement).
+// AIGenerationService. Ajout description + etapesScenarios + templatize
+// des données en mode Record.
 import {
   Component, EventEmitter, Input, Output, signal,
   OnDestroy, inject, ViewChild, ElementRef, AfterViewChecked,
@@ -38,6 +38,18 @@ const BROWSER_LABELS: Record<BrowserType, string> = {
   chromium:'🟡 Chromium', firefox:'🦊 Firefox', webkit:'🍎 Safari (WebKit)',
 };
 
+// ── Types de documents acceptés pour le flux #2 (Document).
+const ALLOWED_DOC_TYPES: Record<string, string> = {
+  'application/pdf': 'PDF',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+  'application/msword': 'DOC',
+  'text/plain': 'TXT',
+  'text/csv': 'CSV',
+  'application/csv': 'CSV',
+  'application/vnd.ms-excel': 'XLS',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+};
+
 @Component({
   selector:    'app-add-scenario-modal',
   standalone:  true,
@@ -63,13 +75,14 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
   errorMessage         = signal('');
 
   // ── NLP ───────────────────────────────────────────────────────────────────
-  nlpName = ''; nlpText = '';
+  nlpName = ''; nlpText = ''; nlpDescription = '';
   parsedSteps  = signal<ParsedStep[]>([]);
   parsedData   = signal<DataField[]>([]);
   parsedScript = signal('');
 
   // ── Recording ─────────────────────────────────────────────────────────────
   recName        = '';
+  recDescription = '';
   recStartUrl    = 'https://';
   recBrowser     = signal<BrowserType>('chromium');
   recAgentToken  = '';
@@ -80,6 +93,7 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
   recScript      = signal('');
   recError       = signal('');
   agentConnected = signal(false);
+  recDetectedVariables = signal<{ key: string; value: string; isSecret: boolean }[]>([]);
 
   readonly browserOptions: BrowserType[] = ['chromium', 'firefox', 'webkit'];
   readonly browserLabels = BROWSER_LABELS;
@@ -169,57 +183,53 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
   // ─────────────────────────────────────────────────────────────────────────
   // NLP
   // ─────────────────────────────────────────────────────────────────────────
-// REMPLACER la méthode parseNLP existante par celle-ci :
-parseNLP(): void {
-  if (!this.nlpText.trim()) return;
-  this.parsing.set(true);
-  this.parsedPreviewVisible.set(false);
-  this.errorMessage.set('');
+  parseNLP(): void {
+    if (!this.nlpText.trim()) return;
+    this.parsing.set(true);
+    this.parsedPreviewVisible.set(false);
+    this.errorMessage.set('');
 
-  this.aiSvc.generateScriptFromNlp(this.projectId, {
-    title: this.nlpName || 'Scénario généré',
-    description: this.nlpText,
-    steps: '',
-    expectedResult: '',
-  }).subscribe({
-    next: (result) => {
-      // Reconstruit les signaux existants à partir de la VRAIE réponse IA
-      const steps: ParsedStep[] = (result.steps ?? []).map((s, i) => ({
-        num: i + 1,
-        action: s.description || s.action,
-        selector: s.selector ?? s.value ?? '',
-        type: this._mapActionToParsedType(s.action),
-      }));
-      const data: DataField[] = (result.variables ?? []).map(v => ({
-        k: v.key, 
-        v: v.value, 
-        isSecret: v.isSecret,
-      }));
+    this.aiSvc.generateScriptFromNlp(this.projectId, {
+      title: this.nlpName || 'Scénario généré',
+      description: this.nlpText,
+      steps: '',
+      expectedResult: '',
+    }).subscribe({
+      next: (result) => {
+        const steps: ParsedStep[] = (result.steps ?? []).map((s, i) => ({
+          num: i + 1,
+          action: s.description || s.action,
+          selector: s.selector ?? s.value ?? '',
+          type: this._mapActionToParsedType(s.action),
+        }));
+        const data: DataField[] = (result.variables ?? []).map(v => ({
+          k: v.key,
+          v: v.value,
+          isSecret: v.isSecret,
+        }));
 
-      this.parsedSteps.set(steps);
-      this.parsedData.set(data);
-      this.parsedScript.set(result.scriptTemplate);
-      this.parsing.set(false);
-      this.parsedPreviewVisible.set(true);
-    },
-    error: (err) => {
-      this.parsing.set(false);
-      this.errorMessage.set(
-        err?.error?.message || 'Erreur lors de la génération IA. Réessaie ou reformule ta description.'
-      );
-    },
-  });
-}
+        this.parsedSteps.set(steps);
+        this.parsedData.set(data);
+        this.parsedScript.set(result.scriptTemplate);
+        this.parsing.set(false);
+        this.parsedPreviewVisible.set(true);
+      },
+      error: (err) => {
+        this.parsing.set(false);
+        this.errorMessage.set(
+          err?.error?.message || 'Erreur lors de la génération IA. Réessaie ou reformule ta description.'
+        );
+      },
+    });
+  }
 
-// AJOUTER cette méthode privée (juste après parseNLP) :
-/** Traduit l'action ScenarioDTO vers le type visuel existant du template */
-private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'nav' {
-  if (action === 'goto') return 'nav';
-  if (action.startsWith('assert')) return 'assert';
-  if (['fill', 'press', 'selectOption', 'check', 'uncheck'].includes(action)) return 'fill';
-  return 'click';
-}
-
+  /** Traduit l'action ScenarioDTO vers le type visuel existant du template */
+  private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'nav' {
+    if (action === 'goto') return 'nav';
+    if (action.startsWith('assert')) return 'assert';
+    if (['fill', 'press', 'selectOption', 'check', 'uncheck'].includes(action)) return 'fill';
+    return 'click';
+  }
 
   regenerateData(scenarioId: string): void {
     const vars = this.parsedData().map(d => ({ key: d.k, value: d.v, isSecret: d.isSecret ?? false }));
@@ -299,16 +309,19 @@ private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'n
     this._sub(this.socketSvc.recordingStopped$, (result) => {
       this._stopTimer();
 
-      const finalScript = result.script?.trim()
+      const rawScript = result.script?.trim()
         ? result.script
         : this.recScriptLines().join('\n');
-
-      this.recScript.set(finalScript);
-      this.recStatus.set('stopped');
 
       if (result.events?.length > 0 && this.recEvents().length === 0) {
         this.recEvents.set(result.events);
       }
+
+      // ── Templatise le script à partir des events capturés
+      const { templated, variables } = this._templatizeScript(rawScript);
+      this.recScript.set(templated);
+      this.recDetectedVariables.set(variables);
+      this.recStatus.set('stopped');
     });
 
     this._sub(this.socketSvc.recordingError$, (err) => {
@@ -331,13 +344,13 @@ private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'n
   stopRecording(): void {
     this._stopRecording();
     setTimeout(() => {
-    if (this.recStatus() === 'recording' || this.recStatus() === 'connecting') {
-      this._stopTimer();
-      const finalScript = this.recScriptLines().join('\n');
-      this.recScript.set(finalScript);
-      this.recStatus.set('stopped');
-    }
-  }, 5000);
+      if (this.recStatus() === 'recording' || this.recStatus() === 'connecting') {
+        this._stopTimer();
+        const finalScript = this.recScriptLines().join('\n');
+        this.recScript.set(finalScript);
+        this.recStatus.set('stopped');
+      }
+    }, 5000);
   }
 
   private _stopRecording(): void {
@@ -350,6 +363,7 @@ private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'n
     this.recSec.set(0);
     this.recScript.set('');
     this.recScriptLines.set([]);
+    this.recDetectedVariables.set([]);
     this.recStatus.set(this.agentConnected() ? 'agent_ok' : 'idle');
     this.recError.set('');
   }
@@ -366,6 +380,63 @@ private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'n
     return this.recScriptLines().join('\n');
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Templatisation du script enregistré (mode Record)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Remplace les valeurs saisies dans un .fill('selector', 'valeur') par
+   * {{cle}}, en devinant la clé depuis le nom du champ (selector) — même
+   * heuristique que dataGenerator.inferType côté backend, appliquée ici
+   * juste pour NOMMER la variable (le typage réel est fait par le backend
+   * au moment du syncFromTemplate()).
+   */
+  private _templatizeScript(script: string): { templated: string; variables: { key: string; value: string; isSecret: boolean }[] } {
+    const variables: { key: string; value: string; isSecret: boolean }[] = [];
+    let counter = 0;
+
+    const templated = script.replace(
+      /\.fill\((['"])(.*?)\1,\s*(['"])(.*?)\3\)/g,
+      (full, q1, selector, _q3, value) => {
+        if (!value) return full; // valeur vide, rien à templatiser
+        const key = this._guessKeyFromSelector(selector) || `champ${++counter}`;
+        const isSecret = /pass|secret|token|pin\b/i.test(key);
+        if (!variables.find(v => v.key === key)) variables.push({ key, value, isSecret });
+        return `.fill(${q1}${selector}${q1}, '{{${key}}}')`;
+      }
+    );
+
+    return { templated, variables };
+  }
+
+  private _guessKeyFromSelector(selector: string): string | null {
+    const patterns: [RegExp, string][] = [
+      [/pass(word)?/i, 'password'], [/e[-_]?mail/i, 'email'],
+      [/phone|tel/i, 'phone'], [/name/i, 'name'], [/comment/i, 'comment'],
+    ];
+    for (const [re, key] of patterns) if (re.test(selector)) return key;
+    return null;
+  }
+
+  /** Construit les étapes métier pour le mode Record depuis les events capturés */
+  private _buildRecordSteps(): { action: string; selector: string | null; value: string | null; description: string }[] {
+    return this.recEvents().map(evt => ({
+      action: this._mapActionClassToAction(evt.actionClass),
+      selector: null,
+      value: null,
+      description: evt.desc?.replace(/<[^>]+>/g, '') ?? evt.actionLabel,
+    }));
+  }
+
+  private _mapActionClassToAction(cls: RecordEvent['actionClass']): string {
+    switch (cls) {
+      case 'nav': return 'goto';
+      case 'type': return 'fill';
+      case 'assert': return 'assertVisible';
+      default: return 'click';
+    }
+  }
+
   // ═════════════════════════════════════════════════════════════════════════
   // ══ DOCUMENT (module IA — besoin #2) ════════════════════════════════════
   // ═════════════════════════════════════════════════════════════════════════
@@ -375,14 +446,9 @@ private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'n
     const file = input.files?.[0] ?? null;
     this.docError.set('');
     if (file) {
-      const ALLOWED = [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/msword',
-        'text/plain',
-      ];
-      if (!ALLOWED.includes(file.type)) {
-        this.docError.set('Type non supporté (PDF, DOCX ou TXT uniquement).');
+      if (!ALLOWED_DOC_TYPES[file.type]) {
+        const extensions = [...new Set(Object.values(ALLOWED_DOC_TYPES))].join(', ');
+        this.docError.set(`Type non supporté (${extensions} uniquement).`);
         input.value = '';
         return;
       }
@@ -410,7 +476,7 @@ private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'n
 
     const job = this.aiSvc.generateFromDocument(this.projectId, file);
 
-    job.progress$.subscribe(p => this.docError.set(''));
+    job.progress$.subscribe(() => this.docError.set(''));
 
     job.result$.subscribe(({ scenarios }) => {
       this.docGenerating.set(false);
@@ -458,9 +524,6 @@ private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'n
         this.docSavingSelected.set(false);
         this.docSaveErrors.set(res.errors || []);
 
-        const createdIds = new Set<string>();
-        // On retire du tableau de propositions celles effectivement créées
-        // (best-effort par nom, le bulk-create ne renvoie pas le tempId).
         const failedNames = new Set((res.errors || []).map(e => e.name));
         this.docProposals.update(list => list.filter(p => !p.selected || failedNames.has(p.name)));
 
@@ -567,7 +630,7 @@ private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'n
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Save (NLP / Record — inchangé)
+  // Save (NLP / Record)
   // ─────────────────────────────────────────────────────────────────────────
   saveDraft(): void { this._validateAndSave('DRAFT'); }
   save(): void      { this._validateAndSave('ACTIVE'); }
@@ -592,29 +655,32 @@ private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'n
     this._callSaveApi(name, status, script, isNlp);
   }
 
-  private _callSaveApi(
-    name: string,
-    status: 'DRAFT' | 'ACTIVE',
-    script: string,
-    isNlp: boolean,
-  ): void {
+  private _callSaveApi(name: string, status: 'DRAFT' | 'ACTIVE', script: string, isNlp: boolean): void {
     this.saving.set(true);
     this.errorMessage.set('');
 
+    // ── En mode record, les variables viennent de recDetectedVariables (templatisées), pas parsedData
+    const variablesSource = isNlp
+      ? this.parsedData().map(d => ({
+          key: d.k,
+          value: d.v,
+          isSecret: d.isSecret ?? (
+            d.k.toLowerCase().includes('password') ||
+            d.k.toLowerCase().includes('secret')
+          ),
+        }))
+      : this.recDetectedVariables();
+
     const payload: CreateScenarioPayload = {
       name,
-      type:           TYPE_MAP[this.selectedType()],
-      creationMode:   isNlp ? 'NLP' : 'RECORD',
-      nlpText:        isNlp ? this.nlpText : undefined,
+      type: TYPE_MAP[this.selectedType()],
+      creationMode: isNlp ? 'NLP' : 'RECORD',
+      nlpText: isNlp ? this.nlpText : undefined,
+      description: isNlp ? this.nlpDescription : this.recDescription,
+      etapesScenarios: isNlp ? this.parsedSteps() : this._buildRecordSteps(),
       scriptTemplate: script,
-      variables: this.parsedData().map(d => ({
-        key:      d.k,
-        value:    d.v,
-        isSecret: d.isSecret ?? (
-          d.k.toLowerCase().includes('password') ||
-          d.k.toLowerCase().includes('secret')
-        ),
-      })),
+      status,
+      variables: variablesSource,
     };
 
     this.scenarioSvc.create(this.projectId, payload).subscribe({
@@ -667,13 +733,14 @@ private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'n
     this.parsedPreviewVisible.set(false);
     this.saving.set(false);
     this.errorMessage.set('');
-    this.nlpName = ''; this.nlpText = '';
+    this.nlpName = ''; this.nlpText = ''; this.nlpDescription = '';
     this.parsedSteps.set([]); this.parsedData.set([]); this.parsedScript.set('');
-    this.recName = ''; this.recStartUrl = 'https://';
+    this.recName = ''; this.recDescription = ''; this.recStartUrl = 'https://';
     this.recBrowser.set('chromium'); this.recAgentToken = '';
     this.recStatus.set('idle'); this.recSec.set(0);
     this.recEvents.set([]); this.recScriptLines.set([]);
     this.recScript.set(''); this.recError.set('');
+    this.recDetectedVariables.set([]);
     this.agentConnected.set(false);
     this._stopTimer();
     this._clearSubs();
@@ -699,52 +766,4 @@ private _mapActionToParsedType(action: string): 'click' | 'fill' | 'assert' | 'n
     this.urlSavingSelected.set(false);
     this.urlSaveErrors.set([]);
   }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // NLP helpers (inchangés)
-  // ─────────────────────────────────────────────────────────────────────────
-  private _generateSteps(text: string): ParsedStep[] {
-    const t = text.toLowerCase();
-    const steps: ParsedStep[] = [];
-    let num = 1;
-
-    if (t.includes('navigu') || t.includes('va sur') || t.includes('accède') || t.includes('ouvre')) {
-      const url = text.match(/\/[\w/-]+/)?.[0] ?? '/login';
-      steps.push({ num: num++, action: `Naviguer vers ${url}`, selector: url, type: 'nav' });
-    } else {
-      steps.push({ num: num++, action: 'Naviguer vers la page cible', selector: '/page', type: 'nav' });
-    }
-
-    if (t.includes('email') || t.includes('identifiant'))
-      steps.push({ num: num++, action: 'Remplir le champ email', selector: 'input[name="email"]', type: 'fill' });
-
-    if (t.includes('mot de passe') || t.includes('password') || t.includes('mdp'))
-      steps.push({ num: num++, action: 'Remplir le champ mot de passe', selector: 'input[name="password"]', type: 'fill' });
-
-    if (t.includes('clique') || t.includes('submit') || t.includes('connecter') || t.includes('valide'))
-      steps.push({ num: num++, action: 'Cliquer sur le bouton', selector: 'button[type="submit"]', type: 'click' });
-
-    if (t.includes('vérifie') || t.includes('dashboard') || t.includes('erreur')) {
-      const sel = t.includes('dashboard') ? '/dashboard'
-        : t.includes('erreur') ? '.error-message' : '.result';
-      steps.push({ num: num++, action: `Vérifier ${sel}`, selector: sel, type: 'assert' });
-    }
-
-    if (steps.length < 2) {
-      steps.push(
-        { num: num++, action: 'Interagir avec le formulaire', selector: 'form',    type: 'fill'   },
-        { num: num++, action: 'Vérifier le résultat attendu', selector: '.result', type: 'assert' },
-      );
-    }
-    return steps;
-  }
-
- 
-  private _escapeSingle(str: string): string {
-    return String(str)
-      .replace(/\\/g, '\\\\')
-      .replace(/['\u2018\u2019]/g, "\\'");
-  }
-
- 
 }

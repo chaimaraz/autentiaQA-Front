@@ -13,11 +13,11 @@ export interface ScenarioVariable {
   key:      string;
   value:    string;
   isSecret: boolean;
-  // ── NOUVEAU (Sprint 2 backend) ──────────────────────────────────────────
   type?:            'STRING' | 'EMAIL' | 'PASSWORD' | 'URL' | 'PHONE' | 'IBAN' | 'OTP' | 'NUMBER' | 'DATE' | 'TIMEOUT';
   generator?:       'MANUAL' | 'FAKER' | 'PROJECT' | 'SYSTEM' | 'AI';
   isGenerated?:     boolean;
   lastGeneratedAt?: string | null;
+  locked?:          boolean; // ── NOUVEAU
 }
 
 export interface Scenario {
@@ -33,6 +33,8 @@ export interface Scenario {
   updatedAt:      string;
   variables?:     ScenarioVariable[];
   _count?:        { executions: number };
+  description?: string;
+  etapesScenarios?: EtapeScenario[];
 }
 
 export interface PaginatedScenarios {
@@ -63,8 +65,11 @@ export interface CreateScenarioPayload {
   type:           Scenario['type'];
   creationMode:   Scenario['creationMode'];
   nlpText?:       string;
+  description?:       string;   
+  etapesScenarios?:    any[]; 
   scriptTemplate: string;
   variables?:     Omit<ScenarioVariable, 'id'>[];
+  status?:        'DRAFT' | 'ACTIVE';
 }
 
 export interface ScenarioFilterParams {
@@ -84,6 +89,12 @@ export interface ProjectEnvVar {
   value:     string;
   isSecret:  boolean;
   createdAt: string;
+}
+export interface EtapeScenario {
+  action: string;
+  selector: string | null;
+  value: string | null;
+  description: string;
 }
 
 // ─── Service ───────────────────────────────────────────────────────────────────
@@ -109,6 +120,8 @@ export class ScenarioService {
     return this.http.get<PaginatedScenarios>(`${this.base}/projects/${projectId}/scenarios?${query}`);
   }
 
+  
+
   getOne(projectId: string, scenarioId: string): Observable<Scenario> {
     return this.http
       .get<{ data: Scenario }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}`)
@@ -120,6 +133,12 @@ export class ScenarioService {
       .post<{ data: Scenario }>(`${this.base}/projects/${projectId}/scenarios`, payload)
       .pipe(map(r => r.data));
   }
+ 
+  setVariableLock(projectId: string, scenarioId: string, variableId: string, locked: boolean): Observable<ScenarioVariable> {
+  return this.http
+    .patch<{ data: ScenarioVariable }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables/${variableId}/lock`, { locked })
+    .pipe(map(r => r.data));
+}
 
   update(projectId: string, scenarioId: string, payload: Partial<CreateScenarioPayload>): Observable<Scenario> {
     return this.http
@@ -131,8 +150,26 @@ export class ScenarioService {
     return this.http.delete<void>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}`);
   }
 
-  // ── Variables ───────────────────────────────────────────────────────────────
 
+  getFull(projectId: string, scenarioId: string): Observable<Scenario> {
+  return this.getOne(projectId, scenarioId);
+}
+
+regenerateScript(
+  projectId: string,
+  scenarioId: string,
+  payload: { description?: string; steps?: EtapeScenario[]; expectedResult?: string },
+): Observable<Scenario> {
+  return this.http
+    .post<{ data: Scenario }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/regenerate-script`, payload)
+    .pipe(map(r => r.data));
+}
+  // ── Variables ───────────────────────────────────────────────────────────────
+updateMeta(projectId: string, scenarioId: string, payload: { description?: string; etapesScenarios?: EtapeScenario[] }): Observable<Scenario> {
+  return this.http
+    .patch<{ data: Scenario }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/meta`, payload)
+    .pipe(map(r => r.data));
+}
   getVariables(projectId: string, scenarioId: string): Observable<ScenarioVariable[]> {
     return this.http
       .get<{ data: ScenarioVariable[] }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables`)
@@ -212,15 +249,18 @@ export class ScenarioService {
       .pipe(map(r => r.data));
   }
 
-  /** Lance tous les scénarios actifs du projet avec la config de capture choisie */
-  executeAll(projectId: string, captureConfig: ExecutionCaptureConfig): Observable<BatchExecutionRef> {
-    return this.http
-      .post<{ data: BatchExecutionRef }>(
-        `${this.base}/projects/${projectId}/scenarios/execute-all`,
-        { captureConfig }
-      )
-      .pipe(map(r => r.data));
-  }
+executeAll(
+  projectId: string,
+  captureConfig: ExecutionCaptureConfig,
+  dataChoices?: Record<string, 'regenerate' | 'keep'>,
+): Observable<BatchExecutionRef> {
+  return this.http
+    .post<{ data: BatchExecutionRef }>(
+      `${this.base}/projects/${projectId}/scenarios/execute-all`,
+      { captureConfig, dataChoices: dataChoices ?? {} }
+    )
+    .pipe(map(r => r.data));
+}
 
   getExecutions(projectId: string, scenarioId: string): Observable<ScenarioExecutionRef[]> {
     return this.http

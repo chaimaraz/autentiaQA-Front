@@ -51,6 +51,20 @@ export interface CreateProjectPayload {
   files?: File[];               // uniquement si generationMode = SPEC_DOCUMENT
 }
 
+/**
+ * Champs modifiables depuis le panneau "Général" des Paramètres.
+ * ── NOUVEAU : nécessite un endpoint PATCH /api/projects/:id côté backend
+ * (voir project.routes.js / project.controller.js / project.service.js).
+ * Tant que cet endpoint n'existe pas, updateProject() renverra une erreur 404
+ * que le composant General affiche proprement.
+ */
+export interface UpdateProjectPayload {
+  name?: string;
+  url?: string;
+  description?: string;
+  frameworkName?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProjectApiService {
   private readonly baseUrl = 'http://localhost:3000/api';
@@ -78,6 +92,16 @@ export class ProjectApiService {
   getProject(id: string): Observable<ApiResponse<any>> {
     return this.http
       .get<ApiResponse<any>>(`${this.baseUrl}/projects/${id}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  /**
+   * ── NOUVEAU ── Met à jour les infos générales d'un projet.
+   * Requiert : router.patch('/:id', projectController.updateProject) côté backend.
+   */
+  updateProject(id: string, payload: UpdateProjectPayload): Observable<ApiResponse<any>> {
+    return this.http
+      .patch<ApiResponse<any>>(`${this.baseUrl}/projects/${id}`, payload)
       .pipe(catchError(this.handleError));
   }
 
@@ -128,5 +152,3 @@ export class ProjectApiService {
     return throwError(() => new Error(message));
   }
 }
-
-

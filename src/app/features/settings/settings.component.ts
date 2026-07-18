@@ -5,8 +5,11 @@ import { AuthService } from '../../services/auth.service';
 import { UsersManagementComponent } from './users/users-management.component';
 import { AccessControlComponent } from './access-control/access-control.component';
 import { PlatformAdminsComponent } from './platform-admins/platform-admins.component';
+import { GeneralSettingsComponent } from './general-settings/general-settings.component';
+import { JiraSettingsComponent } from './jira-settings/jira-settings.component';
+import { NotificationSettingsComponent } from './notification-settings/notification-settings.component';
 
-type SettingsTab = 'users' | 'access-control' | 'platform-admins';
+type SettingsTab = 'general' | 'users' | 'access-control' | 'jira' | 'notifications' | 'platform-admins';
 
 @Component({
   selector: 'app-settings',
@@ -19,6 +22,9 @@ type SettingsTab = 'users' | 'access-control' | 'platform-admins';
     UsersManagementComponent,
     AccessControlComponent,
     PlatformAdminsComponent,
+    GeneralSettingsComponent,
+    JiraSettingsComponent,
+    NotificationSettingsComponent,
   ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
@@ -26,9 +32,11 @@ type SettingsTab = 'users' | 'access-control' | 'platform-admins';
 export class SettingsComponent {
   private auth = inject(AuthService);
 
-  activeTab = signal<SettingsTab>('users');
+  // Onglet "Général" par défaut, comme dans le template de référence.
+  activeTab = signal<SettingsTab>('general');
 
   // Un utilisateur peut administrer plusieurs projets : on choisit celui à gérer.
+  // Logique inchangée pour éviter toute régression sur les droits existants.
   adminProjects = computed(() =>
     this.auth.projects().filter((p) => p.role === 'ADMIN' || this.auth.isSuperAdmin())
   );

@@ -20,8 +20,10 @@ import {
 // ─── Interfaces locales ────────────────────────────────────────────────────────
 
 export interface ScenarioData {
+  id: string;      
   k: string;
   v: string;
+  locked?: boolean; 
 }
 
 export interface ScenarioDisplay {
@@ -156,7 +158,7 @@ export class ScenariosComponent implements OnInit, OnDestroy {
       createdAt: date,
       page:      `${s.creationMode === 'NLP' ? '🤖 NLP' : '⏺ RECORD'} · ${date}`,
       dataOpen:  false,
-      data:      (s.variables ?? []).map(v => ({ k: v.key, v: v.value })),
+     data: (s.variables ?? []).map(v => ({ id: v.id, k: v.key, v: v.value, locked: v.locked })),
       execCount: s._count?.executions ?? 0,
     };
   }
@@ -249,12 +251,14 @@ export class ScenariosComponent implements OnInit, OnDestroy {
     this.execConfigModal.open(s.name, false);
   }
 
-  /** Bouton "Exécuter tous" */
-  executeAllScenarios(): void {
-    this.pendingScenario = null;
-    this.execConfigModal.open('Tous les scénarios actifs', true);
-  }
-
+ executeAllScenarios(): void {
+  this.pendingScenario = null;
+  this.execConfigModal.open(
+    'Tous les scénarios actifs',
+    true,
+    this.scenarios.map(s => ({ id: s.id, name: s.name })) // ── NOUVEAU : liste pour le choix par scénario
+  );
+}
   /** Callback unique de la modal, qu'il s'agisse d'un run simple ou batch */
   onExecutionConfigConfirmed(res: ExecutionConfigResult): void {
     if (res.isBatch) {
@@ -284,21 +288,20 @@ export class ScenariosComponent implements OnInit, OnDestroy {
     });
   }
 
-  private _launchBatch(res: ExecutionConfigResult): void {
-    this.executingAll.set(true);
-    this.svc.executeAll(this.projectId, res.captureConfig).subscribe({
-      next: (batch) => {
-        this.executingAll.set(false);
-        this.router.navigate(['/execution'], {
-          queryParams: { batchId: batch.id, projectId: this.projectId },
-        });
-      },
-      error: () => {
-        this.executingAll.set(false);
-        alert("Erreur lors de l'exécution groupée.");
-      },
-    });
-  }
+ private _launchBatch(res: ExecutionConfigResult): void {
+  this.executingAll.set(true);
+  // ── MODIFIÉ : transmet dataChoices
+  this.svc.executeAll(this.projectId, res.captureConfig, res.dataChoices).subscribe({
+    next: (batch) => {
+      this.executingAll.set(false);
+      this.router.navigate(['/execution'], { queryParams: { batchId: batch.id, projectId: this.projectId } });
+    },
+    error: () => {
+      this.executingAll.set(false);
+      alert("Erreur lors de l'exécution groupée.");
+    },
+  });
+}
 
   deleteScenario(s: ScenarioDisplay): void {
     if (!confirm(`Supprimer le scénario "${s.name}" ?\nCette action est irréversible.`)) return;
@@ -317,4 +320,39 @@ export class ScenariosComponent implements OnInit, OnDestroy {
   }
 
   isEllipsis(p: number | '...'): p is '...' { return p === '...'; }
+
+
+  regeneratingScenarioId = signal<string | null>(null);
+
+regenerateAllData(s: ScenarioDisplay): void {
+  this.regeneratingScenarioId.set(s.id);
+  this.svc.regenerateAllVariablesServerSide(this.projectId, s.id).subscribe({
+    next: (vars) => {
+      s.data = vars.map(v => ({ id: v.id, k: v.key, v: v.value, locked: v.locked }));
+      this.regeneratingScenarioId.set(null);
+    },
+    error: () => {
+      this.regeneratingScenarioId.set(null);
+      alert('Erreur lors de la régénération des données.');
+    },
+  });
+}
+
+regenerateOneData(s: ScenarioDisplay, d: ScenarioData): void {
+  this.svc.regenerateOneVariable(this.projectId, s.id, d.id).subscribe({
+    next: (updated) => {
+      const idx = s.data.findIndex(x => x.id === updated.id);
+      if (idx >= 0) s.data[idx] = { id: updated.id, k: updated.key, v: updated.value, locked: updated.locked };
+    },
+    error: () => alert(`Erreur lors de la régénération de "${d.k}".`),
+  });
+}
+
+toggleLock(s: ScenarioDisplay, d: ScenarioData): void {
+  const newLocked = !d.locked;
+  this.svc.setVariableLock(this.projectId, s.id, d.id, newLocked).subscribe({
+    next: (updated) => { d.locked = updated.locked; },
+    error: () => alert('Erreur lors du verrouillage.'),
+  });
+}
 }

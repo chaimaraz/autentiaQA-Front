@@ -1,0 +1,39 @@
+<div class="settings-section-title">Paramètres généraux</div>
+<div class="settings-section-sub">Informations du projet et configuration de base.</div>
+
+<div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement...</div>
+<div class="auth-alert error show" *ngIf="error()"><span>⚠️</span> {{ error() }}</div>
+<div class="auth-alert success show" *ngIf="success()"><span>✅</span> {{ success() }}</div>
+
+<div *ngIf="!loading() && project()">
+  <div class="form-group">
+    <label class="form-label">Nom du projet</label>
+    <input class="form-input" [(ngModel)]="form.name" />
+  </div>
+  <div class="form-group">
+    <label class="form-label">URL cible</label>
+    <input class="form-input" [(ngModel)]="form.url" />
+  </div>
+  <div class="form-group">
+    <label class="form-label">Framework détecté</label>
+    <div class="chip-row">
+      <span class="tag cyan">{{ project()!.frameworkName }}</span>
+      <span class="tag" *ngFor="let t of project()!.testTypes">{{ t.label }}</span>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Framework de test par défaut</label>
+    <select class="form-input" [(ngModel)]="form.frameworkName">
+      <option value="PLAYWRIGHT">Playwright</option>
+      <option value="CYPRESS">Cypress</option>
+      <option value="SELENIUM">Selenium</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Description du projet</label>
+    <textarea class="form-input" [(ngModel)]="form.description"></textarea>
+  </div>
+  <button class="btn btn-primary" [disabled]="saving()" (click)="save()">
+    {{ saving() ? '⏳ Sauvegarde...' : '💾 Sauvegarder' }}
+  </button>
+</div>

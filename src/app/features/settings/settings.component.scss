@@ -1,32 +1,109 @@
-.settings-tabs {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid var(--border);
-  margin: 20px 0 24px;
+.settings-project-picker {
+  max-width: 360px;
+  margin: 16px 0 20px;
 }
 
-.settings-tab {
-  background: none;
-  border: none;
-  padding: 10px 16px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text2);
+/* ===================== SETTINGS LAYOUT (vertical menu, from reference template) ===================== */
+.settings-layout {
+  display: flex;
+  gap: 0;
+  min-height: 600px;
+  margin-top: 8px;
+}
+
+.settings-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px 0 0 12px;
+  overflow: hidden;
+}
+
+.settings-content {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: none;
+  border-radius: 0 12px 12px 0;
+  min-width: 0;
+}
+
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  transition: all 0.15s;
+  border-bottom: 1px solid var(--border);
+  position: relative;
 
   &:hover {
+    background: var(--surface2);
     color: var(--text);
   }
 
   &.active {
+    background: rgba(0, 229, 255, 0.06);
     color: var(--accent);
-    border-bottom-color: var(--accent);
+
+    &::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 20%;
+      height: 60%;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 3px 0 0 3px;
+    }
   }
 }
 
-.settings-project-picker {
-  max-width: 360px;
-  margin-bottom: 20px;
+.settings-nav-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.settings-panel {
+  display: none;
+  padding: 24px;
+
+  &.active {
+    display: block;
+  }
+}
+
+@media (max-width: 900px) {
+  .settings-layout {
+    flex-direction: column;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .settings-nav-item {
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+
+    &.active::after {
+      display: none;
+    }
+  }
+
+  .settings-content {
+    border-left: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+  }
 }

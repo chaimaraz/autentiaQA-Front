@@ -61,6 +61,33 @@
 
     </div>
 
+    <!-- ── NOUVEAU : données de test — uniquement en mode batch -->
+<div class="config-group" *ngIf="isBatchMode() && batchScenarios().length > 0">
+  <div class="config-label">🗃️ Données de test par scénario</div>
+  <div class="batch-data-toolbar">
+    <button class="pill" style="grid-column:unset" (click)="setAllDataChoice('regenerate')">🎲 Tout régénérer</button>
+    <button class="pill" style="grid-column:unset" (click)="setAllDataChoice('keep')">🔒 Tout conserver</button>
+  </div>
+
+  <div class="batch-scenario-list">
+    <div class="batch-scenario-row" *ngFor="let s of batchScenarios()">
+      <span class="batch-scenario-name">{{ s.name }}</span>
+      <div class="batch-scenario-choice">
+        <label>
+          <input type="radio" [name]="'choice-' + s.id" [checked]="s.dataChoice === 'regenerate'"
+                 (change)="setDataChoice(s, 'regenerate')"/>
+          🎲
+        </label>
+        <label>
+          <input type="radio" [name]="'choice-' + s.id" [checked]="s.dataChoice === 'keep'"
+                 (change)="setDataChoice(s, 'keep')"/>
+          🔒
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" (click)="onCancel()">Annuler</button>
       <button class="btn btn-primary btn-sm" (click)="onConfirm()">

@@ -246,9 +246,10 @@ export class NewProjectComponent {
   private _runAiAnalysis(project: { id: string; name: string }): void {
     const mode = this.selectedMode!.key;
 
-    const job = mode === 'SPEC_DOCUMENT'
+     const job = mode === 'SPEC_DOCUMENT'
       ? this.aiSvc.generateFromDocument(project.id, this.uploadedFiles[0].file)
-      : this.aiSvc.generateFromUrl(project.id, this.projectUrl);
+      : this.aiSvc.generateFromUrl(project.id, this.projectUrl, { maxPages: 3, maxDepth: 1 });
+ 
 
     // Progression en temps réel via Socket.IO
     job.progress$.subscribe(p => {
