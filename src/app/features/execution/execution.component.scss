@@ -442,3 +442,17 @@
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: none; }
 }
+
+.cause-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-family: 'Space Mono', monospace;
+  &.application_bug { background: rgba(239,68,68,.12); color: var(--danger); }
+  &.script_issue    { background: rgba(245,158,11,.12); color: var(--warning); }
+  &.environment     { background: rgba(99,102,241,.12); color: var(--accent); }
+  &.timing          { background: rgba(124,58,237,.12); color: var(--accent2); }
+  &.unknown         { background: var(--surface2); color: var(--text3); }
+}

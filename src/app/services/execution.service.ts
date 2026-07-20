@@ -11,6 +11,18 @@ import { map } from 'rxjs/operators';
 export type CaptureMode = 'NEVER' | 'ON_FAILURE' | 'ON_SUCCESS' | 'ALWAYS';
 export type TraceMode   = 'NEVER' | 'ON_FAILURE' | 'ALWAYS';
 
+export interface AiFailureAnalysis {
+  stepIndex: number | null;
+  action: string;
+  causeCategory: 'APPLICATION_BUG' | 'SCRIPT_ISSUE' | 'ENVIRONMENT' | 'TIMING' | 'UNKNOWN';
+  explanation: string;
+  recommendation: string;
+}
+
+export interface AiAnalysis {
+  summary: string;
+  failures: AiFailureAnalysis[];
+}
 export interface ExecutionCaptureConfig {
   screenshotMode: CaptureMode;
   videoMode:      CaptureMode;
@@ -176,7 +188,12 @@ export class ExecutionService {
       jiraBugs: failed,
     };
   }
-
+  
+  analyzeExecution(executionId: string): Observable<AiAnalysis> {
+  return this.http
+    .post<{ data: { aiAnalysis: AiAnalysis } }>(`${this.SERVER}/api/executions/${executionId}/analyze`, {})
+    .pipe(map(r => r.data.aiAnalysis));
+}
   getPassWidth(r: HistoryRun): number {
     return r.totalCount > 0 ? Math.round((r.passCount / r.totalCount) * 100) : 0;
   }

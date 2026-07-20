@@ -139,7 +139,6 @@ export class ScenarioService {
     .patch<{ data: ScenarioVariable }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}/variables/${variableId}/lock`, { locked })
     .pipe(map(r => r.data));
 }
-
   update(projectId: string, scenarioId: string, payload: Partial<CreateScenarioPayload>): Observable<Scenario> {
     return this.http
       .put<{ data: Scenario }>(`${this.base}/projects/${projectId}/scenarios/${scenarioId}`, payload)

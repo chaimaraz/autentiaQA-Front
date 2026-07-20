@@ -1,7 +1,0 @@
-d:\Projet pfe\autentiaQA-Front\src\app\services\execution.service.ts
-d:\Projet pfe\autentiaQA-Front\src\app\services\scenario.service.ts
-d:\Projet pfe\autentiaQA-Front\src\app\services\modal-socket.service.ts
-d:\Projet pfe\autentiaQA-Front\src\app\features\scenarios\scenarios.component.ts
-d:\Projet pfe\autentiaQA-Front\src\app\features\scenarios\scenarios.component.html
-d:\Projet pfe\autentiaQA-Front\src\app\features\execution\execution.component.ts
-d:\Projet pfe\autentiaQA-Front\src\app\features\execution\execution.component.html

@@ -247,7 +247,36 @@
       <div class="rapport-error-title">⚠ Détail de l'erreur</div>
       <pre class="rapport-error-log">{{ errorMessage() }}</pre>
     </div>
+    <!-- ═══ ANALYSE IA ═══ -->
+<div class="ai-block" *ngIf="analyzingAi() || aiAnalysis()" style="margin:16px 20px">
+  <div class="ai-title">
+    <div class="ai-dot"></div>
+    Analyse IA
+    <button class="btn btn-ghost btn-xs" style="margin-left:auto" (click)="analyzeWithAi()" [disabled]="analyzingAi()">
+      🔁 Réanalyser
+    </button>
+  </div>
 
+  <div *ngIf="analyzingAi()" style="font-size:12px;color:var(--text3)">
+    <span class="spin">⟳</span> Analyse en cours...
+  </div>
+
+  <div *ngIf="!analyzingAi() && aiAnalysis() as analysis">
+    <div class="ai-row"><div class="ai-num">📋</div><div>{{ analysis.summary }}</div></div>
+
+    <div *ngFor="let f of analysis.failures" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,58,237,.15)">
+      <div class="ai-row">
+        <div class="ai-num">⚠</div>
+        <div>
+          <strong>Étape {{ (f.stepIndex ?? 0) + 1 }} — {{ f.action }}</strong>
+          <span class="cause-badge" [ngClass]="f.causeCategory.toLowerCase()">{{ causeLabelFr(f.causeCategory) }}</span>
+        </div>
+      </div>
+      <div class="ai-row"><div class="ai-num">💬</div><div>{{ f.explanation }}</div></div>
+      <div class="ai-row"><div class="ai-num">💡</div><div><strong>Recommandation :</strong> {{ f.recommendation }}</div></div>
+    </div>
+  </div>
+</div>
     <div class="rapport-actions">
       <button class="btn btn-ghost btn-sm" (click)="goBack()">← Retour aux scénarios</button>
       <button class="btn btn-ghost btn-sm" (click)="goToHistory()">📜 Voir l'historique</button>

@@ -13,6 +13,7 @@ import {
   LogEntry,
   ExecCompleteEvent,
   ArtifactType,
+  AiAnalysis,
 } from '../../services/execution.service';
 
 export interface ExecStats {
@@ -254,12 +255,32 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.socket?.disconnect();
 
       if (this.stepsMap.size === 0 && data.executionId) this._loadSteps(data.executionId);
+      this.analyzeWithAi();
     });
 
     this.socket.on('connect_error', () => {
       this._addLog({ time: this._now(), level: 'error', msg: '⚠ Connexion au serveur perdue.' });
     });
   }
+
+  aiAnalysis = signal<AiAnalysis | null>(null);
+analyzingAi = signal(false);
+
+analyzeWithAi(): void {
+  const execId = this.executionId();
+  if (!execId) return;
+  this.analyzingAi.set(true);
+  this.execSvc.analyzeExecution(execId).subscribe({
+    next: (analysis) => {
+      this.aiAnalysis.set(analysis);
+      this.analyzingAi.set(false);
+    },
+    error: () => {
+      this.analyzingAi.set(false);
+      alert("Erreur lors de l'analyse IA.");
+    },
+  });
+}
 
   private _loadSteps(executionId: string): void {
     this.execSvc.getSteps(executionId).subscribe({
@@ -285,6 +306,17 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
     const projId = this.projectId();
     this.router.navigate(projId ? ['/projects', projId, 'history'] : ['/history']);
   }
+
+  causeLabelFr(cat: string): string {
+  const labels: Record<string, string> = {
+    APPLICATION_BUG: '🐛 Bug application',
+    SCRIPT_ISSUE: '📝 Script/sélecteur',
+    ENVIRONMENT: '🌐 Environnement',
+    TIMING: '⏱ Timing',
+    UNKNOWN: '❓ Indéterminé',
+  };
+  return labels[cat] || cat;
+}
 
   openTraceViewer(): void {
     const url = this.traceUrl();
