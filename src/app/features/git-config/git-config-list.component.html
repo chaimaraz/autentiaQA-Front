@@ -79,13 +79,28 @@
       <div class="gcl-webhook-box">
         <div class="gcl-webhook-label">URL de webhook — à coller côté {{ repo.provider }}</div>
         <div class="gcl-webhook-row">
-          <code class="gcl-code">{{ webhookUrl(repo) }}</code>
+          <app-code-block [code]="webhookUrl(repo)" language="text"></app-code-block>
           <button class="btn btn-ghost btn-xs" (click)="copyToClipboard(webhookUrl(repo))">📋 Copier</button>
         </div>
         <div class="gcl-webhook-label" style="margin-top:10px">Secret de signature</div>
         <div class="gcl-webhook-row">
-          <code class="gcl-code">{{ repo.webhookSecret }}</code>
+          <app-code-block [code]="repo.webhookSecret" language="text"></app-code-block>
           <button class="btn btn-ghost btn-xs" (click)="regenerateSecret(repo)">🔄 Régénérer</button>
+        </div>
+        <div class="gcl-webhook-label" style="margin-top:10px;text-transform:none;letter-spacing:normal">
+          ⚠️ Cette URL doit être joignable publiquement depuis internet pour que GitHub/GitLab/Bitbucket (ou le fichier CI ci-dessous) puisse la contacter — remplacez "localhost" par l'URL réelle de votre backend déployé.
+        </div>
+      </div>
+
+      <!-- Fichier CI : alternative au webhook, même déclencheur côté backend -->
+      <div class="gcl-webhook-box" style="margin-top:14px">
+        <div class="gcl-webhook-label">
+          Fichier CI — {{ repo.provider === 'GITLAB' || repo.provider === 'BITBUCKET' ? 'extrait à fusionner dans votre config existante' : 'alternative au webhook, prête à committer' }}
+        </div>
+        <app-code-block [code]="ciFileContent(repo)" language="bash"></app-code-block>
+        <div class="gcl-webhook-row" style="margin-top:8px">
+          <button class="btn btn-ghost btn-xs" (click)="copyToClipboard(ciFileContent(repo))">📋 Copier</button>
+          <button class="btn btn-ghost btn-xs" (click)="downloadCiFile(repo)">⬇ Télécharger ({{ ciFileName(repo) }})</button>
         </div>
       </div>
 

@@ -1,0 +1,58 @@
+// src/app/shared/components/code-block/code-block.component.scss
+:host {
+  display: block;
+}
+
+.code-block {
+  margin: 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.code-block code {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text2);
+  white-space: pre;
+}
+
+// ── Palette de coloration alignée sur les tokens de l'appli (pas de thème
+// hljs importé, pour rester cohérent en light/dark) ──────────────────────
+:host ::ng-deep {
+  .hljs-comment,
+  .hljs-quote { color: var(--text3); font-style: italic; }
+
+  .hljs-keyword,
+  .hljs-selector-tag,
+  .hljs-meta .hljs-keyword,
+  .hljs-doctag { color: var(--accent2); font-weight: 700; }
+
+  .hljs-string,
+  .hljs-symbol,
+  .hljs-bullet { color: var(--success); }
+
+  .hljs-number,
+  .hljs-literal { color: var(--accent3); }
+
+  .hljs-attr,
+  .hljs-attribute,
+  .hljs-variable.language_ { color: var(--accent); }
+
+  .hljs-variable,
+  .hljs-template-variable { color: var(--accent2); }
+
+  .hljs-built_in,
+  .hljs-title,
+  .hljs-title.function_ { color: var(--accent); }
+
+  .hljs-meta { color: var(--text3); }
+
+  .hljs-name,
+  .hljs-tag { color: var(--accent); }
+}

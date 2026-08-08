@@ -72,6 +72,8 @@ export interface HistoryRun {
   };
   steps:     ExecutionStep[];
   artifacts: ExecutionArtifact[];
+  jiraTicketKey?: string | null;
+  jiraTicketUrl?: string | null;
 }
 
 export interface ExecutionDetail extends HistoryRun {
@@ -102,6 +104,35 @@ export interface GlobalStats {
   failedRuns: number;
   avgDuration: number;
   jiraBugs: number;
+}
+
+// ── Ticket Jira (aperçu / création) ─────────────────────────────────────────
+
+export interface JiraPreviewArtifact {
+  id: string;
+  type: ArtifactType;
+  url: string;
+}
+
+export interface JiraPreview {
+  execution: { id: string; scenarioName: string; result: ExecutionResultType; startedAt: string; finishedAt: string | null };
+  title: string;
+  description: string;
+  failedSteps: { stepIndex: number; action: string; errorMessage: string | null; errorStack: string | null }[];
+  aiAnalysis: AiAnalysis;
+  artifacts: JiraPreviewArtifact[];
+  existingTicket: { key: string; url: string } | null;
+}
+
+export interface JiraTicketPayload {
+  title: string;
+  description: string;
+}
+
+export interface JiraTicketResult {
+  key: string;
+  url: string;
+  alreadyExisted: boolean;
 }
 
 // ── Événements Socket.IO temps réel ────────────────────────────────────────
@@ -211,6 +242,18 @@ export class ExecutionService {
   formatDuration(ms: number | null | undefined): string {
     if (!ms) return '—';
     return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+  }
+
+  getJiraPreview(executionId: string): Observable<JiraPreview> {
+    return this.http
+      .get<{ data: JiraPreview }>(`${this.SERVER}/api/executions/${executionId}/jira-preview`)
+      .pipe(map(r => r.data));
+  }
+
+  createJiraTicket(executionId: string, payload: JiraTicketPayload): Observable<JiraTicketResult> {
+    return this.http
+      .post<{ data: JiraTicketResult }>(`${this.SERVER}/api/executions/${executionId}/jira-ticket`, payload)
+      .pipe(map(r => r.data));
   }
 
   getArtifactUrl(path: string): string {

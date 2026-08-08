@@ -281,12 +281,18 @@
       <button class="btn btn-ghost btn-sm" (click)="goBack()">← Retour aux scénarios</button>
       <button class="btn btn-ghost btn-sm" (click)="goToHistory()">📜 Voir l'historique</button>
       <button class="btn btn-ghost btn-sm">⬇ Exporter PDF</button>
-      <button *ngIf="result() === 'FAIL' || result() === 'ERROR'"
-              class="btn btn-ghost btn-sm" style="color:var(--danger)">
-        🐛 Créer bug Jira
-      </button>
+      <ng-container *ngIf="result() === 'FAIL' || result() === 'ERROR'">
+        <a *ngIf="jiraTicketUrl() as url" [href]="url" target="_blank" class="btn btn-ghost btn-sm" style="color:var(--success)">
+          🔗 Voir le ticket Jira
+        </a>
+        <button *ngIf="!jiraTicketUrl()" class="btn btn-ghost btn-sm" style="color:var(--danger)" (click)="openJiraModal()">
+          🐛 Créer bug Jira
+        </button>
+      </ng-container>
     </div>
   </div>
+
+  <app-jira-ticket-modal (created)="onJiraTicketCreated($event)"></app-jira-ticket-modal>
 
   <!-- ═══ ARTEFACTS : Trace Viewer / Vidéo / Screenshot ═══ -->
 

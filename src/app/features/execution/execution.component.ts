@@ -14,7 +14,9 @@ import {
   ExecCompleteEvent,
   ArtifactType,
   AiAnalysis,
+  JiraTicketResult,
 } from '../../services/execution.service';
+import { JiraTicketModalComponent } from '../../shared/components/jira-ticket-modal/jira-ticket-modal.component';
 
 export interface ExecStats {
   pass: number; fail: number; running: number; skipped: number; total: number;
@@ -50,13 +52,27 @@ export type ExecMode   = 'single' | 'batch';
 @Component({
   selector:    'app-execution',
   standalone:  true,
-  imports:     [NgFor, NgClass, NgIf, DecimalPipe, DatePipe, RouterLink],
+  imports:     [NgFor, NgClass, NgIf, DecimalPipe, DatePipe, RouterLink, JiraTicketModalComponent],
   templateUrl: './execution.component.html',
   styleUrl:    './execution.component.scss',
 })
 export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   @ViewChild('logContainer') logContainer!: ElementRef;
+  @ViewChild(JiraTicketModalComponent) jiraModal!: JiraTicketModalComponent;
+
+  jiraTicketKey = signal<string | null>(null);
+  jiraTicketUrl = signal<string | null>(null);
+
+  openJiraModal(): void {
+    const execId = this.executionId();
+    if (execId) this.jiraModal.open(execId);
+  }
+
+  onJiraTicketCreated(result: JiraTicketResult): void {
+    this.jiraTicketKey.set(result.key);
+    this.jiraTicketUrl.set(result.url);
+  }
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);

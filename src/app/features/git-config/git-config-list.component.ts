@@ -6,11 +6,12 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { GitConfigService, GitRepoConfig, GitWebhookEventItem } from '../../services/git-config.service';
 import { ProjectApiService } from '../../services/project-api.service';
 import { GitConfigFormComponent } from './add-config/git-config-form.component';
+import { CodeBlockComponent } from '../../shared/components/code-block/code-block.component';
 
 @Component({
   selector: 'app-git-config-list',
   standalone: true,
-  imports: [NgFor, NgIf, NgClass, DatePipe, FormsModule, RouterLink, GitConfigFormComponent],
+  imports: [NgFor, NgIf, NgClass, DatePipe, FormsModule, RouterLink, GitConfigFormComponent, CodeBlockComponent],
   templateUrl: './git-config-list.component.html',
   styleUrl: './git-config-list.component.scss',
 })
@@ -104,6 +105,25 @@ export class GitConfigListComponent implements OnInit {
 
   copyToClipboard(text: string): void {
     navigator.clipboard?.writeText(text);
+  }
+
+  ciFileName(repo: GitRepoConfig): string {
+    return this.gitConfig.buildCiFileName(repo);
+  }
+
+  ciFileContent(repo: GitRepoConfig): string {
+    return this.gitConfig.buildCiFileContent(repo, this.webhookUrl(repo));
+  }
+
+  /** Téléchargement du fichier/extrait CI généré — même pattern Blob que scenario-data.component.ts::exportJson() */
+  downloadCiFile(repo: GitRepoConfig): void {
+    const blob = new Blob([this.ciFileContent(repo)], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = this.ciFileName(repo);
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   startEdit(repo: GitRepoConfig): void {

@@ -332,11 +332,16 @@
                     🧭 Trace Viewer
                   </button>
                   <button class="btn btn-ghost btn-xs">⬇ Exporter PDF</button>
-                  <button class="btn btn-ghost btn-xs"
-                          *ngIf="run.result === 'FAIL' || run.result === 'ERROR'"
-                          style="color:var(--danger)">
-                    🐛 Créer bug Jira
-                  </button>
+                  <ng-container *ngIf="run.result === 'FAIL' || run.result === 'ERROR'">
+                    <a *ngIf="run.jiraTicketUrl as url" [href]="url" target="_blank"
+                       class="btn btn-ghost btn-xs" style="color:var(--success)" (click)="$event.stopPropagation()">
+                      🔗 Voir le ticket Jira
+                    </a>
+                    <button *ngIf="!run.jiraTicketUrl" class="btn btn-ghost btn-xs" style="color:var(--danger)"
+                            (click)="openJiraModal(run); $event.stopPropagation()">
+                      🐛 Créer bug Jira
+                    </button>
+                  </ng-container>
                 </div>
 
               </div>
@@ -347,6 +352,8 @@
       </tbody>
     </table>
   </div>
+
+  <app-jira-ticket-modal (created)="onJiraTicketCreated($event)"></app-jira-ticket-modal>
 </div>
 
 <!-- ═══ PAGINATION ═══ -->

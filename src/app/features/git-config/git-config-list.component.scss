@@ -164,6 +164,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
+
+  app-code-block {
+    flex: 1;
+    min-width: 0;
+  }
 }
 .gcl-code {
   flex: 1;

@@ -1,22 +1,39 @@
 // src/app/features/history/history.component.ts
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, ViewChild } from '@angular/core';
 import { NgFor, NgClass, NgIf, DatePipe, SlicePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import {
-  ExecutionService, HistoryRun, GlobalStats, ExecutionStep,
+  ExecutionService, HistoryRun, GlobalStats, ExecutionStep, JiraTicketResult,
 } from '../../services/execution.service';
+import { JiraTicketModalComponent } from '../../shared/components/jira-ticket-modal/jira-ticket-modal.component';
 
 @Component({
   selector: 'app-history',
   standalone: true,
-  imports: [NgFor, NgClass, NgIf, FormsModule, RouterLink, DatePipe, SlicePipe],
+  imports: [NgFor, NgClass, NgIf, FormsModule, RouterLink, DatePipe, SlicePipe, JiraTicketModalComponent],
   templateUrl: './history.component.html',
   styleUrl: './history.component.scss',
 })
 export class HistoryComponent implements OnInit {
   private route = inject(ActivatedRoute);
   readonly executionSvc = inject(ExecutionService);
+
+  @ViewChild(JiraTicketModalComponent) jiraModal!: JiraTicketModalComponent;
+  private jiraModalRunId: string | null = null;
+
+  openJiraModal(run: HistoryRun): void {
+    this.jiraModalRunId = run.id;
+    this.jiraModal.open(run.id);
+  }
+
+  onJiraTicketCreated(result: JiraTicketResult): void {
+    const runId = this.jiraModalRunId;
+    if (!runId) return;
+    this.runs.update(list => list.map(r =>
+      r.id === runId ? { ...r, jiraTicketKey: result.key, jiraTicketUrl: result.url } : r
+    ));
+  }
 
   projectId    = '';
   filterStatus = '';
