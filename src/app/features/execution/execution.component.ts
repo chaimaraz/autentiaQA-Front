@@ -4,8 +4,9 @@ import {
 } from '@angular/core';
 import { NgFor, NgClass, NgIf, DecimalPipe, DatePipe } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router }          from '@angular/router';
-import { io, Socket }                                  from 'socket.io-client';
+import { Socket }                                      from 'socket.io-client';
 import { HttpClient }                                  from '@angular/common/http';
+import { createSocket }                                from '../../shared/utils/socket-factory';
 import {
   ExecutionService,
   ExecutionStep,
@@ -15,8 +16,11 @@ import {
   ArtifactType,
   AiAnalysis,
   JiraTicketResult,
+  BatchDetail,
+  BatchScenarioExecution,
 } from '../../services/execution.service';
 import { JiraTicketModalComponent } from '../../shared/components/jira-ticket-modal/jira-ticket-modal.component';
+import { exportElementAsPdf } from '../../shared/utils/export-pdf';
 
 export interface ExecStats {
   pass: number; fail: number; running: number; skipped: number; total: number;
@@ -60,6 +64,8 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   @ViewChild('logContainer') logContainer!: ElementRef;
   @ViewChild(JiraTicketModalComponent) jiraModal!: JiraTicketModalComponent;
+  @ViewChild('singleReportEl') singleReportEl?: ElementRef<HTMLElement>;
+  @ViewChild('batchReportEl') batchReportEl?: ElementRef<HTMLElement>;
 
   jiraTicketKey = signal<string | null>(null);
   jiraTicketUrl = signal<string | null>(null);
@@ -107,11 +113,13 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
   batchProgress     = signal<BatchProgress | null>(null);
   batchDone         = signal(false);
   expandedScenario  = signal<string | null>(null);
+  batchDetail       = signal<BatchDetail | null>(null);
+  loadingBatchDetail = signal(false);
 
   stages = signal([
-    { icon: '▷',  label: 'Lancement\nPlaywright', state: 'running' },
-    { icon: '⚙',  label: 'Exécution\ntests',      state: 'pending' },
-    { icon: '📊', label: 'Rapport\nfinal',         state: 'pending' },
+    { icon: 'fa-play',          label: 'Lancement\nPlaywright', state: 'running' },
+    { icon: 'fa-gear',          label: 'Exécution\ntests',      state: 'pending' },
+    { icon: 'fa-chart-column',  label: 'Rapport\nfinal',        state: 'pending' },
   ]);
 
   private shouldScroll = false;
@@ -131,6 +139,9 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.mode.set('batch');
       this.batchId.set(p['batchId']);
       this._connectSocket();
+      // ── Rechargement de page / lien profond (ex: email de merge) : le batch
+      // est peut-être déjà terminé et plus aucun événement socket n'arrivera.
+      this._loadBatchDetail(p['batchId']);
     } else if (p['executionId']) {
       this.mode.set('single');
       this.executionId.set(p['executionId']);
@@ -159,12 +170,12 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.executionId()) query['executionId'] = this.executionId()!;
     if (this.batchId())     query['batchId']     = this.batchId()!;
 
-    this.socket = io(`${this.SERVER}/execution`, { transports: ['websocket'], query });
+    this.socket = createSocket(`${this.SERVER}/execution`, { transports: ['websocket'], query });
 
     this.socket.on('connect', () => {
       if (this.executionId()) this.socket?.emit('subscribe', { executionId: this.executionId() });
       if (this.batchId())     this.socket?.emit('subscribeBatch', { batchId: this.batchId() });
-      this._addLog({ time: this._now(), level: 'info', msg: "🔌 Connecté — en attente de l'exécution..." });
+      this._addLog({ time: this._now(), level: 'info', msg: "Connecté — en attente de l'exécution..." });
     });
 
     this.socket.on('exec_log', (entry: LogEntry) => this._addLog(entry));
@@ -196,17 +207,19 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
     // à l'exécution courante, pour afficher console + steps en direct
     // pour CHAQUE scénario, et pas juste à la fin. ─────────────────────────
 
-    console.log("Listening batch_progress");
   this.socket.on('batch_progress', (data: BatchProgress) => {
-
-  console.log("========== BATCH_PROGRESS ==========");
-  console.log(data);
 
   this.batchProgress.set(data);
 
-  if (data.currentExecutionId && data.currentExecutionId !== this.currentBatchExecId) {
+  if (data.status === 'DONE') {
+    // ── NOUVEAU : le batch est terminé — l'analyse IA des échecs a déjà été
+    // générée côté backend avant cet événement, donc ce fetch renvoie le
+    // rapport complet (par scénario, captures, IA) en un seul appel.
+    this.showReport.set(true);
+    if (this.batchId()) this._loadBatchDetail(this.batchId()!);
+  }
 
-    console.log("currentExecutionId =", data.currentExecutionId);
+  if (data.currentExecutionId && data.currentExecutionId !== this.currentBatchExecId) {
 
     if (this.currentBatchExecId) {
       this.socket?.emit('unsubscribe', {
@@ -220,15 +233,13 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
       executionId: data.currentExecutionId
     });
 
-    console.log("subscribe exec =", data.currentExecutionId);
-
     this.stepsMap.clear();
     this.steps.set([]);
 
     this._addLog({
       time: this._now(),
       level: 'info',
-      msg: `▶ ${data.currentScenario}`
+      msg: `${data.currentScenario}`
     });
   }
 
@@ -239,11 +250,10 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
       // pas seulement le dernier. On loggue le résultat individuel sans écraser
       // les stats/result globaux du batch (gérés par batch_progress). ────────
       if (this.mode() === 'batch') {
-        const icon = data.result === 'PASS' ? '✓' : '✗';
         this._addLog({
           time: this._now(),
           level: data.result === 'PASS' ? 'pass' : 'fail',
-          msg: `${icon} Scénario terminé — ${data.result} en ${(data.durationMs / 1000).toFixed(1)}s`,
+          msg: `Scénario terminé — ${data.result} en ${(data.durationMs / 1000).toFixed(1)}s`,
         });
         return;
       }
@@ -275,7 +285,7 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
 
     this.socket.on('connect_error', () => {
-      this._addLog({ time: this._now(), level: 'error', msg: '⚠ Connexion au serveur perdue.' });
+      this._addLog({ time: this._now(), level: 'error', msg: 'Connexion au serveur perdue.' });
     });
   }
 
@@ -297,6 +307,37 @@ analyzeWithAi(): void {
     },
   });
 }
+
+  private _loadBatchDetail(batchId: string): void {
+    const projId = this.projectId();
+    if (!projId) return;
+    this.loadingBatchDetail.set(true);
+    this.execSvc.getBatchDetail(projId, batchId).subscribe({
+      next: (detail) => {
+        this.batchDetail.set(detail);
+        this.loadingBatchDetail.set(false);
+        if (detail.status === 'DONE') this.showReport.set(true);
+      },
+      error: () => this.loadingBatchDetail.set(false),
+    });
+  }
+
+  getExecScreenshotUrl(exec: BatchScenarioExecution): string | null {
+    const shot = this.execSvc.findArtifact(exec.artifacts, 'SCREENSHOT');
+    return shot ? this.execSvc.getArtifactUrl(shot.filePath) : null;
+  }
+
+  getFailedSteps(exec: BatchScenarioExecution): ExecutionStep[] {
+    return (exec.steps || []).filter(s => s.result === 'FAIL');
+  }
+
+  async exportSingleReport(): Promise<void> {
+    if (this.singleReportEl) await exportElementAsPdf(this.singleReportEl.nativeElement, `rapport-${this.scenarioName()}.pdf`);
+  }
+
+  async exportBatchReport(): Promise<void> {
+    if (this.batchReportEl) await exportElementAsPdf(this.batchReportEl.nativeElement, `rapport-batch-${this.batchId()}.pdf`);
+  }
 
   private _loadSteps(executionId: string): void {
     this.execSvc.getSteps(executionId).subscribe({
@@ -325,13 +366,24 @@ analyzeWithAi(): void {
 
   causeLabelFr(cat: string): string {
   const labels: Record<string, string> = {
-    APPLICATION_BUG: '🐛 Bug application',
-    SCRIPT_ISSUE: '📝 Script/sélecteur',
-    ENVIRONMENT: '🌐 Environnement',
-    TIMING: '⏱ Timing',
-    UNKNOWN: '❓ Indéterminé',
+    APPLICATION_BUG: 'Bug application',
+    SCRIPT_ISSUE: 'Script/sélecteur',
+    ENVIRONMENT: 'Environnement',
+    TIMING: 'Timing',
+    UNKNOWN: 'Indéterminé',
   };
   return labels[cat] || cat;
+}
+
+  causeIconFr(cat: string): string {
+  const icons: Record<string, string> = {
+    APPLICATION_BUG: 'fa-bug',
+    SCRIPT_ISSUE: 'fa-file-code',
+    ENVIRONMENT: 'fa-globe',
+    TIMING: 'fa-stopwatch',
+    UNKNOWN: 'fa-circle-question',
+  };
+  return icons[cat] || 'fa-circle-question';
 }
 
   openTraceViewer(): void {

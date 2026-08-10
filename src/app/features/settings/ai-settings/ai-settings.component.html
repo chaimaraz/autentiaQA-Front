@@ -1,0 +1,106 @@
+<div class="settings-section-title">Fournisseur IA</div>
+<div class="settings-section-sub">
+  Configurez le modèle d'intelligence artificielle utilisé pour la génération de scénarios et l'analyse des rapports. Réservé au Super Admin.
+</div>
+
+<div *ngIf="loading()" class="empty-state"><i class="fa-solid fa-arrows-rotate spin"></i> Chargement...</div>
+
+<div class="ai-card" *ngIf="!loading()">
+  <div class="ai-header-row">
+    <div class="ai-header-icon"><i class="fa-solid fa-robot"></i></div>
+    <div>
+      <div class="ai-header-text">Modèle actif</div>
+      <div class="ai-header-sub">Utilisé par la génération de scénarios et les rapports IA</div>
+    </div>
+    <div style="margin-left:auto">
+      <div class="ai-disconnected-banner" *ngIf="!connected()"><i class="fa-solid fa-triangle-exclamation"></i> Non testé</div>
+      <div class="ai-connected-banner" *ngIf="connected()"><i class="fa-solid fa-circle-check"></i> Connexion vérifiée</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="form-group">
+      <label class="form-label">Fournisseur</label>
+      <select class="form-input" [(ngModel)]="form.provider" (ngModelChange)="onProviderChange()">
+        <option *ngFor="let p of providers()" [value]="p.id">{{ p.label }}</option>
+      </select>
+    </div>
+    <div class="form-group" *ngIf="!isMock()">
+      <label class="form-label">Modèle</label>
+      <input
+        class="form-input"
+        [(ngModel)]="form.model"
+        [placeholder]="selectedProviderMeta()?.exampleModels?.[0] || 'ex: gemini-2.5-flash'"
+        list="ai-example-models"
+      />
+      <datalist id="ai-example-models">
+        <option *ngFor="let m of selectedProviderMeta()?.exampleModels" [value]="m"></option>
+      </datalist>
+    </div>
+  </div>
+
+  <div class="form-group" *ngIf="!isMock()">
+    <label class="form-label">Clé API</label>
+    <div style="display:flex;gap:8px">
+      <input class="form-input" type="password" placeholder="sk-... / AIza..." [(ngModel)]="form.apiKey" />
+      <button class="btn btn-ghost btn-sm" [disabled]="testing()" (click)="testConnection()">
+        <i class="fa-solid" [ngClass]="testing() ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i> {{ testing() ? 'Test...' : 'Tester' }}
+      </button>
+    </div>
+    <div class="form-hint" *ngIf="hasApiKey() && !form.apiKey">
+      <i class="fa-solid fa-lock"></i> Une clé API est déjà enregistrée. Laissez le champ vide pour la conserver, ou saisissez-en une nouvelle pour la remplacer.
+    </div>
+  </div>
+
+  <div class="form-group" *ngIf="isMock()">
+    <button class="btn btn-ghost btn-sm" [disabled]="testing()" (click)="testConnection()">
+      <i class="fa-solid" [ngClass]="testing() ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i> {{ testing() ? 'Test...' : 'Tester la connexion' }}
+    </button>
+  </div>
+
+  <div class="grid-2">
+    <div class="form-group">
+      <label class="form-label">Température <span style="font-size:10px;color:var(--text3);font-weight:400">(créativité, 0 à 2)</span></label>
+      <input class="form-input" type="number" min="0" max="2" step="0.1" [(ngModel)]="form.temperature" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Max tokens</label>
+      <input class="form-input" type="number" min="1" step="500" [(ngModel)]="form.maxTokens" />
+    </div>
+  </div>
+
+  <div class="form-hint" *ngIf="testMessage()">{{ testMessage() }}</div>
+</div>
+
+<div class="ai-card" style="margin-top:16px" *ngIf="!loading()">
+  <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px">
+    <i class="fa-solid fa-sliders"></i> Limites de génération
+  </div>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:16px">
+    Bornes appliquées à chaque génération de scénarios (document, URL). Remplacent les variables d'environnement AI_MAX_SCENARIOS / CRAWL_MAX_PAGES / CRAWL_MAX_DEPTH une fois configurées ici.
+  </div>
+
+  <div class="grid-3">
+    <div class="form-group">
+      <label class="form-label">Scénarios max par génération</label>
+      <input class="form-input" type="number" min="1" max="50" [(ngModel)]="form.maxScenarios" />
+      <div class="form-hint">Nombre de scénarios demandés à l'IA en une fois (document / URL)</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Pages max explorées (crawl URL)</label>
+      <input class="form-input" type="number" min="1" max="200" [(ngModel)]="form.crawlMaxPages" />
+      <div class="form-hint">Valeur par défaut si la requête n'en précise pas</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Profondeur max de crawl</label>
+      <input class="form-input" type="number" min="0" max="10" [(ngModel)]="form.crawlMaxDepth" />
+      <div class="form-hint">Nombre de clics depuis la page de départ</div>
+    </div>
+  </div>
+</div>
+
+<button class="btn btn-primary" style="margin-top:16px" [disabled]="saving() || loading()" (click)="saveConfig()">
+  <i class="fa-solid" [ngClass]="saving() ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i> {{ saving() ? 'Sauvegarde...' : 'Sauvegarder la configuration IA' }}
+</button>
+<div class="auth-alert error show" *ngIf="error()" style="margin-top:12px"><i class="fa-solid fa-triangle-exclamation"></i> {{ error() }}</div>
+<div class="auth-alert success show" *ngIf="success()" style="margin-top:12px"><i class="fa-solid fa-circle-check"></i> {{ success() }}</div>

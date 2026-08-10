@@ -159,8 +159,14 @@ export class GitConfigListComponent implements OnInit {
   }
 
   decisionLabel(decision: string): string {
-    return { ACCEPTED: '✅ Merge recommandé', REJECTED: '⛔ Merge à bloquer',
-              PENDING: '⏳ En cours', SKIPPED: 'ℹ️ Ignoré' }[decision] || decision;
+    return { ACCEPTED: 'Merge recommandé', REJECTED: 'Merge à bloquer',
+              PENDING: 'En cours', SKIPPED: 'Ignoré' }[decision] || decision;
+  }
+
+  /** Icône FA associée à une décision — cohérente avec decisionLabel() */
+  decisionIcon(decision: string): string {
+    return { ACCEPTED: 'fa-circle-check', REJECTED: 'fa-ban',
+              PENDING: 'fa-spinner fa-spin', SKIPPED: 'fa-circle-info' }[decision] || 'fa-circle-info';
   }
 
   /** Mappe une décision vers une classe de badge de statut cohérente avec le reste de l'app */
@@ -171,14 +177,14 @@ export class GitConfigListComponent implements OnInit {
   /** Icône d'affichage par fournisseur — purement cosmétique, aucun impact fonctionnel */
   providerIcon(provider?: string): string {
   return {
-    GITHUB: '🐙',
-    GITLAB: '🦊',
-    BITBUCKET: '🪣'
-  }[provider ?? ''] || '🔗';
+    GITHUB: 'fa-brands fa-github',
+    GITLAB: 'fa-brands fa-gitlab',
+    BITBUCKET: 'fa-brands fa-bitbucket'
+  }[provider ?? ''] || 'fa-solid fa-code-branch';
 }
 
   /** Icône d'affichage par type de dépôt — purement cosmétique */
   roleIcon(role: string): string {
-    return { FRONTEND: '🖥️', BACKEND: '⚙️', MOBILE: '📱', INFRA: '🛠️' }[role] || '📦';
+    return { FRONTEND: 'fa-solid fa-desktop', BACKEND: 'fa-solid fa-gear', MOBILE: 'fa-solid fa-mobile-screen', INFRA: 'fa-solid fa-toolbox' }[role] || 'fa-solid fa-box';
   }
 }

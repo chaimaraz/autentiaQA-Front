@@ -14,3 +14,30 @@
 .project-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
 .project-url { font-size: 11px; color: var(--text3); font-family: 'Space Mono', monospace; }
 .project-meta { display: flex; align-items: center; gap: 8px; }
+
+.dash-project-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    font-family: 'Space Mono', monospace;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+}

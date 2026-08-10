@@ -13,21 +13,21 @@
   <div>
     <div class="section-title">
       Scénarios générés par l'IA
-      <span class="ai-badge">🤖 {{ total }} scénario{{ total > 1 ? 's' : '' }}</span>
+      <span class="ai-badge"><i class="fa-solid fa-robot"></i> {{ total }} scénario{{ total > 1 ? 's' : '' }}</span>
     </div>
     <div class="section-sub" style="margin-bottom:0">
       Projet · {{ projectId }}
     </div>
   </div>
  <div class="page-actions">
-  <button class="btn btn-ghost btn-sm">⬇ Exporter JSON</button>
-  <button class="btn btn-purple btn-sm" (click)="openAddModal()">✦ Ajouter un scénario</button>
+  <button class="btn btn-ghost btn-sm"><i class="fa-solid fa-download"></i> Exporter JSON</button>
+  <button class="btn btn-purple btn-sm" (click)="openAddModal()"><i class="fa-solid fa-plus"></i> Ajouter un scénario</button>
 
   <button class="btn btn-primary btn-sm"
        [disabled]="executingAll()"
       (click)="executeAllScenarios()">
-    <span *ngIf="!executingAll()">▷ Exécuter tous</span>
-    <span *ngIf="executingAll()"><span class="loading-spinner">⟳</span> Lancement...</span>
+    <span *ngIf="!executingAll()"><i class="fa-solid fa-play"></i> Exécuter tous</span>
+    <span *ngIf="executingAll()"><i class="fa-solid fa-arrows-rotate fa-spin"></i> Lancement...</span>
   </button>
  </div>
 </div>
@@ -36,7 +36,7 @@
 <div class="toolbar">
 
   <div class="search-bar">
-    <span class="search-icon">🔍</span>
+    <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
     <input
       class="search-input"
       type="text"
@@ -44,13 +44,13 @@
       [value]="searchQuery"
       (input)="onSearch($any($event.target).value)"
     />
-    <button *ngIf="searchQuery" class="search-clear" (click)="clearSearch()" title="Effacer">✕</button>
+    <button *ngIf="searchQuery" class="search-clear" (click)="clearSearch()" title="Effacer"><i class="fa-solid fa-xmark"></i></button>
   </div>
 
   <button class="btn btn-ghost btn-sm filter-toggle" (click)="toggleFilters()">
-    <span>⚙ Filtres</span>
+    <span><i class="fa-solid fa-sliders"></i> Filtres</span>
     <span *ngIf="activeFiltersCount > 0" class="filter-badge">{{ activeFiltersCount }}</span>
-    <span class="filter-arrow">{{ filtersOpen ? '▴' : '▾' }}</span>
+    <i class="fa-solid filter-arrow" [ngClass]="filtersOpen ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
   </button>
 
   <div class="page-size-selector">
@@ -73,9 +73,9 @@
         <button class="pill" [ngClass]="{ active: filterStatus() === '' }"
           (click)="filterStatus.set(''); applyFilters()">Tous</button>
         <button class="pill" [ngClass]="{ active: filterStatus() === 'ACTIVE' }"
-          (click)="filterStatus.set('ACTIVE'); applyFilters()">● Actif</button>
+          (click)="filterStatus.set('ACTIVE'); applyFilters()"><i class="fa-solid fa-circle-check"></i> Actif</button>
         <button class="pill" [ngClass]="{ active: filterStatus() === 'DRAFT' }"
-          (click)="filterStatus.set('DRAFT'); applyFilters()">○ Brouillon</button>
+          (click)="filterStatus.set('DRAFT'); applyFilters()"><i class="fa-regular fa-circle"></i> Brouillon</button>
       </div>
     </div>
 
@@ -85,9 +85,9 @@
         <button class="pill" [ngClass]="{ active: filterMode() === '' }"
           (click)="filterMode.set(''); applyFilters()">Tous</button>
         <button class="pill" [ngClass]="{ active: filterMode() === 'NLP' }"
-          (click)="filterMode.set('NLP'); applyFilters()">🤖 NLP</button>
+          (click)="filterMode.set('NLP'); applyFilters()"><i class="fa-solid fa-robot"></i> NLP</button>
         <button class="pill" [ngClass]="{ active: filterMode() === 'RECORD' }"
-          (click)="filterMode.set('RECORD'); applyFilters()">⏺ Enregistrement</button>
+          (click)="filterMode.set('RECORD'); applyFilters()"><i class="fa-solid fa-circle-dot"></i> Enregistrement</button>
       </div>
     </div>
 
@@ -95,7 +95,7 @@
       <label class="filter-label">Date de création</label>
       <div class="filter-dates">
         <input type="date" class="date-input" [(ngModel)]="filterDateFrom" (change)="applyFilters()" />
-        <span class="date-sep">→</span>
+        <span class="date-sep"><i class="fa-solid fa-arrow-right"></i></span>
         <input type="date" class="date-input" [(ngModel)]="filterDateTo" (change)="applyFilters()" />
       </div>
     </div>
@@ -106,14 +106,14 @@
     <span class="filters-summary">
       {{ activeFiltersCount === 0 ? 'Aucun filtre actif' : activeFiltersCount + ' filtre(s) actif(s)' }}
     </span>
-    <button class="btn btn-ghost btn-xs" (click)="resetFilters()">✕ Réinitialiser tout</button>
+    <button class="btn btn-ghost btn-xs" (click)="resetFilters()"><i class="fa-solid fa-xmark"></i> Réinitialiser tout</button>
   </div>
 </div>
 
 <!-- ==================== ERREUR SUPPRESSION ==================== -->
 <div *ngIf="deleteError" class="alert-error">
-  ⚠ {{ deleteError }}
-  <button class="alert-close" (click)="deleteError = ''">✕</button>
+  <i class="fa-solid fa-triangle-exclamation"></i> {{ deleteError }}
+  <button class="alert-close" (click)="deleteError = ''"><i class="fa-solid fa-xmark"></i></button>
 </div>
 
 <!-- ==================== TABS ==================== -->
@@ -139,11 +139,11 @@
 <div class="scenarios-list">
 
   <div *ngIf="loading" class="empty-state">
-    <span class="loading-spinner">⟳</span>&nbsp;Chargement...
+    <i class="fa-solid fa-arrows-rotate fa-spin"></i>&nbsp;Chargement...
   </div>
 
   <div *ngIf="!loading && scenarios.length === 0" class="empty-state">
-    <div class="empty-icon">🔍</div>
+    <div class="empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
     <div>Aucun scénario trouvé.</div>
     <div class="empty-sub" *ngIf="activeFiltersCount > 0 || searchQuery">
       <button class="btn btn-ghost btn-xs" (click)="resetFilters()">
@@ -161,38 +161,40 @@
         <div class="scenario-name">
           {{ s.name }}
           <span class="status-badge" [ngClass]="'status-' + s.status.toLowerCase()">
-            {{ s.status === 'ACTIVE' ? '● Actif' : '○ Brouillon' }}
+            <i class="fa-solid" [ngClass]="s.status === 'ACTIVE' ? 'fa-circle-check' : 'fa-circle'"></i>
+            {{ s.status === 'ACTIVE' ? 'Actif' : 'Brouillon' }}
           </span>
         </div>
         <div class="scenario-meta">
-          <span class="scenario-page">{{ s.page }}</span>
+          <span class="scenario-page"><i class="fa-solid" [ngClass]="s.mode === 'NLP' ? 'fa-robot' : 'fa-circle-dot'"></i> {{ s.page }}</span>
           <span class="exec-count" *ngIf="s.execCount > 0">
-            ▷ {{ s.execCount }} exécution{{ s.execCount > 1 ? 's' : '' }}
+            <i class="fa-solid fa-play"></i> {{ s.execCount }} exécution{{ s.execCount > 1 ? 's' : '' }}
           </span>
         </div>
       </div>
 
       <div class="scenario-actions">
         <button class="btn btn-ghost btn-sm" (click)="toggleData(s)">
-          {{ s.dataOpen ? '▴ Données' : '⚙ Données' }}
+          <i class="fa-solid" [ngClass]="s.dataOpen ? 'fa-chevron-up' : 'fa-gear'"></i> Données
         </button>
-<button class="btn btn-ghost btn-sm" [routerLink]="['/projects', projectId, 'scenarios', s.id, 'edit']">✏ Modifier</button>        <button class="btn btn-ghost btn-sm"
+        <button class="btn btn-ghost btn-sm" [routerLink]="['/projects', projectId, 'scenarios', s.id, 'edit']"><i class="fa-solid fa-pen"></i> Modifier</button>
+        <button class="btn btn-ghost btn-sm"
                 [disabled]="executingOne() === s.id"
                 (click)="executeScenario(s)">
-          <span *ngIf="executingOne() !== s.id">▷ Exécuter</span>
-          <span *ngIf="executingOne() === s.id"><span class="loading-spinner">⟳</span> ...</span>
+          <span *ngIf="executingOne() !== s.id"><i class="fa-solid fa-play"></i> Exécuter</span>
+          <span *ngIf="executingOne() === s.id"><i class="fa-solid fa-arrows-rotate fa-spin"></i> ...</span>
         </button>
         <button
           class="btn btn-danger btn-sm"
           (click)="deleteScenario(s)"
           title="Supprimer ce scénario"
-        >🗑</button>
+        ><i class="fa-solid fa-trash"></i></button>
       </div>
     </div>
 
     <div class="scenario-data-panel" [ngClass]="{ open: s.dataOpen }">
       <div class="data-header">
-        <span>🤖 DONNÉES DE TEST GÉNÉRÉES AUTOMATIQUEMENT</span>
+        <span><i class="fa-solid fa-robot"></i> DONNÉES DE TEST GÉNÉRÉES AUTOMATIQUEMENT</span>
       </div>
      <div class="data-field" *ngFor="let d of s.data">
   <span class="data-key">{{ d.k }}</span>
@@ -201,14 +203,14 @@
   </span>
   <label class="lock-check" title="Conserver cette donnée (ne plus régénérer)">
     <input type="checkbox" [checked]="d.locked" (change)="toggleLock(s, d)"/>
-    🔒
+    <i class="fa-solid fa-lock"></i>
   </label>
-  <button class="btn btn-ghost btn-xs" [disabled]="d.locked" (click)="regenerateOneData(s, d)">🎲</button>
+  <button class="btn btn-ghost btn-xs" [disabled]="d.locked" (click)="regenerateOneData(s, d)"><i class="fa-solid fa-dice"></i></button>
 </div>
      <div class="data-actions">
   <button class="btn btn-ghost btn-xs" [disabled]="regeneratingScenarioId() === s.id" (click)="regenerateAllData(s)">
-    <span *ngIf="regeneratingScenarioId() !== s.id">🎲 Régénérer les données</span>
-    <span *ngIf="regeneratingScenarioId() === s.id">⏳ Régénération...</span>
+    <span *ngIf="regeneratingScenarioId() !== s.id"><i class="fa-solid fa-dice"></i> Régénérer les données</span>
+    <span *ngIf="regeneratingScenarioId() === s.id"><i class="fa-solid fa-spinner fa-spin"></i> Régénération...</span>
   </button>
 </div>
     </div>
@@ -225,16 +227,16 @@
 
   <div class="pagination-controls">
 
-    <button class="page-btn page-btn-nav" [disabled]="currentPage === 1" (click)="goToPage(1)" title="Première page">«</button>
-    <button class="page-btn page-btn-nav" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)" title="Page précédente">‹</button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === 1" (click)="goToPage(1)" title="Première page"><i class="fa-solid fa-angles-left"></i></button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)" title="Page précédente"><i class="fa-solid fa-chevron-left"></i></button>
 
     <ng-container *ngFor="let p of pages">
       <span *ngIf="isEllipsis(p)" class="page-ellipsis">…</span>
       <button *ngIf="!isEllipsis(p)" class="page-btn" [ngClass]="{ active: p === currentPage }" (click)="goToPage(+p)">{{ p }}</button>
     </ng-container>
 
-    <button class="page-btn page-btn-nav" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)" title="Page suivante">›</button>
-    <button class="page-btn page-btn-nav" [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)" title="Dernière page">»</button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)" title="Page suivante"><i class="fa-solid fa-chevron-right"></i></button>
+    <button class="page-btn page-btn-nav" [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)" title="Dernière page"><i class="fa-solid fa-angles-right"></i></button>
 
   </div>
 </div>

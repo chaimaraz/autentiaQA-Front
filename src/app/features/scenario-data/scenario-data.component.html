@@ -3,35 +3,35 @@
 <div class="card scenario-data-card">
   <div class="card-header">
     <div class="card-title">
-      🗃️ Données du scénario
+      <i class="fa-solid fa-database"></i> Données du scénario
       <span class="count-label" *ngIf="variables().length > 0">({{ variables().length }})</span>
     </div>
     <div class="page-actions">
       <button class="btn btn-ghost btn-xs" (click)="sync()" [disabled]="loading()" title="Redétecte les {{'{{placeholders}}'}} du script">
-        🔁 Détecter
+        <i class="fa-solid fa-rotate"></i> Détecter
       </button>
       <button class="btn btn-ghost btn-xs" (click)="regenerateAll()" [disabled]="loading()" title="Régénère toutes les variables non-manuelles">
-        🎲 Régénérer tout
+        <i class="fa-solid fa-dice"></i> Régénérer tout
       </button>
-      <button class="btn btn-ghost btn-xs" (click)="exportJson()" [disabled]="variables().length === 0">⬇ Exporter</button>
+      <button class="btn btn-ghost btn-xs" (click)="exportJson()" [disabled]="variables().length === 0"><i class="fa-solid fa-download"></i> Exporter</button>
       <label class="btn btn-ghost btn-xs" style="cursor:pointer">
-        ⬆ Importer
+        <i class="fa-solid fa-upload"></i> Importer
         <input type="file" accept="application/json" style="display:none" (change)="importJson($event)">
       </label>
       <button class="btn btn-primary btn-xs" (click)="save()" [disabled]="saving() || loading()">
-        {{ saving() ? '⏳ Enregistrement…' : '💾 Enregistrer' }}
+        <i class="fa-solid" [ngClass]="saving() ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i> {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
       </button>
     </div>
   </div>
 
-  <div *ngIf="error()" class="alert-error" style="margin:8px 16px">⚠ {{ error() }}</div>
+  <div *ngIf="error()" class="alert-error" style="margin:8px 16px"><i class="fa-solid fa-triangle-exclamation"></i> {{ error() }}</div>
 
-  <div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement…</div>
+  <div *ngIf="loading()" class="empty-state"><i class="fa-solid fa-arrows-rotate spin"></i> Chargement…</div>
 
   <div *ngIf="!loading() && variables().length === 0" class="empty-state">
-    <div class="empty-icon">🗃️</div>
+    <div class="empty-icon"><i class="fa-solid fa-database"></i></div>
     <div>Aucune variable détectée.</div>
-    <button class="btn btn-ghost btn-xs" style="margin-top:8px" (click)="sync()">🔁 Détecter depuis le script</button>
+    <button class="btn btn-ghost btn-xs" style="margin-top:8px" (click)="sync()"><i class="fa-solid fa-rotate"></i> Détecter depuis le script</button>
   </div>
 
   <table class="exec-table" *ngIf="!loading() && variables().length > 0">
@@ -49,7 +49,7 @@
       <tr *ngFor="let v of variables()">
         <td class="cell-mono">
           {{ v.key }}
-          <span class="secret-badge" *ngIf="v.isSecret" title="Valeur sensible">🔒</span>
+          <span class="secret-badge" *ngIf="v.isSecret" title="Valeur sensible"><i class="fa-solid fa-lock"></i></span>
         </td>
         <td>
           <input
@@ -58,12 +58,12 @@
             [type]="(v.isSecret && !isSecretVisible(v.id)) ? 'password' : 'text'"
           />
           <button *ngIf="v.isSecret" class="btn btn-ghost btn-xs" (click)="toggleSecretVisibility(v.id)" style="margin-left:4px">
-            {{ isSecretVisible(v.id) ? '🙈' : '👁' }}
+            <i class="fa-solid" [ngClass]="isSecretVisible(v.id) ? 'fa-eye-slash' : 'fa-eye'"></i>
           </button>
         </td>
         <td class="cell-text">{{ v.type || 'STRING' }}</td>
         <td>
-          <span class="type-badge">{{ generatorLabel(v.generator) }}</span>
+          <span class="type-badge"><i class="fa-solid" [ngClass]="generatorIcon(v.generator)"></i> {{ generatorLabel(v.generator) }}</span>
         </td>
         <td class="cell-toggle">
   <input type="checkbox" [checked]="v.locked" (change)="toggleLock(v)" title="Conserver cette donnée (ne plus régénérer)"/>
@@ -76,7 +76,7 @@
             (click)="regenerateOne(v)"
             title="Régénérer cette variable"
           >
-            {{ regeneratingId() === v.id ? '⏳' : '🎲' }}
+            <i class="fa-solid" [ngClass]="regeneratingId() === v.id ? 'fa-spinner fa-spin' : 'fa-dice'"></i>
           </button>
         </td>
       </tr>

@@ -40,17 +40,17 @@ export class GitConfigFormComponent implements OnInit {
   ) {}
 
   roleOptions: { key: RepoRoleKey; label: string; icon: string }[] = [
-    { key: 'FRONTEND', label: 'Frontend', icon: '🖥️' },
-    { key: 'BACKEND',  label: 'Backend / Microservice', icon: '⚙️' },
-    { key: 'MOBILE',   label: 'Mobile', icon: '📱' },
-    { key: 'INFRA',    label: 'Infra', icon: '🛠️' },
-    { key: 'OTHER',    label: 'Autre', icon: '📦' },
+    { key: 'FRONTEND', label: 'Frontend', icon: 'fa-solid fa-desktop' },
+    { key: 'BACKEND',  label: 'Backend / Microservice', icon: 'fa-solid fa-gear' },
+    { key: 'MOBILE',   label: 'Mobile', icon: 'fa-solid fa-mobile-screen' },
+    { key: 'INFRA',    label: 'Infra', icon: 'fa-solid fa-toolbox' },
+    { key: 'OTHER',    label: 'Autre', icon: 'fa-solid fa-box' },
   ];
   providerOptions: { key: ProviderKey; label: string; icon: string }[] = [
-    { key: 'GITHUB',    label: 'GitHub', icon: '🐙' },
-    { key: 'GITLAB',    label: 'GitLab', icon: '🦊' },
-    { key: 'BITBUCKET', label: 'Bitbucket', icon: '🪣' },
-    { key: 'OTHER',     label: 'Autre', icon: '🔗' },
+    { key: 'GITHUB',    label: 'GitHub', icon: 'fa-brands fa-github' },
+    { key: 'GITLAB',    label: 'GitLab', icon: 'fa-brands fa-gitlab' },
+    { key: 'BITBUCKET', label: 'Bitbucket', icon: 'fa-brands fa-bitbucket' },
+    { key: 'OTHER',     label: 'Autre', icon: 'fa-solid fa-code-branch' },
   ];
 
   // ── Sélecteur de projet (utilisé uniquement si projectId n'est pas déjà connu) ──

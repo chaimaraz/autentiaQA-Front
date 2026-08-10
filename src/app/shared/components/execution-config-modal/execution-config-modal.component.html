@@ -9,14 +9,14 @@
           {{ isBatchMode() ? 'Tous les scénarios actifs' : targetLabel() }}
         </div>
       </div>
-      <button class="modal-close" (click)="onCancel()" aria-label="Fermer">✕</button>
+      <button class="modal-close" (click)="onCancel()" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <div class="modal-body">
 
       <!-- Screenshot -->
       <div class="config-group">
-        <div class="config-label">📸 Screenshot</div>
+        <div class="config-label"><i class="fa-solid fa-camera"></i> Screenshot</div>
         <div class="pill-row">
           <button *ngFor="let opt of captureOptions"
                   class="pill"
@@ -29,7 +29,7 @@
 
       <!-- Video -->
       <div class="config-group">
-        <div class="config-label">🎥 Vidéo</div>
+        <div class="config-label"><i class="fa-solid fa-video"></i> Vidéo</div>
         <div class="pill-row">
           <button *ngFor="let opt of captureOptions"
                   class="pill"
@@ -39,13 +39,13 @@
           </button>
         </div>
         <div class="config-hint" *ngIf="isBatchMode() && videoMode() !== 'NEVER'">
-          ⚠ La vidéo ralentit l'exécution groupée. Recommandé : Jamais ou Si échec.
+          <i class="fa-solid fa-triangle-exclamation"></i> La vidéo ralentit l'exécution groupée. Recommandé : Jamais ou Si échec.
         </div>
       </div>
 
       <!-- Trace -->
       <div class="config-group">
-        <div class="config-label">🧭 Trace (Playwright Trace Viewer)</div>
+        <div class="config-label"><i class="fa-solid fa-compass"></i> Trace (Playwright Trace Viewer)</div>
         <div class="pill-row pill-row-3">
           <button *ngFor="let opt of traceOptions"
                   class="pill"
@@ -63,10 +63,10 @@
 
     <!-- ── NOUVEAU : données de test — uniquement en mode batch -->
 <div class="config-group" *ngIf="isBatchMode() && batchScenarios().length > 0">
-  <div class="config-label">🗃️ Données de test par scénario</div>
+  <div class="config-label"><i class="fa-solid fa-database"></i> Données de test par scénario</div>
   <div class="batch-data-toolbar">
-    <button class="pill" style="grid-column:unset" (click)="setAllDataChoice('regenerate')">🎲 Tout régénérer</button>
-    <button class="pill" style="grid-column:unset" (click)="setAllDataChoice('keep')">🔒 Tout conserver</button>
+    <button class="pill" style="grid-column:unset" (click)="setAllDataChoice('regenerate')"><i class="fa-solid fa-dice"></i> Tout régénérer</button>
+    <button class="pill" style="grid-column:unset" (click)="setAllDataChoice('keep')"><i class="fa-solid fa-lock"></i> Tout conserver</button>
   </div>
 
   <div class="batch-scenario-list">
@@ -76,12 +76,12 @@
         <label>
           <input type="radio" [name]="'choice-' + s.id" [checked]="s.dataChoice === 'regenerate'"
                  (change)="setDataChoice(s, 'regenerate')"/>
-          🎲
+          <i class="fa-solid fa-dice"></i>
         </label>
         <label>
           <input type="radio" [name]="'choice-' + s.id" [checked]="s.dataChoice === 'keep'"
                  (change)="setDataChoice(s, 'keep')"/>
-          🔒
+          <i class="fa-solid fa-lock"></i>
         </label>
       </div>
     </div>
@@ -91,7 +91,7 @@
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" (click)="onCancel()">Annuler</button>
       <button class="btn btn-primary btn-sm" (click)="onConfirm()">
-        ▷ Lancer {{ isBatchMode() ? 'l\'exécution groupée' : 'l\'exécution' }}
+        <i class="fa-solid fa-play"></i> Lancer {{ isBatchMode() ? 'l\'exécution groupée' : 'l\'exécution' }}
       </button>
     </div>
 

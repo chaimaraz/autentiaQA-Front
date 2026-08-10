@@ -35,7 +35,11 @@ const TYPE_TO_SHORT: Record<string, ScenarioType> = {
 };
 
 const BROWSER_LABELS: Record<BrowserType, string> = {
-  chromium:'🟡 Chromium', firefox:'🦊 Firefox', webkit:'🍎 Safari (WebKit)',
+  chromium:'Chromium', firefox:'Firefox', webkit:'Safari (WebKit)',
+};
+
+const BROWSER_ICONS: Record<BrowserType, string> = {
+  chromium:'fa-brands fa-chrome', firefox:'fa-brands fa-firefox-browser', webkit:'fa-brands fa-safari',
 };
 
 // ── Types de documents acceptés pour le flux #2 (Document).
@@ -97,6 +101,7 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
 
   readonly browserOptions: BrowserType[] = ['chromium', 'firefox', 'webkit'];
   readonly browserLabels = BROWSER_LABELS;
+  readonly browserIcons = BROWSER_ICONS;
 
   private recTimerInterval?: ReturnType<typeof setInterval>;
   private subs               = new Subscription();
@@ -170,14 +175,14 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
   // ─────────────────────────────────────────────────────────────────────────
   copyCode(): void {
     const cmd = 'npm install -g autentia-recorder && npx playwright install chromium';
-    navigator.clipboard.writeText(cmd).then(() => alert('📋 Commande copiée !'));
+    navigator.clipboard.writeText(cmd).then(() => alert('Commande copiée !'));
   }
 
   copyScript(): void {
     const text = this.activeMode() === 'nlp'
       ? this.parsedScript()
       : (this.recScript() || this.liveScript);
-    navigator.clipboard.writeText(text).then(() => alert('📋 Script copié !'));
+    navigator.clipboard.writeText(text).then(() => alert('Script copié !'));
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -530,7 +535,7 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
         (res.data || []).forEach((scenario: Scenario) => this.saved.emit(scenario));
 
         if (!this.docProposals().length && !res.errors?.length) {
-          alert(`✅ ${res.data.length} scénario(s) créé(s) avec succès.`);
+          alert(`${res.data.length} scénario(s) créé(s) avec succès.`);
         }
       },
       error: (err: unknown) => {
@@ -558,7 +563,7 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
       maxDepth: this.urlMaxDepth,
     });
 
-    job.progress$.subscribe(p => this.urlError.set('ℹ️ ' + p.message));
+    job.progress$.subscribe(p => this.urlError.set(p.message));
 
     job.result$.subscribe(({ scenarios, pagesExplored }) => {
       this.urlCrawling.set(false);
@@ -614,7 +619,7 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
         (res.data || []).forEach((scenario: Scenario) => this.saved.emit(scenario));
 
         if (!this.urlProposals().length && !res.errors?.length) {
-          alert(`✅ ${res.data.length} scénario(s) créé(s) avec succès.`);
+          alert(`${res.data.length} scénario(s) créé(s) avec succès.`);
         }
       },
       error: (err: unknown) => {
@@ -688,7 +693,7 @@ export class AddScenarioModalComponent implements OnDestroy, AfterViewChecked {
         this.saving.set(false);
         this.saved.emit(scenario);
         if (status === 'ACTIVE') this.close();
-        else alert('💾 Brouillon sauvegardé !');
+        else alert('Brouillon sauvegardé !');
       },
       error: (err: unknown) => {
         this.saving.set(false);

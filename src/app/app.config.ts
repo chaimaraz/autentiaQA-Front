@@ -4,6 +4,7 @@ import { provideRouter, withComponentInputBinding, withViewTransitions } from '@
 import { APP_ROUTES } from './app.routes';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/interceptors/auth.interceptor'; // ── NOUVEAU
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts'; // ── NOUVEAU : graphiques du dashboard
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -17,5 +18,6 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       withViewTransitions()   // transitions fluides entre routes
     ),
+    provideCharts(withDefaultRegisterables()),
   ],
 };

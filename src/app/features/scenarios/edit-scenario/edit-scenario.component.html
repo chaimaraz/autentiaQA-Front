@@ -6,14 +6,14 @@
     <div class="section-sub">{{ name || '...' }}</div>
   </div>
   <div class="page-actions">
-    <button class="btn btn-ghost btn-sm" (click)="goBack()">← Retour aux scénarios</button>
+    <button class="btn btn-ghost btn-sm" (click)="goBack()"><i class="fa-solid fa-arrow-left"></i> Retour aux scénarios</button>
   </div>
 </div>
 
-<div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement...</div>
+<div *ngIf="loading()" class="empty-state"><i class="fa-solid fa-arrows-rotate spin"></i> Chargement...</div>
 
-<div class="alert-error" *ngIf="error()">⚠ {{ error() }}</div>
-<div class="alert-success" *ngIf="saveOk()">✅ Scénario enregistré.</div>
+<div class="alert-error" *ngIf="error()"><i class="fa-solid fa-triangle-exclamation"></i> {{ error() }}</div>
+<div class="alert-success" *ngIf="saveOk()"><i class="fa-solid fa-circle-check"></i> Scénario enregistré.</div>
 
 <ng-container *ngIf="!loading()">
 
@@ -44,7 +44,7 @@
   <div class="card mb-16">
     <div class="card-header">
       <div class="card-title">Étapes métier</div>
-      <button class="btn btn-ghost btn-xs" (click)="addStep()">+ Ajouter une étape</button>
+      <button class="btn btn-ghost btn-xs" (click)="addStep()"><i class="fa-solid fa-plus"></i> Ajouter une étape</button>
     </div>
     <div class="card-body">
       <div *ngIf="steps().length === 0" class="no-data">Aucune étape définie.</div>
@@ -52,7 +52,7 @@
         <span class="ai-step-num">{{ i + 1 }}</span>
         <input class="form-input" style="flex:2" [(ngModel)]="step.description" placeholder="Étape métier (ex: Saisir l'email)"/>
         <input class="form-input form-input-mono" style="flex:1" [(ngModel)]="step.selector" placeholder="Sélecteur (optionnel)"/>
-        <button class="btn btn-ghost btn-xs" (click)="removeStep(step)">✕</button>
+        <button class="btn btn-ghost btn-xs" (click)="removeStep(step)"><i class="fa-solid fa-xmark"></i></button>
       </div>
     </div>
   </div>
@@ -62,8 +62,8 @@
     <div class="card-header">
       <div class="card-title">Script Playwright</div>
       <button class="btn btn-primary btn-sm" [disabled]="regenerating()" (click)="regenerateScript()">
-        <span *ngIf="!regenerating()">🔁 Régénérer le script</span>
-        <span *ngIf="regenerating()">⏳ Régénération...</span>
+        <span *ngIf="!regenerating()"><i class="fa-solid fa-rotate"></i> Régénérer le script</span>
+        <span *ngIf="regenerating()"><i class="fa-solid fa-spinner fa-spin"></i> Régénération...</span>
       </button>
     </div>
     <div class="card-body">
@@ -78,8 +78,8 @@
   <div class="wizard-nav">
     <button class="btn btn-ghost" (click)="goBack()">Annuler</button>
     <button class="btn btn-primary" [disabled]="saving()" (click)="save()">
-      <span *ngIf="!saving()">💾 Enregistrer</span>
-      <span *ngIf="saving()">⏳ Enregistrement...</span>
+      <span *ngIf="!saving()"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</span>
+      <span *ngIf="saving()"><i class="fa-solid fa-spinner fa-spin"></i> Enregistrement...</span>
     </button>
   </div>
 

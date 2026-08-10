@@ -4,8 +4,8 @@
   à tous les membres portant ce rôle, sur l'ensemble des projets.
 </div>
 
-<div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement de la matrice des permissions...</div>
-<div class="auth-alert error show" *ngIf="error()"><span>⚠️</span> {{ error() }}</div>
+<div *ngIf="loading()" class="empty-state"><i class="fa-solid fa-arrows-rotate spin"></i> Chargement de la matrice des permissions...</div>
+<div class="auth-alert error show" *ngIf="error()"><i class="fa-solid fa-triangle-exclamation"></i> {{ error() }}</div>
 
 <div *ngIf="!loading()">
   <div *ngFor="let category of categories()" style="margin-bottom:20px">
@@ -32,7 +32,7 @@
             [class.disabled]="role === 'ADMIN'"
             [title]="role === 'ADMIN' ? 'Le rôle Administrateur a toujours accès complet' : ''"
             (click)="toggle(role, perm.code)"
-          >{{ isChecked(role, perm.code) ? '✓' : '' }}</div>
+          ><i class="fa-solid fa-check" *ngIf="isChecked(role, perm.code)"></i></div>
         </div>
       </div>
     </div>
@@ -46,9 +46,10 @@
         [disabled]="saving() === role"
         (click)="save(role)"
       >
-        {{ saving() === role ? '⏳ Enregistrement...' : '💾 Enregistrer — ' + roleLabels[role] }}
+        <i class="fa-solid" [ngClass]="saving() === role ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+        {{ saving() === role ? 'Enregistrement...' : 'Enregistrer — ' + roleLabels[role] }}
       </button>
-      <span class="ac-saved-tag" *ngIf="savedRole() === role">✅ Permissions mises à jour</span>
+      <span class="ac-saved-tag" *ngIf="savedRole() === role"><i class="fa-solid fa-circle-check"></i> Permissions mises à jour</span>
     </div>
   </div>
 </div>

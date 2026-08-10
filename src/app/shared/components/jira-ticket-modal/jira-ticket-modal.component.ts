@@ -1,13 +1,13 @@
 // src/app/shared/components/jira-ticket-modal/jira-ticket-modal.component.ts
 import { Component, EventEmitter, Output, inject, signal } from '@angular/core';
-import { NgIf, NgFor } from '@angular/common';
+import { NgIf, NgFor, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ExecutionService, JiraPreview, JiraTicketResult } from '../../../services/execution.service';
 
 @Component({
   selector: 'app-jira-ticket-modal',
   standalone: true,
-  imports: [NgIf, NgFor, FormsModule],
+  imports: [NgIf, NgFor, NgClass, FormsModule],
   templateUrl: './jira-ticket-modal.component.html',
   styleUrl: './jira-ticket-modal.component.scss',
 })
@@ -84,11 +84,11 @@ export class JiraTicketModalComponent {
 
   causeLabelFr(cat: string): string {
     const labels: Record<string, string> = {
-      APPLICATION_BUG: '🐛 Bug application',
-      SCRIPT_ISSUE: '📝 Script/sélecteur',
-      ENVIRONMENT: '🌐 Environnement',
-      TIMING: '⏱ Timing',
-      UNKNOWN: '❓ Indéterminé',
+      APPLICATION_BUG: 'Bug application',
+      SCRIPT_ISSUE: 'Script/sélecteur',
+      ENVIRONMENT: 'Environnement',
+      TIMING: 'Timing',
+      UNKNOWN: 'Indéterminé',
     };
     return labels[cat] || cat;
   }

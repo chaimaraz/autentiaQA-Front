@@ -1,7 +1,8 @@
 // src/app/services/modal-socket.service.ts
 import { Injectable }  from '@angular/core';
-import { io, Socket }  from 'socket.io-client';
+import { Socket }      from 'socket.io-client';
 import { Subject }     from 'rxjs';
+import { createSocket } from '../shared/utils/socket-factory';
 
 export interface AgentStatus {
   connected: boolean;
@@ -26,7 +27,7 @@ export class ModalSocketService {
   connect(serverUrl: string): void {
     if (this.socket?.connected) return;
 
-    this.socket = io(`${serverUrl}${this.MODAL_NS}`, {
+    this.socket = createSocket(`${serverUrl}${this.MODAL_NS}`, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 3000,

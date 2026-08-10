@@ -3,7 +3,7 @@
 
 <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
   <button class="btn btn-primary btn-sm" (click)="toggleCreateForm()">
-    {{ showCreateForm() ? '✕ Fermer' : '+ Créer un Administrateur' }}
+    <i class="fa-solid" [ngClass]="showCreateForm() ? 'fa-xmark' : 'fa-plus'"></i> {{ showCreateForm() ? 'Fermer' : 'Créer un Administrateur' }}
   </button>
 </div>
 
@@ -22,14 +22,14 @@
       <input class="form-input" type="password" placeholder="Min. 8 caractères" [(ngModel)]="newPassword" />
     </div>
     <button class="btn btn-primary" [disabled]="creating()" (click)="createAdmin()">
-      {{ creating() ? '⏳ Création...' : '✅ Créer' }}
+      <i class="fa-solid" [ngClass]="creating() ? 'fa-spinner fa-spin' : 'fa-check'"></i> {{ creating() ? 'Création...' : 'Créer' }}
     </button>
   </div>
-  <div class="auth-alert error show" *ngIf="createError()" style="margin-top:12px"><span>⚠️</span> {{ createError() }}</div>
-  <div class="auth-alert success show" *ngIf="createSuccess()" style="margin-top:12px"><span>✅</span> {{ createSuccess() }}</div>
+  <div class="auth-alert error show" *ngIf="createError()" style="margin-top:12px"><i class="fa-solid fa-triangle-exclamation"></i> {{ createError() }}</div>
+  <div class="auth-alert success show" *ngIf="createSuccess()" style="margin-top:12px"><i class="fa-solid fa-circle-check"></i> {{ createSuccess() }}</div>
 </div>
 
-<div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement...</div>
+<div *ngIf="loading()" class="empty-state"><i class="fa-solid fa-arrows-rotate spin"></i> Chargement...</div>
 
 <table class="user-table" *ngIf="!loading() && users().length > 0">
   <thead>

@@ -59,10 +59,10 @@ export class NewProjectComponent {
   detectedTags = ['Angular 17', 'SPA', 'JWT Auth', 'REST API', 'Lazy Loading'];
 
   generationModes: GenerationMode[] = [
-    { key: 'URL_CRAWL',      icon: '🕸️', title: 'Analyse automatique URL',
+    { key: 'URL_CRAWL',      icon: 'fa-globe', title: 'Analyse automatique URL',
       desc: "Le crawler parcourt l'ensemble du site et détecte tous les formulaires.",
       colorClass: 'cyan',   selected: true  },
-    { key: 'SPEC_DOCUMENT',  icon: '📄', title: 'Spécifications métier',
+    { key: 'SPEC_DOCUMENT',  icon: 'fa-file-lines', title: 'Spécifications métier',
       desc: "Importez un PDF ou Word. L'IA extrait les règles métier.",
       colorClass: 'purple', selected: false },
   ];
@@ -158,9 +158,9 @@ export class NewProjectComponent {
     const MAX = 20 * 1024 * 1024;
     rawFiles.forEach(file => {
       if (!NewProjectComponent.ALLOWED_SPEC_TYPES[file.type]) {
-        alert(`❌ Type non supporté : ${file.name}`); return;
+        alert(`Type non supporté : ${file.name}`); return;
       }
-      if (file.size > MAX) { alert(`❌ Fichier trop volumineux : ${file.name}`); return; }
+      if (file.size > MAX) { alert(`Fichier trop volumineux : ${file.name}`); return; }
       if (this.uploadedFiles.find(f => f.name === file.name && f.file.size === file.size)) return;
       this.uploadedFiles.push({ file, name: file.name,
         sizeLabel: this.formatBytes(file.size), mimeType: file.type });
@@ -207,7 +207,7 @@ export class NewProjectComponent {
     return true;
   }
 
-  saveDraft(): void { alert('💾 Brouillon sauvegardé !'); }
+  saveDraft(): void { alert('Brouillon sauvegardé !'); }
 
   launch(): void {
     if (this.isSubmitting()) return;
@@ -278,7 +278,7 @@ export class NewProjectComponent {
       this.isSubmitting.set(false);
       this.aiStatusLabel.set('');
       alert(
-        `⚠️ Le projet a bien été créé, mais l'analyse IA a échoué :\n${message}\n\n` +
+        `Le projet a bien été créé, mais l'analyse IA a échoué :\n${message}\n\n` +
         `Vous pouvez réessayer depuis l'écran Scénarios.`
       );
       this.router.navigate(['/projects', project.id, 'scenarios']);

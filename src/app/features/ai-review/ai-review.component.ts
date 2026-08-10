@@ -115,10 +115,7 @@ export class AiReviewComponent implements OnInit {
 
     const job = this.aiSvc.generateScripts(this.projectId(), selected);
 
-    job.progress$.subscribe((p: { status: string; message: string }) => {
-      // Optionnel : afficher la progression dans globalError comme info
-      // this.globalError.set('ℹ️ ' + p.message);
-    });
+    job.progress$.subscribe(() => {});
 
     job.result$.subscribe((data: { scenarios: AIScenarioProposal[] }) => {
       const byId = new Map(data.scenarios.map((s: AIScenarioProposal) => [s.tempId, s]));

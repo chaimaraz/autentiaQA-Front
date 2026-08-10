@@ -8,7 +8,7 @@
   <!-- LEFT: Available scenarios -->
   <div class="card">
     <div class="card-header">
-      <div class="card-title">🎯 Scénarios disponibles <span class="ai-badge">🤖 IA</span></div>
+      <div class="card-title"><i class="fa-solid fa-bullseye"></i> Scénarios disponibles <span class="ai-badge"><i class="fa-solid fa-robot"></i> IA</span></div>
     </div>
     <div class="card-body scenario-picker">
       <div class="scenario-chip" *ngFor="let s of availableScenarios">
@@ -17,7 +17,7 @@
           <div class="sc-name">{{ s.name }}</div>
           <div class="sc-sub">{{ s.desc }}</div>
         </div>
-        <div class="sc-add-btn" (click)="addStep(s)" title="Ajouter au flux">+</div>
+        <div class="sc-add-btn" (click)="addStep(s)" title="Ajouter au flux"><i class="fa-solid fa-plus"></i></div>
       </div>
     </div>
   </div>
@@ -26,7 +26,7 @@
   <div>
     <!-- Properties -->
     <div class="card mb-16">
-      <div class="card-header"><div class="card-title">⚙ Propriétés du flux</div></div>
+      <div class="card-header"><div class="card-title"><i class="fa-solid fa-gear"></i> Propriétés du flux</div></div>
       <div class="card-body" style="padding:14px">
         <div class="form-group" style="margin-bottom:10px">
           <label class="form-label">Nom du flux</label>
@@ -35,10 +35,10 @@
         <div class="form-group" style="margin-bottom:0">
           <label class="form-label">Type</label>
           <select class="form-input" style="font-size:12px">
-            <option>✅ Positif — tout doit réussir</option>
-            <option>❌ Négatif — vérifier erreurs/blocages</option>
-            <option>🔐 Sécurité — accès interdits</option>
-            <option>🔀 Mixte</option>
+            <option>Positif — tout doit réussir</option>
+            <option>Négatif — vérifier erreurs/blocages</option>
+            <option>Sécurité — accès interdits</option>
+            <option>Mixte</option>
           </select>
         </div>
       </div>
@@ -47,16 +47,16 @@
     <!-- Steps canvas -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title">📋 Étapes du flux</div>
+        <div class="card-title"><i class="fa-solid fa-list-check"></i> Étapes du flux</div>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost btn-sm" (click)="clearSteps()">✕ Vider</button>
-          <button class="btn btn-primary btn-sm" (click)="saveFlux()">💾 Sauvegarder</button>
+          <button class="btn btn-ghost btn-sm" (click)="clearSteps()"><i class="fa-solid fa-xmark"></i> Vider</button>
+          <button class="btn btn-primary btn-sm" (click)="saveFlux()"><i class="fa-solid fa-floppy-disk"></i> Sauvegarder</button>
         </div>
       </div>
       <div class="card-body" style="padding:14px">
         <!-- Empty state -->
         <div class="flux-empty" *ngIf="steps().length === 0">
-          <div class="flux-empty-icon">⟶</div>
+          <div class="flux-empty-icon"><i class="fa-solid fa-arrow-right"></i></div>
           <p>Cliquez sur <strong>+</strong> à gauche<br />pour ajouter un scénario au flux</p>
         </div>
 
@@ -73,7 +73,7 @@
                   <div class="step-name">{{ step.name }}</div>
                   <div class="step-desc">{{ step.desc }}</div>
                 </div>
-                <button class="step-remove" (click)="removeStep(i)" title="Supprimer">✕</button>
+                <button class="step-remove" (click)="removeStep(i)" title="Supprimer"><i class="fa-solid fa-xmark"></i></button>
               </div>
             </div>
           </div>
@@ -81,7 +81,7 @@
 
         <!-- AI data hint -->
         <div class="ai-insight" *ngIf="steps().length > 0" style="margin-top:12px;margin-bottom:0">
-          <div class="ai-icon">🧠</div>
+          <div class="ai-icon"><i class="fa-solid fa-brain"></i></div>
           <div class="ai-text">
             <strong>Données partagées :</strong> L'IA génère un jeu cohérent pour tout le flux.
             L'email de l'étape Inscription est réutilisé automatiquement au Login.
@@ -93,5 +93,5 @@
 </div>
 
 <div style="margin-top:16px">
-  <a [routerLink]="'/flux/list'" class="btn btn-ghost">← Retour à la liste</a>
+  <a [routerLink]="'/flux/list'" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Retour à la liste</a>
 </div>

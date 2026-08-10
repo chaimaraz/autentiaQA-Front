@@ -68,37 +68,37 @@ export class SidebarComponent implements OnInit {
     {
       label: 'Général',
       items: [
-        { label: 'Tableau de bord', icon: '⬡', route: '/dashboard' },
-        { label: 'Projets', icon: '◫', route: '/projects', badge: '3', badgeClass: 'green' },
+        { label: 'Tableau de bord', icon: 'fa-gauge-high', route: '/dashboard' },
+        { label: 'Projets', icon: 'fa-folder-open', route: '/projects', badge: '3', badgeClass: 'green' },
       ],
     },
     {
       label: 'Workflow Test',
       items: [
-        { label: 'Nouveau projet', icon: '✦', route: '/projects/new' },
-        { label: 'Scénarios IA', icon: '≡', route: '/scenarios', badge: '47', permission: 'SCENARIO_VIEW' },
+        { label: 'Nouveau projet', icon: 'fa-square-plus', route: '/projects/new' },
+        { label: 'Scénarios IA', icon: 'fa-list-check', route: '/scenarios', badge: '47', permission: 'SCENARIO_VIEW' },
         {
           label: 'Flux personnalisés',
-          icon: '⟶',
+          icon: 'fa-code-branch',
           badge: '3',
           badgeClass: 'green',
           open: false,
           permission: 'SCENARIO_VIEW',
           children: [
-            { label: 'Liste des flux', icon: '☰', route: '/flux/list' },
-            { label: 'Créer un flux', icon: '+', route: '/flux/new', permission: 'SCENARIO_CREATE' },
+            { label: 'Liste des flux', icon: 'fa-list', route: '/flux/list' },
+            { label: 'Créer un flux', icon: 'fa-plus', route: '/flux/new', permission: 'SCENARIO_CREATE' },
           ],
         } as NavGroup,
         {
           label: 'Exécution',
-          icon: '▷',
+          icon: 'fa-play',
           badge: '1',
           badgeClass: 'orange',
           open: true,
           permission: 'EXECUTION_VIEW',
           children: [
-            { label: 'En cours', icon: '▷', route: '/execution' },
-            { label: 'Historique', icon: '📜', route: '/history', permission: 'REPORT_VIEW' },
+            { label: 'En cours', icon: 'fa-play', route: '/execution' },
+            { label: 'Historique', icon: 'fa-clock-rotate-left', route: '/history', permission: 'REPORT_VIEW' },
           ],
         } as NavGroup,
       ],
@@ -106,8 +106,8 @@ export class SidebarComponent implements OnInit {
     {
       label: 'Tests Avancés',
       items: [
-        { label: 'Performance', icon: '◈', route: '/performance', permission: 'PERFORMANCE_VIEW' },
-        { label: 'Sécurité OWASP', icon: '⬡', route: '/security', permission: 'SECURITY_VIEW' },
+        { label: 'Performance', icon: 'fa-gauge', route: '/performance', permission: 'PERFORMANCE_VIEW' },
+        { label: 'Sécurité OWASP', icon: 'fa-shield-halved', route: '/security', permission: 'SECURITY_VIEW' },
       ],
     },
     {
@@ -115,16 +115,16 @@ export class SidebarComponent implements OnInit {
       items: [
         {
           label: 'Pipeline CI/CD',
-          icon: '⎇',
+          icon: 'fa-code-branch',
           open: false,
           permission: 'GIT_CONFIG_MANAGE',
           children: [
-            { label: 'Configuration Git', icon: '🔗', route: '/git-config' },
-            { label: 'Ajouter un dépôt', icon: '+', route: '/git-config/add-config' },
+            { label: 'Configuration Git', icon: 'fa-link', route: '/git-config' },
+            { label: 'Ajouter un dépôt', icon: 'fa-plus', route: '/git-config/add-config' },
           ],
         } as NavGroup,
-        { label: 'Rapports', icon: '▦', route: '/reports', permission: 'REPORT_VIEW' },
-        { label: 'Paramètres', icon: '◎', route: '/settings' },
+        { label: 'Rapports', icon: 'fa-chart-column', route: '/reports', permission: 'REPORT_VIEW' },
+        { label: 'Paramètres', icon: 'fa-gear', route: '/settings' },
       ],
     },
   ];

@@ -4,23 +4,23 @@
 
     <div class="modal-header">
       <div>
-        <div class="modal-title">🐛 Créer un ticket Jira</div>
+        <div class="modal-title"><i class="fa-solid fa-bug"></i> Créer un ticket Jira</div>
         <div class="modal-sub">Aperçu généré automatiquement — titre et description sont modifiables avant validation</div>
       </div>
-      <button class="modal-close" (click)="onCancel()" aria-label="Fermer">✕</button>
+      <button class="modal-close" (click)="onCancel()" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <div class="modal-body">
 
-      <div *ngIf="loading()" class="config-hint">⏳ Génération de l'aperçu...</div>
+      <div *ngIf="loading()" class="config-hint"><i class="fa-solid fa-spinner fa-spin"></i> Génération de l'aperçu...</div>
 
       <ng-container *ngIf="!loading() && preview() as p">
 
         <!-- Ticket déjà existant : pas de formulaire, juste le lien -->
         <div *ngIf="p.existingTicket" class="config-group">
-          <div class="config-label">✅ Un ticket existe déjà pour cette exécution</div>
+          <div class="config-label"><i class="fa-solid fa-circle-check"></i> Un ticket existe déjà pour cette exécution</div>
           <a [href]="p.existingTicket.url" target="_blank" class="btn btn-primary btn-sm" style="width:fit-content">
-            🔗 Voir {{ p.existingTicket.key }} sur Jira
+            <i class="fa-solid fa-link"></i> Voir {{ p.existingTicket.key }} sur Jira
           </a>
         </div>
 
@@ -37,7 +37,7 @@
           </div>
 
           <div class="config-group" *ngIf="p.aiAnalysis?.summary">
-            <div class="config-label">🧠 Analyse IA</div>
+            <div class="config-label"><i class="fa-solid fa-brain"></i> Analyse IA</div>
             <div class="config-hint">{{ p.aiAnalysis.summary }}</div>
             <div class="config-hint" *ngFor="let f of p.aiAnalysis.failures">
               Étape {{ (f.stepIndex ?? 0) + 1 }} — {{ causeLabelFr(f.causeCategory) }} : {{ f.explanation }}
@@ -45,7 +45,7 @@
           </div>
 
           <div class="config-group" *ngIf="p.artifacts.length">
-            <div class="config-label">📎 Artefacts disponibles</div>
+            <div class="config-label"><i class="fa-solid fa-paperclip"></i> Artefacts disponibles</div>
             <div class="config-hint" *ngFor="let a of p.artifacts">
               {{ a.type }} — <a [href]="a.url" target="_blank">{{ a.url }}</a>
             </div>
@@ -53,14 +53,14 @@
         </ng-container>
       </ng-container>
 
-      <div class="config-hint" style="color:var(--danger)" *ngIf="error()">⚠ {{ error() }}</div>
+      <div class="config-hint" style="color:var(--danger)" *ngIf="error()"><i class="fa-solid fa-triangle-exclamation"></i> {{ error() }}</div>
     </div>
 
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" (click)="onCancel()">{{ preview()?.existingTicket ? 'Fermer' : 'Annuler' }}</button>
       <button *ngIf="preview() && !preview()!.existingTicket"
               class="btn btn-primary btn-sm" [disabled]="creating()" (click)="onConfirm()">
-        {{ creating() ? '⏳ Création...' : '🐛 Créer le ticket' }}
+        <i class="fa-solid" [ngClass]="creating() ? 'fa-spinner fa-spin' : 'fa-bug'"></i> {{ creating() ? 'Création...' : 'Créer le ticket' }}
       </button>
     </div>
 

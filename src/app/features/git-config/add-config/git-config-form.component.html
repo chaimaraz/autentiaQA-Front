@@ -1,8 +1,8 @@
 <!-- git-config-form.component.html -->
 <div class="gcf-page-head" *ngIf="isStandalonePage">
-  <a class="gcf-back-link" routerLink="/git-config" [queryParams]="projectId ? { projectId } : {}">← Retour à la configuration Git</a>
+  <a class="gcf-back-link" routerLink="/git-config" [queryParams]="projectId ? { projectId } : {}"><i class="fa-solid fa-arrow-left"></i> Retour à la configuration Git</a>
   <div class="section-title" style="margin-top:8px">
-    <span class="gcf-title-icon">⎇</span>
+    <span class="gcf-title-icon"><i class="fa-solid fa-code-branch"></i></span>
     {{ existing ? 'Modifier le dépôt' : 'Ajouter un dépôt Git' }}
   </div>
   <div class="section-sub">Connectez un dépôt pour déclencher vos scénarios automatiquement à chaque push ou pull request.</div>
@@ -11,7 +11,7 @@
 <!-- Sélecteur de projet : uniquement si l'id n'est pas déjà connu -->
 <div class="gcf-card mb-14" *ngIf="!existing">
   <div class="gcf-card-head">
-    <div class="gcf-card-head-icon">📁</div>
+    <div class="gcf-card-head-icon"><i class="fa-solid fa-folder-open"></i></div>
     <div>
       <div class="gcf-card-title">Projet</div>
       <div class="gcf-card-sub">À quel projet rattacher ce dépôt ?</div>
@@ -29,7 +29,7 @@
 <!-- ① Informations du dépôt -->
 <div class="gcf-card mb-14">
   <div class="gcf-card-head">
-    <div class="gcf-card-head-icon">🐙</div>
+    <div class="gcf-card-head-icon"><i class="fa-brands fa-github"></i></div>
     <div>
       <div class="gcf-card-title">Informations du dépôt</div>
       <div class="gcf-card-sub">Étape 1 — identifiez le dépôt et sa nature</div>
@@ -45,7 +45,7 @@
       <label class="form-label">Type de dépôt</label>
       <div class="gcf-chip-grid">
         <div class="gcf-chip" *ngFor="let r of roleOptions" [ngClass]="{ selected: form.role === r.key }" (click)="form.role = r.key">
-          <span class="gcf-chip-icon">{{ r.icon }}</span>
+          <span class="gcf-chip-icon"><i [ngClass]="r.icon"></i></span>
           <span>{{ r.label }}</span>
         </div>
       </div>
@@ -55,7 +55,7 @@
       <label class="form-label">Fournisseur Git</label>
       <div class="gcf-chip-grid gcf-chip-grid-4">
         <div class="gcf-chip" *ngFor="let p of providerOptions" [ngClass]="{ selected: form.provider === p.key }" (click)="form.provider = p.key">
-          <span class="gcf-chip-icon">{{ p.icon }}</span>
+          <span class="gcf-chip-icon"><i [ngClass]="p.icon"></i></span>
           <span>{{ p.label }}</span>
         </div>
       </div>
@@ -77,7 +77,7 @@
 <!-- ② Déclencheurs -->
 <div class="gcf-card mb-14">
   <div class="gcf-card-head">
-    <div class="gcf-card-head-icon gcf-icon-cyan">⚡</div>
+    <div class="gcf-card-head-icon gcf-icon-cyan"><i class="fa-solid fa-bolt"></i></div>
     <div>
       <div class="gcf-card-title">Déclencheurs</div>
       <div class="gcf-card-sub">Étape 2 — quels événements Git lancent l'exécution des scénarios</div>
@@ -86,16 +86,16 @@
   <div class="gcf-card-body">
     <div class="git-events-grid">
       <div class="git-event-toggle" [ngClass]="{ selected: form.onPush }" (click)="form.onPush = !form.onPush">
-        <span>{{ form.onPush ? '✓' : '○' }}</span> Push
+        <i class="fa-solid" [ngClass]="form.onPush ? 'fa-circle-check' : 'fa-circle'"></i> Push
       </div>
       <div class="git-event-toggle" [ngClass]="{ selected: form.onPr }" (click)="form.onPr = !form.onPr">
-        <span>{{ form.onPr ? '✓' : '○' }}</span> Pull Request
+        <i class="fa-solid" [ngClass]="form.onPr ? 'fa-circle-check' : 'fa-circle'"></i> Pull Request
       </div>
       <div class="git-event-toggle" [ngClass]="{ selected: form.onTag }" (click)="form.onTag = !form.onTag">
-        <span>{{ form.onTag ? '✓' : '○' }}</span> Nouveau tag
+        <i class="fa-solid" [ngClass]="form.onTag ? 'fa-circle-check' : 'fa-circle'"></i> Nouveau tag
       </div>
       <div class="git-event-toggle" [ngClass]="{ selected: form.onSchedule }" (click)="form.onSchedule = !form.onSchedule">
-        <span>{{ form.onSchedule ? '✓' : '○' }}</span> Planifié (cron)
+        <i class="fa-solid" [ngClass]="form.onSchedule ? 'fa-circle-check' : 'fa-circle'"></i> Planifié (cron)
       </div>
     </div>
   </div>
@@ -104,7 +104,7 @@
 <!-- ③ Décision & notifications -->
 <div class="gcf-card mb-14">
   <div class="gcf-card-head">
-    <div class="gcf-card-head-icon gcf-icon-purple">🔔</div>
+    <div class="gcf-card-head-icon gcf-icon-purple"><i class="fa-solid fa-bell"></i></div>
     <div>
       <div class="gcf-card-title">Décision & notifications</div>
       <div class="gcf-card-sub">Étape 3 — comment réagir au résultat des scénarios</div>
@@ -135,11 +135,12 @@
   </div>
 </div>
 
-<div *ngIf="errorMessage()" class="gcf-error">⚠️ {{ errorMessage() }}</div>
+<div *ngIf="errorMessage()" class="gcf-error"><i class="fa-solid fa-triangle-exclamation"></i> {{ errorMessage() }}</div>
 
 <div class="gcf-actions">
   <button class="btn btn-ghost" (click)="cancel()">Annuler</button>
   <button class="btn btn-primary" (click)="submit()" [disabled]="isSaving()">
-    {{ isSaving() ? '⏳ Enregistrement...' : (existing ? '💾 Enregistrer' : '🔗 Ajouter le dépôt') }}
+    <i class="fa-solid" [ngClass]="isSaving() ? 'fa-spinner fa-spin' : (existing ? 'fa-floppy-disk' : 'fa-link')"></i>
+    {{ isSaving() ? 'Enregistrement...' : (existing ? 'Enregistrer' : 'Ajouter le dépôt') }}
   </button>
 </div>

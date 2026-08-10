@@ -16,10 +16,10 @@
 <div class="settings-layout" *ngIf="adminProjects().length > 0">
   <div class="settings-sidebar">
     <div class="settings-nav-item" [class.active]="activeTab() === 'general'" (click)="setTab('general')">
-      <span class="settings-nav-icon">⚙️</span> Général
+      <span class="settings-nav-icon"><i class="fa-solid fa-gear"></i></span> Général
     </div>
     <div class="settings-nav-item" [class.active]="activeTab() === 'users'" (click)="setTab('users')">
-      <span class="settings-nav-icon">👥</span> Utilisateurs
+      <span class="settings-nav-icon"><i class="fa-solid fa-users"></i></span> Utilisateurs
     </div>
     <div
       class="settings-nav-item"
@@ -27,13 +27,13 @@
       [class.active]="activeTab() === 'access-control'"
       (click)="setTab('access-control')"
     >
-      <span class="settings-nav-icon">🔒</span> Contrôle d'accès
+      <span class="settings-nav-icon"><i class="fa-solid fa-lock"></i></span> Contrôle d'accès
     </div>
     <div class="settings-nav-item" [class.active]="activeTab() === 'jira'" (click)="setTab('jira')">
-      <span class="settings-nav-icon">🐛</span> Intégration Jira
+      <span class="settings-nav-icon"><i class="fa-solid fa-bug"></i></span> Intégration Jira
     </div>
     <div class="settings-nav-item" [class.active]="activeTab() === 'notifications'" (click)="setTab('notifications')">
-      <span class="settings-nav-icon">🔔</span> Notifications
+      <span class="settings-nav-icon"><i class="fa-solid fa-bell"></i></span> Notifications
     </div>
     <div
       class="settings-nav-item"
@@ -41,7 +41,15 @@
       [class.active]="activeTab() === 'platform-admins'"
       (click)="setTab('platform-admins')"
     >
-      <span class="settings-nav-icon">🛡️</span> Comptes plateforme
+      <span class="settings-nav-icon"><i class="fa-solid fa-shield-halved"></i></span> Comptes plateforme
+    </div>
+    <div
+      class="settings-nav-item"
+      *ngIf="isSuperAdmin()"
+      [class.active]="activeTab() === 'ai-provider'"
+      (click)="setTab('ai-provider')"
+    >
+      <span class="settings-nav-icon"><i class="fa-solid fa-robot"></i></span> Fournisseur IA
     </div>
   </div>
 
@@ -74,6 +82,11 @@
     <!-- COMPTES PLATEFORME -->
     <div class="settings-panel" [class.active]="activeTab() === 'platform-admins'">
       <app-platform-admins *ngIf="activeTab() === 'platform-admins'" />
+    </div>
+
+    <!-- FOURNISSEUR IA -->
+    <div class="settings-panel" [class.active]="activeTab() === 'ai-provider'">
+      <app-ai-settings *ngIf="activeTab() === 'ai-provider' && isSuperAdmin()" />
     </div>
   </div>
 </div>

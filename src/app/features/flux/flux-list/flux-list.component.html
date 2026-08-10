@@ -5,7 +5,7 @@
 </div>
 
 <div class="ai-insight" style="margin-bottom:20px">
-  <div class="ai-icon">🧠</div>
+  <div class="ai-icon"><i class="fa-solid fa-brain"></i></div>
   <div class="ai-text">
     <strong>Comment ça fonctionne :</strong> L'IA génère d'abord tous les scénarios individuels. Vous composez ensuite
     des <em>flux</em> en ordonnant ces scénarios. Les données sont partagées entre étapes — l'email de l'inscription est
@@ -14,7 +14,7 @@
 </div>
 
 <div class="flux-saved-item" *ngFor="let f of fluxList">
-  <div class="flux-saved-icon" [ngClass]="f.iconClass">{{ f.icon }}</div>
+  <div class="flux-saved-icon" [ngClass]="f.iconClass"><i class="fa-solid" [ngClass]="f.icon"></i></div>
   <div class="flux-saved-info">
     <div class="flux-saved-name">{{ f.name }}</div>
     <div class="flux-saved-meta">
@@ -30,12 +30,12 @@
     </div>
   </div>
   <div class="flux-saved-actions">
-    <button class="btn btn-success-soft btn-sm">▷ Relancer</button>
-    <a [routerLink]="'/flux/new'" class="btn btn-ghost btn-sm">✏ Modifier</a>
-    <button class="btn btn-ghost btn-sm">⬇ Script</button>
+    <button class="btn btn-success-soft btn-sm"><i class="fa-solid fa-play"></i> Relancer</button>
+    <a [routerLink]="'/flux/new'" class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen"></i> Modifier</a>
+    <button class="btn btn-ghost btn-sm"><i class="fa-solid fa-download"></i> Script</button>
   </div>
 </div>
 
 <div style="margin-top:16px">
-  <a [routerLink]="'/flux/new'" class="btn btn-primary">+ Créer un nouveau flux</a>
+  <a [routerLink]="'/flux/new'" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Créer un nouveau flux</a>
 </div>

@@ -7,6 +7,7 @@ import {
   ExecutionService, HistoryRun, GlobalStats, ExecutionStep, JiraTicketResult,
 } from '../../services/execution.service';
 import { JiraTicketModalComponent } from '../../shared/components/jira-ticket-modal/jira-ticket-modal.component';
+import { exportElementAsPdf } from '../../shared/utils/export-pdf';
 
 @Component({
   selector: 'app-history',
@@ -154,6 +155,32 @@ export class HistoryComponent implements OnInit {
   getFirstFailedStep(run: HistoryRun): string {
     const failed = (run.steps || []).find(s => s.result === 'FAIL');
     return failed ? failed.action : '';
+  }
+
+  causeLabelFr(cat: string): string {
+    const labels: Record<string, string> = {
+      APPLICATION_BUG: 'Bug application',
+      SCRIPT_ISSUE: 'Script/sélecteur',
+      ENVIRONMENT: 'Environnement',
+      TIMING: 'Timing',
+      UNKNOWN: 'Indéterminé',
+    };
+    return labels[cat] || cat;
+  }
+
+  causeIconFr(cat: string): string {
+    const icons: Record<string, string> = {
+      APPLICATION_BUG: 'fa-bug',
+      SCRIPT_ISSUE: 'fa-file-code',
+      ENVIRONMENT: 'fa-globe',
+      TIMING: 'fa-stopwatch',
+      UNKNOWN: 'fa-circle-question',
+    };
+    return icons[cat] || 'fa-circle-question';
+  }
+
+  async exportRunReport(el: HTMLElement, run: HistoryRun): Promise<void> {
+    await exportElementAsPdf(el, `rapport-${run.scenario.name}-${run.id}.pdf`);
   }
 
   get pages(): (number | '...')[] {

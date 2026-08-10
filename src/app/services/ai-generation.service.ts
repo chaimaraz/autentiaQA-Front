@@ -3,7 +3,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { io, Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
+import { createSocket } from '../shared/utils/socket-factory';
 
 export interface AIScenarioStep {
   action: string;
@@ -159,7 +160,7 @@ export class AIGenerationService {
 
     jobId$.subscribe({
       next: (jobId) => {
-        const socket: Socket = io(`${this.SERVER}/ai`, {
+        const socket: Socket = createSocket(`${this.SERVER}/ai`, {
           transports: ['websocket'],
           query: { jobId },
         });

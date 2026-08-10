@@ -1,5 +1,5 @@
 import { Component, Input, OnChanges, signal } from '@angular/core';
-import { NgIf, NgFor } from '@angular/common';
+import { NgIf, NgFor, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 /**
@@ -12,7 +12,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-notification-settings',
   standalone: true,
-  imports: [NgIf, NgFor, FormsModule],
+  imports: [NgIf, NgFor, NgClass, FormsModule],
   templateUrl: './notification-settings.component.html',
   styleUrl: './notification-settings.component.scss',
 })

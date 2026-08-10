@@ -1,9 +1,9 @@
 <div class="settings-section-title">Paramètres généraux</div>
 <div class="settings-section-sub">Informations du projet et configuration de base.</div>
 
-<div *ngIf="loading()" class="empty-state"><span class="spin">⟳</span> Chargement...</div>
-<div class="auth-alert error show" *ngIf="error()"><span>⚠️</span> {{ error() }}</div>
-<div class="auth-alert success show" *ngIf="success()"><span>✅</span> {{ success() }}</div>
+<div *ngIf="loading()" class="empty-state"><i class="fa-solid fa-arrows-rotate spin"></i> Chargement...</div>
+<div class="auth-alert error show" *ngIf="error()"><i class="fa-solid fa-triangle-exclamation"></i> {{ error() }}</div>
+<div class="auth-alert success show" *ngIf="success()"><i class="fa-solid fa-circle-check"></i> {{ success() }}</div>
 
 <div *ngIf="!loading() && project()">
   <div class="form-group">
@@ -34,6 +34,6 @@
     <textarea class="form-input" [(ngModel)]="form.description"></textarea>
   </div>
   <button class="btn btn-primary" [disabled]="saving()" (click)="save()">
-    {{ saving() ? '⏳ Sauvegarde...' : '💾 Sauvegarder' }}
+    <i class="fa-solid" [ngClass]="saving() ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i> {{ saving() ? 'Sauvegarde...' : 'Sauvegarder' }}
   </button>
 </div>

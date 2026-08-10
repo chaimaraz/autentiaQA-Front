@@ -156,7 +156,7 @@ export class ScenariosComponent implements OnInit, OnDestroy {
       status:    s.status as 'DRAFT' | 'ACTIVE',
       mode:      s.creationMode,
       createdAt: date,
-      page:      `${s.creationMode === 'NLP' ? '🤖 NLP' : '⏺ RECORD'} · ${date}`,
+      page:      `${s.creationMode === 'NLP' ? 'NLP' : 'RECORD'} · ${date}`,
       dataOpen:  false,
      data: (s.variables ?? []).map(v => ({ id: v.id, k: v.key, v: v.value, locked: v.locked })),
       execCount: s._count?.executions ?? 0,

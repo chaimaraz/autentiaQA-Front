@@ -20,7 +20,7 @@ RUN npm run build --prod
 FROM nginx:alpine
 
 # Copier les fichiers buildés depuis le builder
-COPY --from=builder /app/dist/autentia-front /usr/share/nginx/html
+COPY --from=builder /app/dist/autentia-front/browser /usr/share/nginx/html
 
 # Copier le fichier de configuration Nginx (optionnel)
 COPY nginx.conf /etc/nginx/conf.d/default.conf

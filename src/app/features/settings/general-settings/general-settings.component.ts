@@ -1,5 +1,5 @@
 import { Component, Input, OnChanges, inject, signal } from '@angular/core';
-import { NgIf, NgFor } from '@angular/common';
+import { NgIf, NgFor, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProjectApiService } from '../../../services/project-api.service';
 
@@ -15,7 +15,7 @@ interface ProjectView {
 @Component({
   selector: 'app-general-settings',
   standalone: true,
-  imports: [NgIf, NgFor, FormsModule],
+  imports: [NgIf, NgFor, NgClass, FormsModule],
   templateUrl: './general-settings.component.html',
   styleUrl: './general-settings.component.scss',
 })

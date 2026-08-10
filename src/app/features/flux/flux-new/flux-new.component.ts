@@ -43,7 +43,7 @@ export class FluxNewComponent {
   clearSteps(): void { this.steps.set([]); }
 
   saveFlux(): void {
-    alert(`✓ Flux "${this.fluxName}" sauvegardé !\n\nIl apparaît maintenant dans la liste des flux.`);
+    alert(`Flux "${this.fluxName}" sauvegardé !\n\nIl apparaît maintenant dans la liste des flux.`);
     this.router.navigate(['/flux/list']);
   }
 

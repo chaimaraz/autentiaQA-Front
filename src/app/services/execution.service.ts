@@ -74,10 +74,40 @@ export interface HistoryRun {
   artifacts: ExecutionArtifact[];
   jiraTicketKey?: string | null;
   jiraTicketUrl?: string | null;
+  aiAnalysis?: AiAnalysis | null;
 }
 
 export interface ExecutionDetail extends HistoryRun {
   captureConfig?: ExecutionCaptureConfig;
+}
+
+// ── Rapport de batch détaillé (résultat par scénario + IA + artefacts) ─────
+
+export interface BatchScenarioExecution {
+  id: string;
+  result: ExecutionResultType;
+  durationMs: number | null;
+  passCount: number;
+  failCount: number;
+  totalCount: number;
+  errorMessage: string | null;
+  aiAnalysis?: AiAnalysis | null;
+  scenario: { id: string; name: string; type: string };
+  steps: ExecutionStep[];
+  artifacts: ExecutionArtifact[];
+}
+
+export interface BatchDetail {
+  id: string;
+  projectId: string;
+  status: 'RUNNING' | 'DONE';
+  totalCount: number;
+  passCount: number;
+  failCount: number;
+  durationMs: number | null;
+  startedAt: string;
+  finishedAt: string | null;
+  executions: BatchScenarioExecution[];
 }
 
 export interface HistoryResponse {
@@ -183,6 +213,13 @@ export class ExecutionService {
   getExecutionDetail(executionId: string): Observable<ExecutionDetail> {
     return this.http
       .get<{ data: ExecutionDetail }>(`${this.SERVER}/api/executions/${executionId}`)
+      .pipe(map(r => r.data));
+  }
+
+  /** Détail complet d'un batch (résultats par scénario, captures, analyse IA) — recharge/lien profond inclus. */
+  getBatchDetail(projectId: string, batchId: string): Observable<BatchDetail> {
+    return this.http
+      .get<{ data: BatchDetail }>(`${this.SERVER}/api/projects/${projectId}/scenarios/batches/${batchId}`)
       .pipe(map(r => r.data));
   }
 

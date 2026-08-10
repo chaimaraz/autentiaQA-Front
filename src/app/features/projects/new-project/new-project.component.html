@@ -7,7 +7,7 @@
       <div class="section-title">Créer un nouveau projet</div>
       <div class="section-sub">L'IA analysera votre application et générera tous les scénarios de test automatiquement.</div>
     </div>
-    <button class="btn btn-ghost btn-sm" (click)="cancel()">✕ Annuler</button>
+    <button class="btn btn-ghost btn-sm" (click)="cancel()"><i class="fa-solid fa-xmark"></i> Annuler</button>
   </div>
 
   <!-- ==================== STEP INDICATOR ==================== -->
@@ -23,7 +23,8 @@
           (click)="goToStep(step.num)"
           style="cursor:pointer"
         >
-          {{ getStepState(step.num) === 'done' ? '✓' : step.num }}
+          <i class="fa-solid fa-check" *ngIf="getStepState(step.num) === 'done'"></i>
+          <ng-container *ngIf="getStepState(step.num) !== 'done'">{{ step.num }}</ng-container>
         </div>
         <div class="step-label" [ngClass]="{ active: getStepState(step.num) !== 'pending' }">
           {{ step.label }}
@@ -48,7 +49,7 @@
           <div class="form-group">
             <label class="form-label">URL cible *</label>
             <input class="form-input" [(ngModel)]="projectUrl" placeholder="https://monapp.io" />
-            <div class="form-hint">⚡ L'IA effectuera un crawl automatique depuis cette URL</div>
+            <div class="form-hint"><i class="fa-solid fa-bolt"></i> L'IA effectuera un crawl automatique depuis cette URL</div>
           </div>
         </div>
         <div class="form-group" style="margin-bottom:0">
@@ -62,8 +63,8 @@
     <div class="wizard-nav">
       <button class="btn btn-ghost" (click)="cancel()">Annuler</button>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-secondary" (click)="saveDraft()">💾 Sauvegarder brouillon</button>
-        <button class="btn btn-primary" (click)="next()">Suivant →</button>
+        <button class="btn btn-secondary" (click)="saveDraft()"><i class="fa-solid fa-floppy-disk"></i> Sauvegarder brouillon</button>
+        <button class="btn btn-primary" (click)="next()">Suivant <i class="fa-solid fa-arrow-right"></i></button>
       </div>
     </div>
   </div>
@@ -85,7 +86,7 @@
             (click)="selectMode(mode)"
           >
             <span class="mode-badge" *ngIf="mode.key === 'SPEC_DOCUMENT'">IA</span>
-            <span class="mode-icon">{{ mode.icon }}</span>
+            <span class="mode-icon"><i class="fa-solid" [ngClass]="mode.icon"></i></span>
             <div class="mode-title">{{ mode.title }}</div>
             <div class="mode-desc">{{ mode.desc }}</div>
           </div>
@@ -113,23 +114,23 @@
   (change)="onFilesSelected($event)"
 />
             <div *ngIf="uploadedFiles.length === 0" class="drop-zone-empty">
-              <span class="drop-icon">📁</span>
+              <span class="drop-icon"><i class="fa-solid fa-folder-open"></i></span>
               <div class="drop-title">Glissez vos fichiers ici</div>
               <div class="drop-sub">ou <span class="drop-link">cliquez pour parcourir</span></div>
 <div class="drop-hint">PDF, DOCX, TXT, CSV, Excel — jusqu'à 10 fichiers, 20 MB chacun</div>            </div>
             <div *ngIf="uploadedFiles.length > 0" class="drop-zone-has-files" (click)="$event.stopPropagation()">
               <div class="file-list">
                 <div class="file-item" *ngFor="let item of uploadedFiles; let i = index">
-                  <span class="file-icon">{{ item.mimeType === 'application/pdf' ? '📕' : '📘' }}</span>
+                  <span class="file-icon"><i class="fa-solid" [ngClass]="item.mimeType === 'application/pdf' ? 'fa-file-pdf' : 'fa-file-lines'"></i></span>
                   <div class="file-info">
                     <div class="file-name">{{ item.name }}</div>
                     <div class="file-size">{{ item.sizeLabel }}</div>
                   </div>
-                  <button class="file-remove" (click)="removeFile(i)" title="Supprimer">✕</button>
+                  <button class="file-remove" (click)="removeFile(i)" title="Supprimer"><i class="fa-solid fa-xmark"></i></button>
                 </div>
               </div>
               <button class="btn btn-ghost btn-sm add-more-btn" (click)="fileInput.click()">
-                + Ajouter d'autres fichiers
+                <i class="fa-solid fa-plus"></i> Ajouter d'autres fichiers
               </button>
             </div>
           </div>
@@ -141,10 +142,10 @@
           <div class="chip-row">
             <span *ngFor="let tag of detectedTags; let i = index"
               class="tag" [ngClass]="i === 0 ? 'cyan' : ''">
-              {{ i === 0 ? '✓ ' : '' }}{{ tag }}
+              <i class="fa-solid fa-check" *ngIf="i === 0"></i> {{ tag }}
             </span>
           </div>
-          <div class="form-hint">🤖 Détection IA via analyse DOM</div>
+          <div class="form-hint"><i class="fa-solid fa-robot"></i> Détection IA via analyse DOM</div>
         </div>
       </div>
     </div>
@@ -162,7 +163,7 @@
             [ngClass]="{ selected: type.selected }"
             (click)="toggleTestType(type)"
           >
-            <div class="toggle-check">{{ type.selected ? '✓' : '' }}</div>
+            <div class="toggle-check"><i class="fa-solid fa-check" *ngIf="type.selected"></i></div>
             <span>{{ type.label }}</span>
           </div>
         </div>
@@ -191,10 +192,10 @@
     </div>
 
     <div class="wizard-nav">
-      <button class="btn btn-ghost" (click)="prev()">← Précédent</button>
+      <button class="btn btn-ghost" (click)="prev()"><i class="fa-solid fa-arrow-left"></i> Précédent</button>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-secondary" (click)="saveDraft()">💾 Sauvegarder brouillon</button>
-        <button class="btn btn-primary" (click)="next()">Suivant →</button>
+        <button class="btn btn-secondary" (click)="saveDraft()"><i class="fa-solid fa-floppy-disk"></i> Sauvegarder brouillon</button>
+        <button class="btn btn-primary" (click)="next()">Suivant <i class="fa-solid fa-arrow-right"></i></button>
       </div>
     </div>
   </div>
@@ -204,7 +205,7 @@
     <div class="card mb-16">
       <div class="card-header">
         <div class="card-title">⑤ Dépôts Git &amp; CI/CD <span class="ai-badge">Facultatif</span></div>
-        <button class="btn btn-secondary btn-sm" (click)="addRepo()">+ Ajouter un dépôt</button>
+        <button class="btn btn-secondary btn-sm" (click)="addRepo()"><i class="fa-solid fa-plus"></i> Ajouter un dépôt</button>
       </div>
       <div class="card-body">
 
@@ -216,7 +217,7 @@
         <div class="repo-card" *ngFor="let repo of repos; let i = index" style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <div class="switch-label">Dépôt #{{ i + 1 }}</div>
-            <button class="btn btn-ghost btn-sm" (click)="removeRepo(i)">✕ Retirer</button>
+            <button class="btn btn-ghost btn-sm" (click)="removeRepo(i)"><i class="fa-solid fa-xmark"></i> Retirer</button>
           </div>
 
           <div class="grid-2">
@@ -250,16 +251,16 @@
             <label class="form-label">Événements déclencheurs</label>
             <div class="git-events-grid">
               <div class="git-event-toggle" [ngClass]="{ selected: repo.onPush }" (click)="repo.onPush = !repo.onPush">
-                {{ repo.onPush ? '✓' : '○' }} Push
+                <i class="fa-solid" [ngClass]="repo.onPush ? 'fa-circle-check' : 'fa-circle'"></i> Push
               </div>
               <div class="git-event-toggle" [ngClass]="{ selected: repo.onPr }" (click)="repo.onPr = !repo.onPr">
-                {{ repo.onPr ? '✓' : '○' }} Pull Request
+                <i class="fa-solid" [ngClass]="repo.onPr ? 'fa-circle-check' : 'fa-circle'"></i> Pull Request
               </div>
               <div class="git-event-toggle" [ngClass]="{ selected: repo.onTag }" (click)="repo.onTag = !repo.onTag">
-                {{ repo.onTag ? '✓' : '○' }} Nouveau tag
+                <i class="fa-solid" [ngClass]="repo.onTag ? 'fa-circle-check' : 'fa-circle'"></i> Nouveau tag
               </div>
               <div class="git-event-toggle" [ngClass]="{ selected: repo.onSchedule }" (click)="repo.onSchedule = !repo.onSchedule">
-                {{ repo.onSchedule ? '✓' : '○' }} Planifié (cron)
+                <i class="fa-solid" [ngClass]="repo.onSchedule ? 'fa-circle-check' : 'fa-circle'"></i> Planifié (cron)
               </div>
             </div>
           </div>
@@ -316,10 +317,10 @@
     </div>
 
     <div class="wizard-nav">
-      <button class="btn btn-ghost" (click)="prev()">← Précédent</button>
+      <button class="btn btn-ghost" (click)="prev()"><i class="fa-solid fa-arrow-left"></i> Précédent</button>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-secondary" (click)="saveDraft()">💾 Sauvegarder brouillon</button>
-        <button class="btn btn-primary" (click)="next()">Suivant →</button>
+        <button class="btn btn-secondary" (click)="saveDraft()"><i class="fa-solid fa-floppy-disk"></i> Sauvegarder brouillon</button>
+        <button class="btn btn-primary" (click)="next()">Suivant <i class="fa-solid fa-arrow-right"></i></button>
       </div>
     </div>
   </div>
@@ -357,7 +358,7 @@
             <div class="recap-label">Documents de spécification</div>
             <div class="recap-value">
               <div class="chip-row" style="margin-top:6px">
-                <span class="tag purple" *ngFor="let f of uploadedFiles">📄 {{ f.name }} ({{ f.sizeLabel }})</span>
+                <span class="tag purple" *ngFor="let f of uploadedFiles"><i class="fa-solid fa-file-lines"></i> {{ f.name }} ({{ f.sizeLabel }})</span>
               </div>
             </div>
           </div>
@@ -365,7 +366,7 @@
             <div class="recap-label">Types de tests sélectionnés</div>
             <div class="recap-value">
               <div class="chip-row" style="margin-top:6px">
-                <span class="tag green" *ngFor="let t of selectedTestTypes">✓ {{ t.label }}</span>
+                <span class="tag green" *ngFor="let t of selectedTestTypes"><i class="fa-solid fa-check"></i> {{ t.label }}</span>
               </div>
             </div>
           </div>
@@ -379,7 +380,7 @@
 
     <!-- AI estimate -->
     <div class="ai-insight mb-16">
-      <div class="ai-icon">🧠</div>
+      <div class="ai-icon"><i class="fa-solid fa-brain"></i></div>
       <div class="ai-text">
         <strong>Estimation IA :</strong> Basé sur la configuration choisie, l'IA devrait générer entre
         <strong>35 et 60 scénarios</strong> en <strong>~2 minutes</strong>.
@@ -389,7 +390,7 @@
 
     <!-- Error banner -->
     <div class="error-banner mb-16" *ngIf="submitError()">
-      ⚠️ {{ submitError() }}
+      <i class="fa-solid fa-triangle-exclamation"></i> {{ submitError() }}
     </div>
 
     <!-- Timeline -->
@@ -400,7 +401,7 @@
       <div class="card-body">
         <div class="timeline">
           <div class="timeline-item">
-            <div class="timeline-icon done">{{ isSpecMode ? '📄' : '🕸️' }}</div>
+            <div class="timeline-icon done"><i class="fa-solid" [ngClass]="isSpecMode ? 'fa-file-lines' : 'fa-globe'"></i></div>
             <div class="timeline-content">
               <div class="timeline-title">{{ isSpecMode ? 'Analyse des documents' : 'Crawl DOM automatique' }}</div>
               <div class="timeline-desc">
@@ -413,7 +414,7 @@
             <div class="timeline-time">~30s</div>
           </div>
           <div class="timeline-item">
-            <div class="timeline-icon">🧠</div>
+            <div class="timeline-icon"><i class="fa-solid fa-brain"></i></div>
             <div class="timeline-content">
               <div class="timeline-title">Analyse intelligente</div>
               <div class="timeline-desc">Détection du framework, des patterns d'authentification, des API REST et des flux métier.</div>
@@ -421,7 +422,7 @@
             <div class="timeline-time">~20s</div>
           </div>
           <div class="timeline-item">
-            <div class="timeline-icon">✦</div>
+            <div class="timeline-icon"><i class="fa-solid fa-sparkles"></i></div>
             <div class="timeline-content">
               <div class="timeline-title">Génération des scénarios</div>
               <div class="timeline-desc">Création automatique des cas de test positifs, négatifs, de sécurité et de performance.</div>
@@ -429,7 +430,7 @@
             <div class="timeline-time">~30s</div>
           </div>
           <div class="timeline-item">
-            <div class="timeline-icon">▷</div>
+            <div class="timeline-icon"><i class="fa-solid fa-play"></i></div>
             <div class="timeline-content">
               <div class="timeline-title">Première exécution</div>
               <div class="timeline-desc">Lancement immédiat des tests sur {{ selectedFramework?.name }} avec rapport IA en temps réel.</div>
@@ -456,14 +457,14 @@
     </div>
 
   <div class="wizard-nav">
-      <button class="btn btn-ghost" (click)="prev()" [disabled]="isSubmitting()">← Précédent</button>
+      <button class="btn btn-ghost" (click)="prev()" [disabled]="isSubmitting()"><i class="fa-solid fa-arrow-left"></i> Précédent</button>
       <div style="display:flex;gap:10px">
         <button class="btn btn-secondary" (click)="saveDraft()" [disabled]="isSubmitting()">
-          💾 Sauvegarder brouillon
+          <i class="fa-solid fa-floppy-disk"></i> Sauvegarder brouillon
         </button>
         <button class="btn btn-primary launch-btn" (click)="launch()" [disabled]="isSubmitting()">
-          <span *ngIf="!isSubmitting()">🚀 Lancer l'analyse IA</span>
-          <span *ngIf="isSubmitting()">⏳ {{ aiStatusLabel() || 'En cours...' }}</span>
+          <span *ngIf="!isSubmitting()"><i class="fa-solid fa-rocket"></i> Lancer l'analyse IA</span>
+          <span *ngIf="isSubmitting()"><i class="fa-solid fa-spinner fa-spin"></i> {{ aiStatusLabel() || 'En cours...' }}</span>
         </button>
       </div>
     </div>

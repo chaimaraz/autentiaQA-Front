@@ -1,12 +1,12 @@
 <div class="profile-hero">
   <div class="profile-avatar-lg">
     {{ initials() }}
-    <div class="edit-overlay" title="Changer l'avatar">✏️</div>
+    <div class="edit-overlay" title="Changer l'avatar"><i class="fa-solid fa-pen"></i></div>
   </div>
   <div class="profile-hero-info">
     <div class="profile-name">{{ user()?.name }}</div>
     <div class="profile-role">
-      <span class="tag green">● En ligne</span>
+      <span class="tag green"><i class="fa-solid fa-circle"></i> En ligne</span>
       {{ roleLabel() }} · Autentia Team
     </div>
     <div class="profile-stats">
@@ -26,19 +26,19 @@
   </div>
   <div style="display:flex;flex-direction:column;gap:8px">
     <button class="btn btn-primary btn-sm" (click)="toggleEdit()">
-      {{ editing() ? '✕ Annuler' : '✏️ Modifier profil' }}
+      <i class="fa-solid" [ngClass]="editing() ? 'fa-xmark' : 'fa-pen'"></i> {{ editing() ? 'Annuler' : 'Modifier profil' }}
     </button>
   </div>
 </div>
 
-<div class="auth-alert error show" *ngIf="error()"><span>⚠️</span> {{ error() }}</div>
-<div class="auth-alert success show" *ngIf="success()"><span>✅</span> {{ success() }}</div>
+<div class="auth-alert error show" *ngIf="error()"><i class="fa-solid fa-triangle-exclamation"></i> {{ error() }}</div>
+<div class="auth-alert success show" *ngIf="success()"><i class="fa-solid fa-circle-check"></i> {{ success() }}</div>
 
 <div class="profile-grid">
   <div class="card">
     <div class="card-header">
-      <div class="card-title">👤 Informations personnelles</div>
-      <button class="btn btn-ghost btn-sm" (click)="toggleEdit()" *ngIf="!editing()">✏️ Modifier</button>
+      <div class="card-title"><i class="fa-solid fa-user"></i> Informations personnelles</div>
+      <button class="btn btn-ghost btn-sm" (click)="toggleEdit()" *ngIf="!editing()"><i class="fa-solid fa-pen"></i> Modifier</button>
     </div>
     <div class="card-body">
       <div class="form-group">
@@ -54,13 +54,13 @@
         <input class="form-input" [value]="roleLabel()" readonly style="opacity:0.7;cursor:not-allowed" />
       </div>
       <button class="btn btn-primary" style="width:100%;margin-top:16px" *ngIf="editing()" [disabled]="saving()" (click)="saveProfile()">
-        {{ saving() ? '⏳ Sauvegarde...' : '💾 Enregistrer' }}
+        <i class="fa-solid" [ngClass]="saving() ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i> {{ saving() ? 'Sauvegarde...' : 'Enregistrer' }}
       </button>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-header"><div class="card-title">⚙️ Préférences</div></div>
+    <div class="card-header"><div class="card-title"><i class="fa-solid fa-gear"></i> Préférences</div></div>
     <div class="card-body">
       <div class="form-group">
         <label class="form-label">Langue de l'interface</label>
@@ -81,8 +81,8 @@
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Thème</label>
         <div style="display:flex;gap:8px">
-          <div class="theme-choice" [class.active]="theme() === 'dark'" (click)="setTheme('dark')">🌙 Sombre</div>
-          <div class="theme-choice" [class.active]="theme() === 'light'" (click)="setTheme('light')">☀️ Clair</div>
+          <div class="theme-choice" [class.active]="theme() === 'dark'" (click)="setTheme('dark')"><i class="fa-solid fa-moon"></i> Sombre</div>
+          <div class="theme-choice" [class.active]="theme() === 'light'" (click)="setTheme('light')"><i class="fa-solid fa-sun"></i> Clair</div>
         </div>
       </div>
     </div>
@@ -91,7 +91,7 @@
 
 <div class="card mb-16">
   <div class="card-header">
-    <div class="card-title">📊 Activité de test — Dernières 52 semaines</div>
+    <div class="card-title"><i class="fa-solid fa-chart-column"></i> Activité de test — Dernières 52 semaines</div>
     <span style="font-size:11px;color:var(--text3)">{{ stats().executionsCount }} exécutions</span>
   </div>
   <div class="card-body">
@@ -111,7 +111,7 @@
 </div>
 
 <div class="card">
-  <div class="card-header"><div class="card-title">🔐 Sécurité du compte</div></div>
+  <div class="card-header"><div class="card-title"><i class="fa-solid fa-lock"></i> Sécurité du compte</div></div>
   <div class="card-body">
     <div class="form-group">
       <label class="form-label">Mot de passe actuel</label>
@@ -125,9 +125,9 @@
       <label class="form-label">Confirmer</label>
       <input class="form-input" type="password" placeholder="Répétez le nouveau mot de passe" [(ngModel)]="pwForm.confirm" />
     </div>
-    <div class="auth-alert error show" *ngIf="pwError()"><span>⚠️</span> {{ pwError() }}</div>
+    <div class="auth-alert error show" *ngIf="pwError()"><i class="fa-solid fa-triangle-exclamation"></i> {{ pwError() }}</div>
     <button class="btn btn-primary" style="width:100%" [disabled]="pwSaving()" (click)="changePassword()">
-      {{ pwSaving() ? '⏳ Mise à jour...' : '🔐 Mettre à jour' }}
+      <i class="fa-solid" [ngClass]="pwSaving() ? 'fa-spinner fa-spin' : 'fa-lock'"></i> {{ pwSaving() ? 'Mise à jour...' : 'Mettre à jour' }}
     </button>
   </div>
 </div>

@@ -4,12 +4,12 @@
 
   <!-- ══ HEADER ══ -->
   <div class="modal-header">
-    <div class="modal-header-icon">✦</div>
+    <div class="modal-header-icon"><i class="fa-solid fa-plus"></i></div>
     <div>
       <div class="modal-title">Ajouter un scénario</div>
       <div class="modal-subtitle">Choisissez votre méthode de création</div>
     </div>
-    <button class="btn btn-ghost btn-sm close-btn" (click)="close()">✕</button>
+    <button class="btn btn-ghost btn-sm close-btn" (click)="close()"><i class="fa-solid fa-xmark"></i></button>
   </div>
 
   <!-- ══ BODY ══ -->
@@ -18,22 +18,22 @@
     <!-- MODE TABS -->
     <div class="mode-tabs">
       <div class="mode-tab" [ngClass]="{active:activeMode()==='nlp'}" (click)="setMode('nlp')">
-        <span class="mode-tab-icon">🗣️</span>
+        <span class="mode-tab-icon"><i class="fa-solid fa-comment"></i></span>
         <div class="mode-tab-title">Langage naturel</div>
         <div class="mode-tab-desc">Décrivez en français, l'IA génère les étapes et le script</div>
       </div>
       <div class="mode-tab purple" [ngClass]="{active:activeMode()==='record'}" (click)="setMode('record')">
-        <span class="mode-tab-icon">🔴</span>
+        <span class="mode-tab-icon"><i class="fa-solid fa-circle" style="color:#ef4444"></i></span>
         <div class="mode-tab-title">Enregistrement en direct</div>
         <div class="mode-tab-desc">Naviguez dans votre navigateur, Playwright capture tout</div>
       </div>
       <div class="mode-tab cyan" [ngClass]="{active:activeMode()==='document'}" (click)="setMode('document')">
-        <span class="mode-tab-icon">📄</span>
+        <span class="mode-tab-icon"><i class="fa-solid fa-file-lines"></i></span>
         <div class="mode-tab-title">Depuis un document</div>
         <div class="mode-tab-desc">PDF, DOCX ou TXT — l'IA génère plusieurs scénarios à valider</div>
       </div>
       <div class="mode-tab cyan" [ngClass]="{active:activeMode()==='url'}" (click)="setMode('url')">
-        <span class="mode-tab-icon">🕸️</span>
+        <span class="mode-tab-icon"><i class="fa-solid fa-globe"></i></span>
         <div class="mode-tab-title">Depuis une URL</div>
         <div class="mode-tab-desc">Crawl automatique du site, génération multi-scénarios</div>
       </div>
@@ -57,7 +57,7 @@
               *ngFor="let t of [{val:'pos',label:'Positif',cls:'pos'},{val:'neg',label:'Négatif',cls:'neg'},{val:'sec',label:'Sécurité',cls:'sec'},{val:'perf',label:'Perf',cls:'perf'}]"
               [ngClass]="[t.cls, selectedType()===t.val?'selected':'']"
               (click)="setType($any(t.val))">
-              <span class="type-check">{{ selectedType()===t.val?'✓':'' }}</span>{{ t.label }}
+              <span class="type-check"><i class="fa-solid fa-check" *ngIf="selectedType()===t.val"></i></span>{{ t.label }}
             </div>
           </div>
         </div>
@@ -69,17 +69,17 @@
           placeholder="Ex: L'utilisateur va sur la page de login, entre son email et mot de passe, clique sur Se connecter, puis vérifie qu'il est redirigé vers le dashboard.">
         </textarea>
         <div class="nlp-footer-row">
-          <span class="form-hint">💡 Plus vous êtes précis, meilleur sera le script</span>
+          <span class="form-hint"><i class="fa-solid fa-lightbulb"></i> Plus vous êtes précis, meilleur sera le script</span>
           <button class="btn btn-primary btn-sm" (click)="parseNLP()" [disabled]="parsing()||!nlpText.trim()">
-            <span *ngIf="parsing()">⏳ Analyse...</span>
-            <span *ngIf="!parsing()">🧠 Analyser avec l'IA</span>
+            <span *ngIf="parsing()"><i class="fa-solid fa-spinner fa-spin"></i> Analyse...</span>
+            <span *ngIf="!parsing()"><i class="fa-solid fa-brain"></i> Analyser avec l'IA</span>
           </button>
         </div>
       </div>
 
       <div class="parsed-preview" [ngClass]="{show:parsedPreviewVisible()}">
         <div class="preview-section-label">
-          🤖 Étapes détectées
+          <i class="fa-solid fa-robot"></i> Étapes détectées
           <span class="steps-count">{{ parsedSteps().length }} étapes</span>
         </div>
         <div class="parsed-steps">
@@ -93,7 +93,7 @@
         <div class="preview-data-box">
           <div class="preview-data-label">DONNÉES DE TEST</div>
           <div class="data-field-row" *ngFor="let d of parsedData()">
-            <span class="data-key">{{ d.k }}<span class="secret-badge" *ngIf="d.isSecret">🔒</span></span>
+            <span class="data-key">{{ d.k }}<span class="secret-badge" *ngIf="d.isSecret"><i class="fa-solid fa-lock"></i></span></span>
             <span class="data-val">
               <input [(ngModel)]="d.v" [type]="d.isSecret?'password':'text'" [placeholder]="!d.v?'(vide)':''"/>
             </span>
@@ -102,7 +102,7 @@
         <div class="preview-script-box">
           <div class="preview-script-header">
             <span>SCRIPT PLAYWRIGHT GÉNÉRÉ</span>
-            <button class="btn btn-ghost btn-xs" (click)="copyScript()">📋 Copier</button>
+            <button class="btn btn-ghost btn-xs" (click)="copyScript()"><i class="fa-solid fa-copy"></i> Copier</button>
           </div>
           <pre class="script-block">{{ parsedScript() }}</pre>
         </div>
@@ -127,7 +127,7 @@
           <div class="install-hint">Installez et lancez l'agent sur votre machine (une seule fois) :</div>
           <div class="install-code">
             <code>npm install -g autentia-recorder && npx playwright install chromium</code>
-            <button class="btn btn-ghost btn-xs" (click)="copyCode()">📋</button>
+            <button class="btn btn-ghost btn-xs" (click)="copyCode()"><i class="fa-solid fa-copy"></i></button>
           </div>
           <div class="install-code" style="margin-top:6px">
             <code>autentia-recorder start --server http://localhost:3000 --token <strong>MON_TOKEN</strong></code>
@@ -145,14 +145,14 @@
           <button class="btn btn-secondary btn-sm agent-check-btn"
             (click)="checkAgent()"
             [disabled]="agentConnected() || recStatus()==='checking' || !recAgentToken.trim()">
-            <span *ngIf="recStatus()==='checking'">⏳ Vérification...</span>
-            <span *ngIf="recStatus()!=='checking' && !agentConnected()">🔌 Vérifier</span>
-            <span *ngIf="agentConnected()">✅ Connecté</span>
+            <span *ngIf="recStatus()==='checking'"><i class="fa-solid fa-spinner fa-spin"></i> Vérification...</span>
+            <span *ngIf="recStatus()!=='checking' && !agentConnected()"><i class="fa-solid fa-plug"></i> Vérifier</span>
+            <span *ngIf="agentConnected()"><i class="fa-solid fa-circle-check"></i> Connecté</span>
           </button>
         </div>
 
         <div class="rec-error-msg" *ngIf="recError() && (recStatus()==='no_agent'||recStatus()==='idle')">
-          ⚠️ {{ recError() }}
+          <i class="fa-solid fa-triangle-exclamation"></i> {{ recError() }}
         </div>
       </div>
 
@@ -180,7 +180,7 @@
                 *ngFor="let t of [{val:'pos',label:'Positif',cls:'pos'},{val:'neg',label:'Négatif',cls:'neg'},{val:'sec',label:'Sécurité',cls:'sec'},{val:'perf',label:'Perf',cls:'perf'}]"
                 [ngClass]="[t.cls, selectedType()===t.val?'selected':'']"
                 (click)="setType($any(t.val))">
-                <span class="type-check">{{ selectedType()===t.val?'✓':'' }}</span>{{ t.label }}
+                <span class="type-check"><i class="fa-solid fa-check" *ngIf="selectedType()===t.val"></i></span>{{ t.label }}
               </div>
             </div>
           </div>
@@ -203,7 +203,7 @@
                 [ngClass]="{selected:recBrowser()===b}"
                 (click)="setBrowser(b)"
                 [class.disabled]="!agentConnected() || recStatus()==='recording'">
-                {{ browserLabels[b] }}
+                <i [ngClass]="browserIcons[b]"></i> {{ browserLabels[b] }}
               </div>
             </div>
           </div>
@@ -222,7 +222,7 @@
               <div class="b-dot green"></div>
             </div>
             <div class="browser-url">
-              🔒 <span>{{
+              <i class="fa-solid fa-lock"></i> <span>{{
                 recStatus()==='recording' ? recStartUrl :
                 recStatus()==='connecting' ? 'Ouverture de '+recBrowser()+'...' :
                 recStatus()==='stopped' ? recStartUrl+' (terminé)' :
@@ -237,7 +237,7 @@
           <div class="browser-content">
             <div class="browser-idle"
               *ngIf="recStatus()==='idle'||recStatus()==='no_agent'||recStatus()==='checking'||recStatus()==='agent_ok'">
-              <div class="browser-idle-icon">🖥️</div>
+              <div class="browser-idle-icon"><i class="fa-solid fa-desktop"></i></div>
               <div class="browser-idle-title" *ngIf="recStatus()==='agent_ok'">Prêt — cliquez Démarrer</div>
               <div class="browser-idle-title" *ngIf="recStatus()!=='agent_ok'">En attente de l'agent</div>
               <div class="browser-idle-sub">
@@ -248,7 +248,7 @@
             </div>
 
             <div class="browser-idle" *ngIf="recStatus()==='connecting'">
-              <div class="browser-idle-icon">⏳</div>
+              <div class="browser-idle-icon"><i class="fa-solid fa-spinner fa-spin"></i></div>
               <div class="browser-idle-title">Ouverture de {{ recBrowser() }}...</div>
               <div class="browser-idle-sub">La fenêtre va s'ouvrir sur votre machine dans quelques secondes</div>
             </div>
@@ -269,12 +269,12 @@
               </div>
 
               <div class="rec-hint" *ngIf="recScriptLines().length === 0">
-                🖱️ Naviguez dans la fenêtre {{ recBrowser() }} — les actions s'afficheront ici
+                <i class="fa-solid fa-arrow-pointer"></i> Naviguez dans la fenêtre {{ recBrowser() }} — les actions s'afficheront ici
               </div>
             </div>
 
             <div class="browser-stopped" *ngIf="recStatus()==='stopped'">
-              <div class="stopped-icon">✅</div>
+              <div class="stopped-icon"><i class="fa-solid fa-circle-check"></i></div>
               <div class="stopped-title">Enregistrement terminé</div>
               <div class="stopped-sub">{{ recEvents().length }} actions capturées — script prêt</div>
             </div>
@@ -286,32 +286,32 @@
             *ngIf="recStatus()==='agent_ok' || recStatus()==='stopped'"
             [disabled]="!agentConnected()"
             (click)="startRecording()">
-            ⏺ Démarrer l'enregistrement
+            <i class="fa-solid fa-circle"></i> Démarrer l'enregistrement
           </button>
           <button class="btn btn-ghost btn-sm" *ngIf="recStatus()==='connecting'" disabled>
-            ⏳ Connexion...
+            <i class="fa-solid fa-spinner fa-spin"></i> Connexion...
           </button>
           <button class="btn btn-warning btn-sm" *ngIf="recStatus()==='recording'" (click)="stopRecording()">
-            ⏹ Arrêter l'enregistrement
+            <i class="fa-solid fa-square"></i> Arrêter l'enregistrement
           </button>
           <div class="rec-timer" *ngIf="recStatus()==='recording'">{{ recTimerLabel }}</div>
           <div style="flex:1"></div>
           <button class="btn btn-ghost btn-sm"
             (click)="clearRecording()"
             [disabled]="recStatus()==='connecting'||recStatus()==='checking'">
-            🗑 Réinitialiser
+            <i class="fa-solid fa-trash"></i> Réinitialiser
           </button>
         </div>
 
         <div class="rec-error-msg" *ngIf="recError() && recStatus()==='agent_ok'">
-          ⚠️ {{ recError() }}
+          <i class="fa-solid fa-triangle-exclamation"></i> {{ recError() }}
         </div>
       </div>
 
       <div class="rec-events-container" *ngIf="recEvents().length > 0">
         <div class="rec-events-title">
           Actions enregistrées
-          <span class="ai-badge">🤖 Capturées par Playwright</span>
+          <span class="ai-badge"><i class="fa-solid fa-robot"></i> Capturées par Playwright</span>
         </div>
         <div class="rec-events-log">
           <div class="rec-event-row" *ngFor="let evt of recEvents()">
@@ -325,7 +325,7 @@
              *ngIf="recScript() && recStatus()==='stopped'">
           <div class="preview-script-header">
             <span>SCRIPT PLAYWRIGHT FINAL</span>
-            <button class="btn btn-ghost btn-xs" (click)="copyScript()">📋 Copier</button>
+            <button class="btn btn-ghost btn-xs" (click)="copyScript()"><i class="fa-solid fa-copy"></i> Copier</button>
           </div>
           <pre class="script-block">{{ recScript() }}</pre>
         </div>
@@ -346,31 +346,31 @@
   (change)="onDocFileSelected($event)" />
 
 <div *ngIf="!docFile()" class="drop-zone-empty" (click)="docFileInput.click()">
-  <span class="drop-icon">📄</span>
+  <span class="drop-icon"><i class="fa-solid fa-file-lines"></i></span>
   <div class="drop-title">Cliquez pour choisir un fichier</div>
   <div class="drop-hint">PDF, DOCX, TXT, CSV ou Excel — max 20 MB</div>
 </div>
 
           <div *ngIf="docFile()" class="file-item" (click)="$event.stopPropagation()">
-            <span class="file-icon">📄</span>
+            <span class="file-icon"><i class="fa-solid fa-file-lines"></i></span>
             <div class="file-info">
               <div class="file-name">{{ docFile()!.name }}</div>
               <div class="file-size">{{ (docFile()!.size / 1024).toFixed(0) }} KB</div>
             </div>
-            <button class="file-remove" (click)="clearDocFile()" title="Supprimer">✕</button>
+            <button class="file-remove" (click)="clearDocFile()" title="Supprimer"><i class="fa-solid fa-xmark"></i></button>
           </div>
         </div>
 
         <div class="nlp-footer-row" style="margin-top:12px">
-          <span class="form-hint">💡 L'IA va extraire le texte et proposer plusieurs scénarios à valider</span>
+          <span class="form-hint"><i class="fa-solid fa-lightbulb"></i> L'IA va extraire le texte et proposer plusieurs scénarios à valider</span>
           <button class="btn btn-primary btn-sm" (click)="generateFromDocument()"
             [disabled]="docGenerating() || !docFile()">
-            <span *ngIf="docGenerating()">⏳ Analyse en cours...</span>
-            <span *ngIf="!docGenerating()">🧠 Générer les scénarios</span>
+            <span *ngIf="docGenerating()"><i class="fa-solid fa-spinner fa-spin"></i> Analyse en cours...</span>
+            <span *ngIf="!docGenerating()"><i class="fa-solid fa-brain"></i> Générer les scénarios</span>
           </button>
         </div>
 
-        <div class="rec-error-msg" *ngIf="docError()">⚠️ {{ docError() }}</div>
+        <div class="rec-error-msg" *ngIf="docError()"><i class="fa-solid fa-triangle-exclamation"></i> {{ docError() }}</div>
     
 
       <!-- Propositions -->
@@ -383,8 +383,8 @@
         </div>
 
         <div class="nlp-footer-row" style="margin-bottom:10px">
-          <button class="btn btn-ghost btn-xs" (click)="selectAllDoc(true)">✓ Tout sélectionner</button>
-          <button class="btn btn-ghost btn-xs" (click)="selectAllDoc(false)">✕ Tout désélectionner</button>
+          <button class="btn btn-ghost btn-xs" (click)="selectAllDoc(true)"><i class="fa-solid fa-check"></i> Tout sélectionner</button>
+          <button class="btn btn-ghost btn-xs" (click)="selectAllDoc(false)"><i class="fa-solid fa-xmark"></i> Tout désélectionner</button>
         </div>
 
         <div class="ai-proposal-item" *ngFor="let p of docProposals()">
@@ -395,9 +395,9 @@
             </span>
             <input class="form-input ai-proposal-name" [(ngModel)]="p.name" />
             <button class="btn btn-ghost btn-xs" (click)="toggleDocExpanded(p)">
-              {{ docExpandedId() === p.tempId ? '▴ Détails' : '▾ Détails' }}
+              <i class="fa-solid" [ngClass]="docExpandedId() === p.tempId ? 'fa-chevron-up' : 'fa-chevron-down'"></i> Détails
             </button>
-            <button class="btn btn-danger btn-sm" (click)="removeDocProposal(p)" title="Retirer">🗑</button>
+            <button class="btn btn-danger btn-sm" (click)="removeDocProposal(p)" title="Retirer"><i class="fa-solid fa-trash"></i></button>
           </div>
 
           <div class="scenario-data-panel open" *ngIf="docExpandedId() === p.tempId">
@@ -408,7 +408,7 @@
             <div class="data-fields">
               <div *ngIf="p.variables.length === 0" class="no-data">Aucune variable.</div>
               <div class="data-field" *ngFor="let v of p.variables">
-                <span class="data-key">{{ v.key }}<span class="secret-badge" *ngIf="v.isSecret">🔒</span></span>
+                <span class="data-key">{{ v.key }}<span class="secret-badge" *ngIf="v.isSecret"><i class="fa-solid fa-lock"></i></span></span>
                 <span class="data-val">
                   <input [(ngModel)]="v.value" [type]="v.isSecret ? 'password' : 'text'" />
                 </span>
@@ -423,7 +423,7 @@
         </div>
 
         <div class="rec-error-msg" *ngIf="docSaveErrors().length > 0">
-          ⚠️ Certains scénarios n'ont pas pu être créés :
+          <i class="fa-solid fa-triangle-exclamation"></i> Certains scénarios n'ont pas pu être créés :
           <div *ngFor="let e of docSaveErrors()">— {{ e.name }} : {{ e.message }}</div>
         </div>
 
@@ -431,8 +431,8 @@
           <span class="form-hint">Vous pouvez modifier ou retirer un scénario avant de le créer</span>
           <button class="btn btn-primary btn-sm" (click)="saveSelectedDocProposals()"
             [disabled]="docSavingSelected() || docSelectedCount === 0">
-            <span *ngIf="docSavingSelected()">⏳ Création...</span>
-            <span *ngIf="!docSavingSelected()">✓ Créer {{ docSelectedCount }} scénario(s)</span>
+            <span *ngIf="docSavingSelected()"><i class="fa-solid fa-spinner fa-spin"></i> Création...</span>
+            <span *ngIf="!docSavingSelected()"><i class="fa-solid fa-check"></i> Créer {{ docSelectedCount }} scénario(s)</span>
           </button>
         </div>
       </div>
@@ -464,15 +464,15 @@
         </div>
 
         <div class="nlp-footer-row">
-          <span class="form-hint">💡 Playwright explore le site (formulaires, boutons, liens) puis l'IA propose des scénarios</span>
+          <span class="form-hint"><i class="fa-solid fa-lightbulb"></i> Playwright explore le site (formulaires, boutons, liens) puis l'IA propose des scénarios</span>
           <button class="btn btn-primary btn-sm" (click)="generateFromUrl()" [disabled]="urlCrawling() || !urlValue.trim()">
-            <span *ngIf="urlCrawling()">⏳ Exploration en cours...</span>
-            <span *ngIf="!urlCrawling()">🕸️ Explorer et générer</span>
+            <span *ngIf="urlCrawling()"><i class="fa-solid fa-spinner fa-spin"></i> Exploration en cours...</span>
+            <span *ngIf="!urlCrawling()"><i class="fa-solid fa-globe"></i> Explorer et générer</span>
           </button>
         </div>
 
-        <div class="rec-error-msg" *ngIf="urlError()">⚠️ {{ urlError() }}</div>
-        <div class="form-hint" *ngIf="urlPagesExplored() !== null">✅ {{ urlPagesExplored() }} page(s) explorée(s)</div>
+        <div class="rec-error-msg" *ngIf="urlError()"><i class="fa-solid fa-triangle-exclamation"></i> {{ urlError() }}</div>
+        <div class="form-hint" *ngIf="urlPagesExplored() !== null"><i class="fa-solid fa-circle-check"></i> {{ urlPagesExplored() }} page(s) explorée(s)</div>
       </div>
 
       <!-- Propositions -->
@@ -485,8 +485,8 @@
         </div>
 
         <div class="nlp-footer-row" style="margin-bottom:10px">
-          <button class="btn btn-ghost btn-xs" (click)="selectAllUrl(true)">✓ Tout sélectionner</button>
-          <button class="btn btn-ghost btn-xs" (click)="selectAllUrl(false)">✕ Tout désélectionner</button>
+          <button class="btn btn-ghost btn-xs" (click)="selectAllUrl(true)"><i class="fa-solid fa-check"></i> Tout sélectionner</button>
+          <button class="btn btn-ghost btn-xs" (click)="selectAllUrl(false)"><i class="fa-solid fa-xmark"></i> Tout désélectionner</button>
         </div>
 
         <div class="ai-proposal-item" *ngFor="let p of urlProposals()">
@@ -497,9 +497,9 @@
             </span>
             <input class="form-input ai-proposal-name" [(ngModel)]="p.name" />
             <button class="btn btn-ghost btn-xs" (click)="toggleUrlExpanded(p)">
-              {{ urlExpandedId() === p.tempId ? '▴ Détails' : '▾ Détails' }}
+              <i class="fa-solid" [ngClass]="urlExpandedId() === p.tempId ? 'fa-chevron-up' : 'fa-chevron-down'"></i> Détails
             </button>
-            <button class="btn btn-danger btn-sm" (click)="removeUrlProposal(p)" title="Retirer">🗑</button>
+            <button class="btn btn-danger btn-sm" (click)="removeUrlProposal(p)" title="Retirer"><i class="fa-solid fa-trash"></i></button>
           </div>
 
           <div class="scenario-data-panel open" *ngIf="urlExpandedId() === p.tempId">
@@ -510,7 +510,7 @@
             <div class="data-fields">
               <div *ngIf="p.variables.length === 0" class="no-data">Aucune variable.</div>
               <div class="data-field" *ngFor="let v of p.variables">
-                <span class="data-key">{{ v.key }}<span class="secret-badge" *ngIf="v.isSecret">🔒</span></span>
+                <span class="data-key">{{ v.key }}<span class="secret-badge" *ngIf="v.isSecret"><i class="fa-solid fa-lock"></i></span></span>
                 <span class="data-val">
                   <input [(ngModel)]="v.value" [type]="v.isSecret ? 'password' : 'text'" />
                 </span>
@@ -525,7 +525,7 @@
         </div>
 
         <div class="rec-error-msg" *ngIf="urlSaveErrors().length > 0">
-          ⚠️ Certains scénarios n'ont pas pu être créés :
+          <i class="fa-solid fa-triangle-exclamation"></i> Certains scénarios n'ont pas pu être créés :
           <div *ngFor="let e of urlSaveErrors()">— {{ e.name }} : {{ e.message }}</div>
         </div>
 
@@ -533,8 +533,8 @@
           <span class="form-hint">Vous pouvez modifier ou retirer un scénario avant de le créer</span>
           <button class="btn btn-primary btn-sm" (click)="saveSelectedUrlProposals()"
             [disabled]="urlSavingSelected() || urlSelectedCount === 0">
-            <span *ngIf="urlSavingSelected()">⏳ Création...</span>
-            <span *ngIf="!urlSavingSelected()">✓ Créer {{ urlSelectedCount }} scénario(s)</span>
+            <span *ngIf="urlSavingSelected()"><i class="fa-solid fa-spinner fa-spin"></i> Création...</span>
+            <span *ngIf="!urlSavingSelected()"><i class="fa-solid fa-check"></i> Créer {{ urlSelectedCount }} scénario(s)</span>
           </button>
         </div>
       </div>
@@ -542,7 +542,7 @@
     </div>
 
     <!-- Erreur API -->
-    <div class="error-banner" *ngIf="errorMessage()">⚠️ {{ errorMessage() }}</div>
+    <div class="error-banner" *ngIf="errorMessage()"><i class="fa-solid fa-triangle-exclamation"></i> {{ errorMessage() }}</div>
 
   </div>
 
@@ -551,12 +551,12 @@
     <button class="btn btn-ghost" (click)="close()" [disabled]="saving()">Fermer</button>
     <div style="display:flex;gap:8px" *ngIf="activeMode()==='nlp' || activeMode()==='record'">
       <button class="btn btn-secondary btn-sm" (click)="saveDraft()" [disabled]="saving()">
-        <span *ngIf="saving()">⏳ Sauvegarde...</span>
-        <span *ngIf="!saving()">💾 Brouillon</span>
+        <span *ngIf="saving()"><i class="fa-solid fa-spinner fa-spin"></i> Sauvegarde...</span>
+        <span *ngIf="!saving()"><i class="fa-solid fa-floppy-disk"></i> Brouillon</span>
       </button>
       <button class="btn btn-primary" (click)="save()" [disabled]="saving()">
-        <span *ngIf="saving()">⏳ En cours...</span>
-        <span *ngIf="!saving()">✓ Ajouter le scénario</span>
+        <span *ngIf="saving()"><i class="fa-solid fa-spinner fa-spin"></i> En cours...</span>
+        <span *ngIf="!saving()"><i class="fa-solid fa-check"></i> Ajouter le scénario</span>
       </button>
     </div>
   </div>

@@ -14,11 +14,19 @@ import { FormsModule } from '@angular/forms';
 import { ScenarioService, ScenarioVariable } from '../../services/scenario.service';
 
 const GENERATOR_LABEL: Record<string, string> = {
-  MANUAL:  '✍️ Manuel',
-  FAKER:   '🎲 Faker',
-  PROJECT: '📁 Projet',
-  SYSTEM:  '⚙️ Système',
-  AI:      '🤖 IA',
+  MANUAL:  'Manuel',
+  FAKER:   'Faker',
+  PROJECT: 'Projet',
+  SYSTEM:  'Système',
+  AI:      'IA',
+};
+
+const GENERATOR_ICON: Record<string, string> = {
+  MANUAL:  'fa-pen',
+  FAKER:   'fa-dice',
+  PROJECT: 'fa-folder-open',
+  SYSTEM:  'fa-gear',
+  AI:      'fa-robot',
 };
 
 @Component({
@@ -119,6 +127,10 @@ export class ScenarioDataComponent implements OnInit {
 
   generatorLabel(gen?: string): string {
     return GENERATOR_LABEL[gen ?? 'MANUAL'] ?? gen ?? '—';
+  }
+
+  generatorIcon(gen?: string): string {
+    return GENERATOR_ICON[gen ?? 'MANUAL'] ?? 'fa-circle-question';
   }
 
   /** Export JSON des variables (bouton "⬇ Exporter"). */

@@ -32,7 +32,7 @@
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
             >
-              <span class="nav-icon">{{ item.icon }}</span>
+              <i class="nav-icon fa-solid {{ item.icon }}"></i>
               {{ item.label }}
               <span *ngIf="item.badge" class="nav-badge" [ngClass]="item.badgeClass">
                 {{ item.badge }}
@@ -44,12 +44,12 @@
           <ng-container *ngIf="isGroup(item)">
             <div class="nav-group">
               <div class="nav-item-parent" [ngClass]="{ active: item.open }" (click)="toggleGroup(item)">
-                <span class="nav-icon">{{ item.icon }}</span>
+                <i class="nav-icon fa-solid {{ item.icon }}"></i>
                 {{ item.label }}
                 <span *ngIf="item.badge" class="nav-badge" [ngClass]="item.badgeClass" style="margin-right:4px">
                   {{ item.badge }}
                 </span>
-                <span class="nav-chevron">{{ item.open ? '▼' : '▶' }}</span>
+                <i class="nav-chevron fa-solid" [ngClass]="item.open ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
               </div>
               <div class="nav-group-children" [ngClass]="{ open: item.open }">
                 <a
@@ -58,7 +58,7 @@
                   [routerLink]="child.route"
                   routerLinkActive="active"
                 >
-                  <span class="nav-icon" style="font-size:11px">{{ child.icon }}</span>
+                  <i class="nav-icon fa-solid {{ child.icon }}" style="font-size:11px"></i>
                   {{ child.label }}
                 </a>
               </div>
@@ -73,10 +73,10 @@
   <div class="sidebar-footer">
     <!-- THEME TOGGLE -->
     <div class="theme-toggle-row">
-      <span class="theme-toggle-label">🎨 Thème</span>
+      <span class="theme-toggle-label"><i class="fa-solid fa-palette"></i> Thème</span>
       <div class="theme-btn">
-        <div class="theme-opt" [ngClass]="{ active: currentTheme() === 'dark' }" (click)="setTheme('dark')" title="Mode sombre">🌙</div>
-        <div class="theme-opt" [ngClass]="{ active: currentTheme() === 'light' }" (click)="setTheme('light')" title="Mode clair">☀️</div>
+        <div class="theme-opt" [ngClass]="{ active: currentTheme() === 'dark' }" (click)="setTheme('dark')" title="Mode sombre"><i class="fa-solid fa-moon"></i></div>
+        <div class="theme-opt" [ngClass]="{ active: currentTheme() === 'light' }" (click)="setTheme('light')" title="Mode clair"><i class="fa-solid fa-sun"></i></div>
       </div>
     </div>
 
@@ -87,13 +87,13 @@
         <div class="user-name">{{ userName() }}</div>
         <div class="user-role">{{ userRoleLabel() }}</div>
       </div>
-      <span style="color:var(--text3);font-size:16px">⋮</span>
+      <i class="fa-solid fa-ellipsis-vertical" style="color:var(--text3);font-size:16px"></i>
 
       <!-- DROPDOWN -->
       <div class="user-dropdown" [ngClass]="{ open: userDropdownOpen() }" (click)="$event.stopPropagation()">
-        <div class="dropdown-item" (click)="goToProfile()">👤 Mon profil</div>
-        <div class="dropdown-item" (click)="goToSettings()">⚙️ Paramètres</div>
-        <div class="dropdown-item danger" (click)="logout()">🚪 Se déconnecter</div>
+        <div class="dropdown-item" (click)="goToProfile()"><i class="fa-solid fa-user"></i> Mon profil</div>
+        <div class="dropdown-item" (click)="goToSettings()"><i class="fa-solid fa-gear"></i> Paramètres</div>
+        <div class="dropdown-item danger" (click)="logout()"><i class="fa-solid fa-right-from-bracket"></i> Se déconnecter</div>
       </div>
     </div>
   </div>

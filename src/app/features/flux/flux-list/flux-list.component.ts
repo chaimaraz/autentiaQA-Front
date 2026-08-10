@@ -1,18 +1,18 @@
 import { Component } from '@angular/core';
-import { NgFor, NgClass } from '@angular/common';
+import { NgFor, NgClass, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-flux-list',
   standalone: true,
-  imports: [NgFor, NgClass, RouterLink],
+  imports: [NgFor, NgClass, NgIf, RouterLink],
   templateUrl: './flux-list.component.html',
   styleUrl: './flux-list.component.scss',
 })
 export class FluxListComponent {
   fluxList = [
     {
-      icon: '✅', iconClass: 'pos',
+      icon: 'fa-circle-check', iconClass: 'pos',
       name: 'Parcours achat complet — Positif',
       meta: '5 scénarios · Dernière exéc: il y a 2h',
       status: 'passed', statusLabel: 'PASSÉ 5/5',
@@ -25,7 +25,7 @@ export class FluxListComponent {
       ],
     },
     {
-      icon: '❌', iconClass: 'neg',
+      icon: 'fa-circle-xmark', iconClass: 'neg',
       name: 'Authentification incorrecte — Négatif',
       meta: '3 scénarios · Dernière exéc: hier',
       status: 'passed', statusLabel: 'PASSÉ 3/3',
@@ -36,7 +36,7 @@ export class FluxListComponent {
       ],
     },
     {
-      icon: '🔐', iconClass: 'mix',
+      icon: 'fa-shield-halved', iconClass: 'mix',
       name: 'Accès admin sans droits — Sécurité',
       meta: '4 scénarios · Jamais exécuté',
       status: 'idle', statusLabel: 'IDLE',
