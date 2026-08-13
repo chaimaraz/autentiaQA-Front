@@ -115,7 +115,7 @@ export class UsersManagementComponent implements OnChanges {
 
     this.memberService.listInvitations(this.projectId).subscribe({
       next: (invitations) => this.invitations.set(invitations),
-      error: () => {}, // non bloquant, comme avant
+      error: () => undefined, // non bloquant, comme avant
     });
   }
 

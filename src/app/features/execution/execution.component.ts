@@ -347,7 +347,7 @@ analyzeWithAi(): void {
           this.steps.set(Array.from(this.stepsMap.values()).sort((a, b) => a.stepIndex - b.stepIndex));
         }
       },
-      error: () => {},
+      error: () => undefined,
     });
   }
 

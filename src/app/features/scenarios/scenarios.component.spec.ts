@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { of, throwError, Subject } from 'rxjs';
 
-import { ScenariosComponent, ScenarioDisplay } from './scenarios.component';
+import { ScenariosComponent } from './scenarios.component';
 import { ScenarioService, PaginatedScenarios } from '../../services/scenario.service';
 import { ExecutionConfigResult } from '../../shared/components/execution-config-modal/execution-config-modal.component';
 

@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 
 import { SettingsComponent } from './settings.component';
 import { AuthService, ProjectAccess } from '../../services/auth.service';
@@ -26,9 +27,13 @@ describe('SettingsComponent', () => {
       isAdmin: jasmine.createSpy('isAdmin').and.returnValue(isAdmin),
     } as unknown as jasmine.SpyObj<AuthService>;
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [SettingsComponent],
-      providers: [{ provide: AuthService, useValue: authServiceSpy }],
+      providers: [
+        { provide: AuthService, useValue: authServiceSpy },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
+      ],
     });
 
     fixture = TestBed.createComponent(SettingsComponent);

@@ -200,7 +200,7 @@ describe('ScenarioDataComponent', () => {
   });
 
   describe('importJson', () => {
-    function fireFileEvent(fileContent: string | null, valid = true): { input: HTMLInputElement } {
+    function fireFileEvent(fileContent: string | null): { input: HTMLInputElement } {
       const file = fileContent !== null ? new File([fileContent], 'vars.json', { type: 'application/json' }) : undefined;
       const input = document.createElement('input');
       input.type = 'file';

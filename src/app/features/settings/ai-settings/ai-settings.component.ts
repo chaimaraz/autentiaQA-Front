@@ -49,7 +49,7 @@ export class AiSettingsComponent implements OnInit {
     this.loading.set(true);
     this.aiConfigSvc.listProviders().subscribe({
       next: (providers) => this.providers.set(providers),
-      error: () => {},
+      error: () => undefined,
     });
     this.aiConfigSvc.getConfig().subscribe({
       next: (config) => {

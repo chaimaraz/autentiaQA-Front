@@ -116,7 +116,11 @@ export class ScenarioDataComponent implements OnInit {
   toggleSecretVisibility(id: string): void {
     this.showSecret.update(set => {
       const next = new Set(set);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }
@@ -154,7 +158,7 @@ export class ScenarioDataComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const imported: Array<{ key: string; value: string; isSecret?: boolean }> = JSON.parse(reader.result as string);
+        const imported: { key: string; value: string; isSecret?: boolean }[] = JSON.parse(reader.result as string);
         if (!Array.isArray(imported)) throw new Error('Format invalide');
 
         this.variables.update(list => {

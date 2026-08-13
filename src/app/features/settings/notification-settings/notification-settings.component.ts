@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, signal } from '@angular/core';
+import { Component, Input, signal } from '@angular/core';
 import { NgIf, NgFor, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -16,7 +16,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './notification-settings.component.html',
   styleUrl: './notification-settings.component.scss',
 })
-export class NotificationSettingsComponent implements OnChanges {
+export class NotificationSettingsComponent {
   @Input({ required: true }) projectId!: string;
 
   saving = signal(false);
@@ -31,9 +31,7 @@ export class NotificationSettingsComponent implements OnChanges {
     { key: 'lowRateAlert', label: 'Alerte si taux de succès < 80%', enabled: true },
   ];
 
-  ngOnChanges(): void {
-    // TODO backend : GET /api/projects/:projectId (globalConfig) pour précharger le formulaire
-  }
+  // TODO backend : GET /api/projects/:projectId (globalConfig) pour précharger le formulaire
 
   save(): void {
     this.saving.set(true);

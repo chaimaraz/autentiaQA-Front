@@ -12,9 +12,8 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import {
   AIGenerationService,
   AIScenarioProposal, AIScenarioStep, AIScenarioVariable,
-  AIJobProgress, AIJobResult,
 } from '../../services/ai-generation.service';
-import { AIReviewStoreService, AIReviewPayload } from '../../services/ai-review-store.service';
+import { AIReviewStoreService } from '../../services/ai-review-store.service';
 
 type ScreenStage = 'review' | 'generating_scripts' | 'scripts_ready' | 'saving' | 'done';
 
@@ -115,7 +114,7 @@ export class AiReviewComponent implements OnInit {
 
     const job = this.aiSvc.generateScripts(this.projectId(), selected);
 
-    job.progress$.subscribe(() => {});
+    job.progress$.subscribe(() => undefined);
 
     job.result$.subscribe((data: { scenarios: AIScenarioProposal[] }) => {
       const byId = new Map(data.scenarios.map((s: AIScenarioProposal) => [s.tempId, s]));
