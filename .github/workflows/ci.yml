@@ -84,6 +84,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Requis pour le driver docker-container, seul a supporter le cache
+      # distant type=gha utilise ci-dessous.
+      - uses: docker/setup-buildx-action@v3
+
       - name: Build de l'image (locale, pas encore poussee)
         uses: docker/build-push-action@v7
         with:
