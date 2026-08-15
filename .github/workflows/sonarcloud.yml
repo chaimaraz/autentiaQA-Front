@@ -10,11 +10,12 @@ jobs:
   sonarcloud:
     name: Analyse SonarCloud
     runs-on: ubuntu-latest
-    # Desactive tant que le secret SONAR_TOKEN n'est pas configure (voir
-    # sonar-project.properties : necessite d'importer le projet sur
-    # sonarcloud.io puis d'ajouter le token dans Settings > Secrets and
-    # variables > Actions).
-    if: ${{ secrets.SONAR_TOKEN != '' }}
+    # `secrets` ne peut pas etre utilise dans un `if:` (job ou step) — invalide
+    # tout le workflow si on essaie. A la place, le secret passe par `env:` au
+    # niveau du job, et seule l'etape de scan est conditionnee sur cette env var
+    # tant que SONAR_TOKEN n'est pas configure (voir sonar-project.properties).
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -29,6 +30,5 @@ jobs:
       - run: npm run test:ci
 
       - name: SonarCloud Scan
+        if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@v5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
