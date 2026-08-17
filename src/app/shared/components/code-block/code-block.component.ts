@@ -27,6 +27,12 @@ export class CodeBlockComponent implements OnChanges {
   constructor(private sanitizer: DomSanitizer) {}
 
   ngOnChanges(): void {
+    // Pas de risque XSS malgré bypassSecurityTrustHtml : hljs.highlight()
+    // echappe toujours le texte source (< > &) avant de l'entourer de <span
+    // class="hljs-...">, il n'interprete jamais le contenu de `code` comme du
+    // HTML. Le chemin 'text' passe par _escape() (textContent), donc echappe
+    // aussi. bypassSecurityTrustHtml sert uniquement a preserver les classes
+    // hljs-* que le sanitizer par defaut d'Angular retirerait sinon.
     const raw = this.language === 'text'
       ? this._escape(this.code)
       : hljs.highlight(this.code || '', { language: this.language }).value;

@@ -151,6 +151,8 @@ export class ProfileComponent {
   }
 
   // Heatmap purement visuelle (comme dans le template) — 52 semaines * 7 jours.
+  // Math.random() est volontaire ici : purement decoratif, aucun usage
+  // securitaire (ni token, ni mot de passe, ni identifiant).
   heatmapCells: string[] = Array.from({ length: 52 * 7 }, () => {
     const r = Math.random();
     return r < 0.4 ? '' : r < 0.6 ? 'l1' : r < 0.75 ? 'l2' : r < 0.9 ? 'l3' : 'l4';

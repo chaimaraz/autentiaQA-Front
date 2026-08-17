@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Installer les dépendances
-RUN npm install
+RUN npm install --ignore-scripts
 
 # Copier tout le code
 COPY . .
@@ -25,8 +25,14 @@ COPY --from=builder /app/dist/autentia-front/browser /usr/share/nginx/html
 # Copier le fichier de configuration Nginx (optionnel)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Exposer le port
-EXPOSE 80
+# Nginx tourne en non-root (utilisateur "nginx" déjà présent dans l'image) :
+# écoute sur un port non privilégié (voir nginx.conf) + dossiers d'exécution
+# réattribués (root ne conserve que le build, jamais le service HTTP).
+RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d \
+    && touch /var/run/nginx.pid \
+    && chown nginx:nginx /var/run/nginx.pid
+USER nginx
 
-# Démarrer Nginx
+EXPOSE 8080
+
 CMD ["nginx", "-g", "daemon off;"]
