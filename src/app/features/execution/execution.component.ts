@@ -2,7 +2,7 @@
 import {
   Component, OnInit, OnDestroy, signal, inject, ViewChild, ElementRef, AfterViewChecked,
 } from '@angular/core';
-import { NgFor, NgClass, NgIf, DecimalPipe, DatePipe } from '@angular/common';
+import { NgFor, NgClass, NgIf, NgTemplateOutlet, DecimalPipe, DatePipe } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router }          from '@angular/router';
 import { Socket }                                      from 'socket.io-client';
 import { HttpClient }                                  from '@angular/common/http';
@@ -20,6 +20,7 @@ import {
   BatchScenarioExecution,
 } from '../../services/execution.service';
 import { JiraTicketModalComponent } from '../../shared/components/jira-ticket-modal/jira-ticket-modal.component';
+import { AiFailuresListComponent } from '../../shared/components/ai-failures-list/ai-failures-list.component';
 import { generateSingleReportPdf, generateBatchReportPdf, ReportStepVM, ScenarioReportVM } from '../../shared/utils/pdf-report';
 
 export interface ExecStats {
@@ -56,7 +57,7 @@ export type ExecMode   = 'single' | 'batch';
 @Component({
   selector:    'app-execution',
   standalone:  true,
-  imports:     [NgFor, NgClass, NgIf, DecimalPipe, DatePipe, RouterLink, JiraTicketModalComponent],
+  imports:     [NgFor, NgClass, NgIf, NgTemplateOutlet, DecimalPipe, DatePipe, RouterLink, JiraTicketModalComponent, AiFailuresListComponent],
   templateUrl: './execution.component.html',
   styleUrl:    './execution.component.scss',
 })

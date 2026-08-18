@@ -43,7 +43,7 @@
           <!-- GROUP ITEM -->
           <ng-container *ngIf="isGroup(item)">
             <div class="nav-group">
-              <div class="nav-item-parent" [ngClass]="{ active: item.open }" (click)="toggleGroup(item)">
+              <div class="nav-item-parent" [ngClass]="{ active: item.open }" (click)="toggleGroup(item)" (keydown.enter)="toggleGroup(item)" tabindex="0">
                 <i class="nav-icon fa-solid {{ item.icon }}"></i>
                 {{ item.label }}
                 <span *ngIf="item.badge" class="nav-badge" [ngClass]="item.badgeClass" style="margin-right:4px">
@@ -75,13 +75,13 @@
     <div class="theme-toggle-row">
       <span class="theme-toggle-label"><i class="fa-solid fa-palette"></i> Thème</span>
       <div class="theme-btn">
-        <div class="theme-opt" [ngClass]="{ active: currentTheme() === 'dark' }" (click)="setTheme('dark')" title="Mode sombre"><i class="fa-solid fa-moon"></i></div>
-        <div class="theme-opt" [ngClass]="{ active: currentTheme() === 'light' }" (click)="setTheme('light')" title="Mode clair"><i class="fa-solid fa-sun"></i></div>
+        <div class="theme-opt" [ngClass]="{ active: currentTheme() === 'dark' }" (click)="setTheme('dark')" (keydown.enter)="setTheme('dark')" tabindex="0" title="Mode sombre"><i class="fa-solid fa-moon"></i></div>
+        <div class="theme-opt" [ngClass]="{ active: currentTheme() === 'light' }" (click)="setTheme('light')" (keydown.enter)="setTheme('light')" tabindex="0" title="Mode clair"><i class="fa-solid fa-sun"></i></div>
       </div>
     </div>
 
     <!-- USER CARD -->
-    <div class="user-card" (click)="toggleUserDropdown()">
+    <div class="user-card" (click)="toggleUserDropdown()" (keydown.enter)="toggleUserDropdown()" tabindex="0">
       <div class="avatar">{{ userInitials() }}</div>
       <div class="user-info">
         <div class="user-name">{{ userName() }}</div>
@@ -91,9 +91,9 @@
 
       <!-- DROPDOWN -->
       <div class="user-dropdown" [ngClass]="{ open: userDropdownOpen() }" (click)="$event.stopPropagation()">
-        <div class="dropdown-item" (click)="goToProfile()"><i class="fa-solid fa-user"></i> Mon profil</div>
-        <div class="dropdown-item" (click)="goToSettings()"><i class="fa-solid fa-gear"></i> Paramètres</div>
-        <div class="dropdown-item danger" (click)="logout()"><i class="fa-solid fa-right-from-bracket"></i> Se déconnecter</div>
+        <div class="dropdown-item" (click)="goToProfile()" (keydown.enter)="goToProfile()" tabindex="0"><i class="fa-solid fa-user"></i> Mon profil</div>
+        <div class="dropdown-item" (click)="goToSettings()" (keydown.enter)="goToSettings()" tabindex="0"><i class="fa-solid fa-gear"></i> Paramètres</div>
+        <div class="dropdown-item danger" (click)="logout()" (keydown.enter)="logout()" tabindex="0"><i class="fa-solid fa-right-from-bracket"></i> Se déconnecter</div>
       </div>
     </div>
   </div>

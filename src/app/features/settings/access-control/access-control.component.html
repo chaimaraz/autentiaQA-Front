@@ -32,6 +32,8 @@
             [class.disabled]="role === 'ADMIN'"
             [title]="role === 'ADMIN' ? 'Le rôle Administrateur a toujours accès complet' : ''"
             (click)="toggle(role, perm.code)"
+            (keydown.enter)="toggle(role, perm.code)"
+            tabindex="0"
           ><i class="fa-solid fa-check" *ngIf="isChecked(role, perm.code)"></i></div>
         </div>
       </div>

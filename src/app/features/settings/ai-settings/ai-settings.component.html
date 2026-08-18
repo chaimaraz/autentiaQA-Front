@@ -20,14 +20,15 @@
 
   <div class="grid-2">
     <div class="form-group">
-      <label class="form-label">Fournisseur</label>
-      <select class="form-input" [(ngModel)]="form.provider" (ngModelChange)="onProviderChange()">
+      <label class="form-label" for="ai-provider">Fournisseur</label>
+      <select id="ai-provider" class="form-input" [(ngModel)]="form.provider" (ngModelChange)="onProviderChange()">
         <option *ngFor="let p of providers()" [value]="p.id">{{ p.label }}</option>
       </select>
     </div>
     <div class="form-group" *ngIf="!isMock()">
-      <label class="form-label">Modèle</label>
+      <label class="form-label" for="ai-model">Modèle</label>
       <input
+        id="ai-model"
         class="form-input"
         [(ngModel)]="form.model"
         [placeholder]="selectedProviderMeta()?.exampleModels?.[0] || 'ex: gemini-2.5-flash'"
@@ -40,9 +41,9 @@
   </div>
 
   <div class="form-group" *ngIf="!isMock()">
-    <label class="form-label">Clé API</label>
+    <label class="form-label" for="ai-api-key">Clé API</label>
     <div style="display:flex;gap:8px">
-      <input class="form-input" type="password" placeholder="sk-... / AIza..." [(ngModel)]="form.apiKey" />
+      <input id="ai-api-key" class="form-input" type="password" placeholder="sk-... / AIza..." [(ngModel)]="form.apiKey" />
       <button class="btn btn-ghost btn-sm" [disabled]="testing()" (click)="testConnection()">
         <i class="fa-solid" [ngClass]="testing() ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i> {{ testing() ? 'Test...' : 'Tester' }}
       </button>
@@ -60,12 +61,12 @@
 
   <div class="grid-2">
     <div class="form-group">
-      <label class="form-label">Température <span style="font-size:10px;color:var(--text3);font-weight:400">(créativité, 0 à 2)</span></label>
-      <input class="form-input" type="number" min="0" max="2" step="0.1" [(ngModel)]="form.temperature" />
+      <label class="form-label" for="ai-temperature">Température <span style="font-size:10px;color:var(--text3);font-weight:400">(créativité, 0 à 2)</span></label>
+      <input id="ai-temperature" class="form-input" type="number" min="0" max="2" step="0.1" [(ngModel)]="form.temperature" />
     </div>
     <div class="form-group">
-      <label class="form-label">Max tokens</label>
-      <input class="form-input" type="number" min="1" step="500" [(ngModel)]="form.maxTokens" />
+      <label class="form-label" for="ai-max-tokens">Max tokens</label>
+      <input id="ai-max-tokens" class="form-input" type="number" min="1" step="500" [(ngModel)]="form.maxTokens" />
     </div>
   </div>
 
@@ -82,18 +83,18 @@
 
   <div class="grid-3">
     <div class="form-group">
-      <label class="form-label">Scénarios max par génération</label>
-      <input class="form-input" type="number" min="1" max="50" [(ngModel)]="form.maxScenarios" />
+      <label class="form-label" for="ai-max-scenarios">Scénarios max par génération</label>
+      <input id="ai-max-scenarios" class="form-input" type="number" min="1" max="50" [(ngModel)]="form.maxScenarios" />
       <div class="form-hint">Nombre de scénarios demandés à l'IA en une fois (document / URL)</div>
     </div>
     <div class="form-group">
-      <label class="form-label">Pages max explorées (crawl URL)</label>
-      <input class="form-input" type="number" min="1" max="200" [(ngModel)]="form.crawlMaxPages" />
+      <label class="form-label" for="ai-crawl-max-pages">Pages max explorées (crawl URL)</label>
+      <input id="ai-crawl-max-pages" class="form-input" type="number" min="1" max="200" [(ngModel)]="form.crawlMaxPages" />
       <div class="form-hint">Valeur par défaut si la requête n'en précise pas</div>
     </div>
     <div class="form-group">
-      <label class="form-label">Profondeur max de crawl</label>
-      <input class="form-input" type="number" min="0" max="10" [(ngModel)]="form.crawlMaxDepth" />
+      <label class="form-label" for="ai-crawl-max-depth">Profondeur max de crawl</label>
+      <input id="ai-crawl-max-depth" class="form-input" type="number" min="0" max="10" [(ngModel)]="form.crawlMaxDepth" />
       <div class="form-hint">Nombre de clics depuis la page de départ</div>
     </div>
   </div>

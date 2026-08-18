@@ -2,8 +2,8 @@
 <div class="settings-section-sub">Invitez des membres et gérez leurs rôles sur ce projet.</div>
 
 <div class="invite-row">
-  <input class="form-input" type="email" placeholder="email@entreprise.com" [(ngModel)]="inviteEmail" style="flex:2" />
-  <select class="form-input" [(ngModel)]="inviteRole" style="flex:1;min-width:140px">
+  <input class="form-input" type="email" placeholder="email@entreprise.com" [(ngModel)]="inviteEmail" style="flex:2" aria-label="Email à inviter" />
+  <select class="form-input" [(ngModel)]="inviteRole" style="flex:1;min-width:140px" aria-label="Rôle à attribuer">
     <option *ngFor="let r of roles" [value]="r">{{ roleLabels[r] }}</option>
   </select>
   <button class="btn btn-primary" [disabled]="inviting()" (click)="sendInvite()">
@@ -52,6 +52,7 @@
           style="font-size:11px;padding:4px 8px;width:auto"
           [ngModel]="row.role"
           (ngModelChange)="updateRole(row, $event)"
+          [attr.aria-label]="'Rôle de ' + row.name"
         >
           <option *ngFor="let r of roles" [value]="r">{{ roleLabels[r] }}</option>
         </select>

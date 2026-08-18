@@ -1,6 +1,6 @@
 <!-- src/app/shared/components/execution-config-modal/execution-config-modal.component.html -->
-<div class="modal-backdrop" *ngIf="isOpen()" (click)="onCancel()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
+<div class="modal-backdrop" *ngIf="isOpen()" (click)="onCancel()" (keydown.escape)="onCancel()" tabindex="0">
+  <div class="modal-card" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
 
     <div class="modal-header">
       <div>

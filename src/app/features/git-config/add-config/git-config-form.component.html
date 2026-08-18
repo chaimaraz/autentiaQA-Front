@@ -18,7 +18,7 @@
     </div>
   </div>
   <div class="gcf-card-body">
-    <select class="form-input" [(ngModel)]="projectId" name="projectId" *ngIf="!loadingProjects(); else loadingProj">
+    <select class="form-input" [(ngModel)]="projectId" name="projectId" aria-label="Projet" *ngIf="!loadingProjects(); else loadingProj">
       <option [ngValue]="null" disabled>-- Sélectionnez un projet --</option>
       <option *ngFor="let p of projects()" [value]="p.id">{{ p.name }}</option>
     </select>
@@ -37,8 +37,8 @@
   </div>
   <div class="gcf-card-body">
     <div class="form-group">
-      <label class="form-label">Nom du dépôt</label>
-      <input class="form-input" [(ngModel)]="form.name" name="name" placeholder="ex: Backend Auth Service" />
+      <label class="form-label" for="gcf-name">Nom du dépôt</label>
+      <input id="gcf-name" class="form-input" [(ngModel)]="form.name" name="name" placeholder="ex: Backend Auth Service" />
     </div>
 
     <div class="form-group">
@@ -47,7 +47,7 @@
         <div class="gcf-chip" *ngFor="let r of roleOptions"
           [ngClass]="{ selected: form.role === r.key }"
           [style.--chip-color]="r.color" [style.--chip-bg]="r.bg"
-          (click)="form.role = r.key">
+          (click)="form.role = r.key" (keydown.enter)="form.role = r.key" tabindex="0">
           <span class="gcf-chip-icon"><i [ngClass]="r.icon"></i></span>
           <span>{{ r.label }}</span>
         </div>
@@ -60,7 +60,7 @@
         <div class="gcf-chip" *ngFor="let p of providerOptions"
           [ngClass]="{ selected: form.provider === p.key }"
           [style.--chip-color]="p.color" [style.--chip-bg]="p.bg"
-          (click)="form.provider = p.key">
+          (click)="form.provider = p.key" (keydown.enter)="form.provider = p.key" tabindex="0">
           <span class="gcf-chip-icon"><i [ngClass]="p.icon"></i></span>
           <span>{{ p.label }}</span>
         </div>
@@ -69,12 +69,12 @@
 
     <div class="grid-2">
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">URL du dépôt</label>
-        <input class="form-input gcf-mono" [(ngModel)]="form.repoUrl" name="repoUrl" placeholder="https://github.com/company/repo" />
+        <label class="form-label" for="gcf-repo-url">URL du dépôt</label>
+        <input id="gcf-repo-url" class="form-input gcf-mono" [(ngModel)]="form.repoUrl" name="repoUrl" placeholder="https://github.com/company/repo" />
       </div>
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Branche surveillée</label>
-        <input class="form-input gcf-mono" [(ngModel)]="form.branch" name="branch" placeholder="main" />
+        <label class="form-label" for="gcf-branch">Branche surveillée</label>
+        <input id="gcf-branch" class="form-input gcf-mono" [(ngModel)]="form.branch" name="branch" placeholder="main" />
       </div>
     </div>
   </div>
@@ -91,16 +91,16 @@
   </div>
   <div class="gcf-card-body">
     <div class="git-events-grid">
-      <div class="git-event-toggle" [ngClass]="{ selected: form.onPush }" (click)="form.onPush = !form.onPush">
+      <div class="git-event-toggle" [ngClass]="{ selected: form.onPush }" (click)="form.onPush = !form.onPush" (keydown.enter)="form.onPush = !form.onPush" tabindex="0">
         <i class="fa-solid" [ngClass]="form.onPush ? 'fa-circle-check' : 'fa-circle'"></i> Push
       </div>
-      <div class="git-event-toggle" [ngClass]="{ selected: form.onPr }" (click)="form.onPr = !form.onPr">
+      <div class="git-event-toggle" [ngClass]="{ selected: form.onPr }" (click)="form.onPr = !form.onPr" (keydown.enter)="form.onPr = !form.onPr" tabindex="0">
         <i class="fa-solid" [ngClass]="form.onPr ? 'fa-circle-check' : 'fa-circle'"></i> Pull Request
       </div>
-      <div class="git-event-toggle" [ngClass]="{ selected: form.onTag }" (click)="form.onTag = !form.onTag">
+      <div class="git-event-toggle" [ngClass]="{ selected: form.onTag }" (click)="form.onTag = !form.onTag" (keydown.enter)="form.onTag = !form.onTag" tabindex="0">
         <i class="fa-solid" [ngClass]="form.onTag ? 'fa-circle-check' : 'fa-circle'"></i> Nouveau tag
       </div>
-      <div class="git-event-toggle" [ngClass]="{ selected: form.onSchedule }" (click)="form.onSchedule = !form.onSchedule">
+      <div class="git-event-toggle" [ngClass]="{ selected: form.onSchedule }" (click)="form.onSchedule = !form.onSchedule" (keydown.enter)="form.onSchedule = !form.onSchedule" tabindex="0">
         <i class="fa-solid" [ngClass]="form.onSchedule ? 'fa-circle-check' : 'fa-circle'"></i> Planifié (cron)
       </div>
     </div>
@@ -122,7 +122,7 @@
         <div class="switch-label">Bloquer le merge si les tests échouent</div>
         <div class="switch-sub">Le rapport indique "merge à rejeter" en cas d'échec</div>
       </div>
-      <div class="toggle-switch" [ngClass]="{ on: form.blockMerge }" (click)="form.blockMerge = !form.blockMerge"></div>
+      <div class="toggle-switch" [ngClass]="{ on: form.blockMerge }" (click)="form.blockMerge = !form.blockMerge" (keydown.enter)="form.blockMerge = !form.blockMerge" tabindex="0"></div>
     </div>
 
     <div class="switch-row">
@@ -130,12 +130,12 @@
         <div class="switch-label">Envoyer un rapport par email</div>
         <div class="switch-sub">À chaque push/PR détecté sur ce dépôt</div>
       </div>
-      <div class="toggle-switch" [ngClass]="{ on: form.notifyEmail }" (click)="form.notifyEmail = !form.notifyEmail"></div>
+      <div class="toggle-switch" [ngClass]="{ on: form.notifyEmail }" (click)="form.notifyEmail = !form.notifyEmail" (keydown.enter)="form.notifyEmail = !form.notifyEmail" tabindex="0"></div>
     </div>
 
     <div class="form-group gcf-reveal" *ngIf="form.notifyEmail" style="margin-top:14px;margin-bottom:0">
-      <label class="form-label">Destinataires du rapport</label>
-      <input class="form-input" [(ngModel)]="form.notifyEmails" name="notifyEmails" placeholder="ex: lead@company.com, qa@company.com" />
+      <label class="form-label" for="gcf-notify-emails">Destinataires du rapport</label>
+      <input id="gcf-notify-emails" class="form-input" [(ngModel)]="form.notifyEmails" name="notifyEmails" placeholder="ex: lead@company.com, qa@company.com" />
       <div class="form-hint">Emails séparés par des virgules.</div>
     </div>
   </div>

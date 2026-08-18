@@ -17,7 +17,7 @@
           <div class="sc-name">{{ s.name }}</div>
           <div class="sc-sub">{{ s.desc }}</div>
         </div>
-        <div class="sc-add-btn" (click)="addStep(s)" title="Ajouter au flux"><i class="fa-solid fa-plus"></i></div>
+        <div class="sc-add-btn" (click)="addStep(s)" (keydown.enter)="addStep(s)" tabindex="0" title="Ajouter au flux"><i class="fa-solid fa-plus"></i></div>
       </div>
     </div>
   </div>
@@ -29,12 +29,12 @@
       <div class="card-header"><div class="card-title"><i class="fa-solid fa-gear"></i> Propriétés du flux</div></div>
       <div class="card-body" style="padding:14px">
         <div class="form-group" style="margin-bottom:10px">
-          <label class="form-label">Nom du flux</label>
-          <input class="form-input" [(ngModel)]="fluxName" placeholder="Ex: Parcours achat positif" />
+          <label class="form-label" for="flux-name">Nom du flux</label>
+          <input id="flux-name" class="form-input" [(ngModel)]="fluxName" placeholder="Ex: Parcours achat positif" />
         </div>
         <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">Type</label>
-          <select class="form-input" style="font-size:12px">
+          <label class="form-label" for="flux-type">Type</label>
+          <select id="flux-type" class="form-input" style="font-size:12px">
             <option>Positif — tout doit réussir</option>
             <option>Négatif — vérifier erreurs/blocages</option>
             <option>Sécurité — accès interdits</option>

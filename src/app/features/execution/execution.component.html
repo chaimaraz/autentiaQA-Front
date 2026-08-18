@@ -143,37 +143,44 @@
     </div>
     <div class="card-body" style="padding:12px 16px">
       <div class="steps-list">
-        <div class="step-item"
-             *ngFor="let step of steps(); let i = index"
-             [ngClass]="{ 'step-fail': step.result === 'FAIL', 'step-pass': step.result === 'PASS', 'step-running': step.result === 'RUNNING' }"
-             (click)="toggleStep(i)">
-          <div class="step-row">
-            <div class="step-index">{{ i + 1 }}</div>
-            <div class="step-indicator" [ngClass]="step.result.toLowerCase()">
-              <i class="fa-solid fa-arrows-rotate spin" *ngIf="step.result === 'RUNNING'"></i>
-              <i class="fa-solid fa-check" *ngIf="step.result === 'PASS'"></i>
-              <i class="fa-solid fa-xmark" *ngIf="step.result === 'FAIL'"></i>
-              <i class="fa-solid fa-minus" *ngIf="step.result === 'SKIP'"></i>
-            </div>
-            <div class="step-content">
-              <div class="step-action">{{ step.action }}</div>
-            </div>
-            <div class="step-dur" *ngIf="step.durationMs">{{ step.durationMs }}ms</div>
-            <span class="step-result-badge" [ngClass]="step.result.toLowerCase()">{{ step.result }}</span>
-            <i class="fa-solid step-toggle" *ngIf="step.errorMessage" [ngClass]="expandedStep() === i ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-          </div>
-          <div class="step-detail" *ngIf="expandedStep() === i && step.errorMessage">
-            <div class="step-error-block">
-              <div class="step-error-label"><i class="fa-solid fa-triangle-exclamation"></i> Message d'erreur</div>
-              <pre class="step-error-msg">{{ step.errorMessage }}</pre>
-            </div>
-          </div>
-        </div>
+        <ng-container *ngTemplateOutlet="stepItems"></ng-container>
       </div>
     </div>
   </div>
 
 </ng-container>
+
+<!-- Bloc partagé : liste des étapes (utilisé ici en live, et dans le rapport final ci-dessous). -->
+<ng-template #stepItems>
+  <div class="step-item"
+       *ngFor="let step of steps(); let i = index"
+       [ngClass]="{ 'step-fail': step.result === 'FAIL', 'step-pass': step.result === 'PASS', 'step-running': step.result === 'RUNNING' }"
+       (click)="toggleStep(i)"
+       (keydown.enter)="toggleStep(i)"
+       tabindex="0">
+    <div class="step-row">
+      <div class="step-index">{{ i + 1 }}</div>
+      <div class="step-indicator" [ngClass]="step.result.toLowerCase()">
+        <i class="fa-solid fa-arrows-rotate spin" *ngIf="step.result === 'RUNNING'"></i>
+        <i class="fa-solid fa-check" *ngIf="step.result === 'PASS'"></i>
+        <i class="fa-solid fa-xmark" *ngIf="step.result === 'FAIL'"></i>
+        <i class="fa-solid fa-minus" *ngIf="step.result === 'SKIP'"></i>
+      </div>
+      <div class="step-content">
+        <div class="step-action">{{ step.action }}</div>
+      </div>
+      <div class="step-dur" *ngIf="step.durationMs">{{ step.durationMs }}ms</div>
+      <span class="step-result-badge" [ngClass]="step.result.toLowerCase()">{{ step.result }}</span>
+      <i class="fa-solid step-toggle" *ngIf="step.errorMessage" [ngClass]="expandedStep() === i ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+    </div>
+    <div class="step-detail" *ngIf="expandedStep() === i && step.errorMessage">
+      <div class="step-error-block">
+        <div class="step-error-label"><i class="fa-solid fa-triangle-exclamation"></i> Message d'erreur</div>
+        <pre class="step-error-msg">{{ step.errorMessage }}</pre>
+      </div>
+    </div>
+  </div>
+</ng-template>
 
 <!-- ═══════════════════════════════════════════════════════════
      CONSOLE D'EXÉCUTION
@@ -271,32 +278,7 @@
 
     <!-- ═══ DÉTAIL DES ÉTAPES — toutes les étapes, passées ET échouées ═══ -->
     <div class="steps-list" style="margin:16px 20px" *ngIf="steps().length > 0">
-      <div class="step-item"
-           *ngFor="let step of steps(); let i = index"
-           [ngClass]="{ 'step-fail': step.result === 'FAIL', 'step-pass': step.result === 'PASS', 'step-running': step.result === 'RUNNING' }"
-           (click)="toggleStep(i)">
-        <div class="step-row">
-          <div class="step-index">{{ i + 1 }}</div>
-          <div class="step-indicator" [ngClass]="step.result.toLowerCase()">
-            <i class="fa-solid fa-arrows-rotate spin" *ngIf="step.result === 'RUNNING'"></i>
-            <i class="fa-solid fa-check" *ngIf="step.result === 'PASS'"></i>
-            <i class="fa-solid fa-xmark" *ngIf="step.result === 'FAIL'"></i>
-            <i class="fa-solid fa-minus" *ngIf="step.result === 'SKIP'"></i>
-          </div>
-          <div class="step-content">
-            <div class="step-action">{{ step.action }}</div>
-          </div>
-          <div class="step-dur" *ngIf="step.durationMs">{{ step.durationMs }}ms</div>
-          <span class="step-result-badge" [ngClass]="step.result.toLowerCase()">{{ step.result }}</span>
-          <i class="fa-solid step-toggle" *ngIf="step.errorMessage" [ngClass]="expandedStep() === i ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-        </div>
-        <div class="step-detail" *ngIf="expandedStep() === i && step.errorMessage">
-          <div class="step-error-block">
-            <div class="step-error-label"><i class="fa-solid fa-triangle-exclamation"></i> Message d'erreur</div>
-            <pre class="step-error-msg">{{ step.errorMessage }}</pre>
-          </div>
-        </div>
-      </div>
+      <ng-container *ngTemplateOutlet="stepItems"></ng-container>
     </div>
 
     <div *ngIf="errorMessage()" class="rapport-error">
@@ -318,26 +300,7 @@
   </div>
 
   <div *ngIf="!analyzingAi() && aiAnalysis() as analysis">
-    <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-clipboard-list"></i></div><div>{{ analysis.summary }}</div></div>
-
-    <div class="regression-warning" *ngIf="analysis.failures.length">
-      <i class="fa-solid fa-triangle-exclamation"></i>
-      Corriger uniquement la cause identifiée pour chaque étape ci-dessous, sans modifier ni impacter d'autres modules de l'application.
-    </div>
-
-    <div *ngFor="let f of analysis.failures" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,58,237,.15)">
-      <div class="ai-row">
-        <div class="ai-num"><i class="fa-solid fa-triangle-exclamation"></i></div>
-        <div>
-          <strong>Étape {{ (f.stepIndex ?? 0) + 1 }} — {{ f.action }}</strong>
-          <span class="cause-badge" [ngClass]="f.causeCategory.toLowerCase()">
-            <i class="fa-solid" [ngClass]="causeIconFr(f.causeCategory)"></i> {{ causeLabelFr(f.causeCategory) }}
-          </span>
-        </div>
-      </div>
-      <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-comment"></i></div><div>{{ f.explanation }}</div></div>
-      <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-lightbulb"></i></div><div><strong>Recommandation :</strong> {{ f.recommendation }}</div></div>
-    </div>
+    <app-ai-failures-list [summary]="analysis.summary" [failures]="analysis.failures" [showStepIndex]="true"></app-ai-failures-list>
   </div>
 </div>
     <div class="rapport-actions">
@@ -514,7 +477,9 @@
         <div class="step-item"
              *ngFor="let exec of bd.executions"
              [ngClass]="{ 'step-fail': exec.result !== 'PASS', 'step-pass': exec.result === 'PASS' }"
-             (click)="toggleScenarioDetail(exec.id)">
+             (click)="toggleScenarioDetail(exec.id)"
+             (keydown.enter)="toggleScenarioDetail(exec.id)"
+             tabindex="0">
           <div class="step-row">
             <div class="step-indicator" [ngClass]="exec.result.toLowerCase()">
               <i class="fa-solid fa-check" *ngIf="exec.result === 'PASS'"></i>
@@ -566,24 +531,7 @@
             <!-- Analyse IA -->
             <div class="ai-block" *ngIf="exec.aiAnalysis as analysis" style="margin-top:12px">
               <div class="ai-title"><div class="ai-dot"></div>Analyse IA</div>
-              <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-clipboard-list"></i></div><div>{{ analysis.summary }}</div></div>
-              <div class="regression-warning" *ngIf="analysis.failures.length">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                Corriger uniquement la cause identifiée pour chaque étape ci-dessous, sans modifier ni impacter d'autres modules de l'application.
-              </div>
-              <div *ngFor="let f of analysis.failures" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,58,237,.15)">
-                <div class="ai-row">
-                  <div class="ai-num"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                  <div>
-                    <strong>{{ f.action }}</strong>
-                    <span class="cause-badge" [ngClass]="f.causeCategory.toLowerCase()">
-                      <i class="fa-solid" [ngClass]="causeIconFr(f.causeCategory)"></i> {{ causeLabelFr(f.causeCategory) }}
-                    </span>
-                  </div>
-                </div>
-                <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-comment"></i></div><div>{{ f.explanation }}</div></div>
-                <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-lightbulb"></i></div><div><strong>Recommandation :</strong> {{ f.recommendation }}</div></div>
-              </div>
+              <app-ai-failures-list [summary]="analysis.summary" [failures]="analysis.failures"></app-ai-failures-list>
             </div>
           </div>
         </div>

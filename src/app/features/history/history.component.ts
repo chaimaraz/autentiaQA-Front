@@ -7,12 +7,13 @@ import {
   ExecutionService, HistoryRun, GlobalStats, ExecutionStep, JiraTicketResult,
 } from '../../services/execution.service';
 import { JiraTicketModalComponent } from '../../shared/components/jira-ticket-modal/jira-ticket-modal.component';
+import { AiFailuresListComponent } from '../../shared/components/ai-failures-list/ai-failures-list.component';
 import { generateSingleReportPdf } from '../../shared/utils/pdf-report';
 
 @Component({
   selector: 'app-history',
   standalone: true,
-  imports: [NgFor, NgClass, NgIf, FormsModule, RouterLink, DatePipe, SlicePipe, JiraTicketModalComponent],
+  imports: [NgFor, NgClass, NgIf, FormsModule, RouterLink, DatePipe, SlicePipe, JiraTicketModalComponent, AiFailuresListComponent],
   templateUrl: './history.component.html',
   styleUrl: './history.component.scss',
 })

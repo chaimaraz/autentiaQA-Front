@@ -75,9 +75,9 @@
       <div class="ai-proposal-item" *ngFor="let p of proposals()">
         <div class="ai-proposal-row">
           <input type="checkbox" [checked]="p.selected" (change)="toggleSelected(p)"
-                 class="ai-proposal-checkbox" [disabled]="stage()!=='review'"/>
+                 class="ai-proposal-checkbox" [disabled]="stage()!=='review'" [attr.aria-label]="'Sélectionner ' + p.name"/>
           <span class="scenario-type" [ngClass]="typeClass[p.type]">{{ typeLabel[p.type] }}</span>
-          <input class="form-input ai-proposal-name" [(ngModel)]="p.name" [disabled]="stage()!=='review'"/>
+          <input class="form-input ai-proposal-name" [(ngModel)]="p.name" [disabled]="stage()!=='review'" aria-label="Nom du scénario proposé"/>
           <button class="btn btn-ghost btn-xs" (click)="toggleExpanded(p)">
             <i class="fa-solid" [ngClass]="expandedId() === p.tempId ? 'fa-chevron-up' : 'fa-chevron-down'"></i> Détails
           </button>
@@ -92,9 +92,9 @@
             <div class="ai-step-row" *ngFor="let step of p.steps; let i = index">
   <span class="ai-step-num">{{ i + 1 }}</span>
   <input class="form-input" style="flex:2" [(ngModel)]="step.description"
-         placeholder="Étape métier (ex: Saisir l'email)" [disabled]="stage()!=='review'"/>
+         placeholder="Étape métier (ex: Saisir l'email)" [disabled]="stage()!=='review'" aria-label="Description de l'étape"/>
   <input class="form-input form-input-mono" style="flex:1" [(ngModel)]="step.selector"
-         placeholder="Sélecteur / URL (optionnel)" [disabled]="stage()!=='review'"/>
+         placeholder="Sélecteur / URL (optionnel)" [disabled]="stage()!=='review'" aria-label="Sélecteur ou URL"/>
   <button class="btn btn-ghost btn-xs" (click)="removeStep(p, step)" *ngIf="stage()==='review'"><i class="fa-solid fa-xmark"></i></button>
 </div>
           </div>
@@ -104,7 +104,7 @@
 
           <!-- Résultat attendu -->
           <div class="data-header" style="margin-top:12px"><span>RÉSULTAT ATTENDU</span></div>
-          <textarea class="form-input" rows="2" [(ngModel)]="p.expectedResult" [disabled]="stage()!=='review'"></textarea>
+          <textarea class="form-input" rows="2" [(ngModel)]="p.expectedResult" [disabled]="stage()!=='review'" aria-label="Résultat attendu"></textarea>
 
           <!-- Données de test -->
           <div class="data-header" style="margin-top:12px"><span>DONNÉES DE TEST</span></div>
@@ -112,10 +112,10 @@
             <div *ngIf="p.variables.length === 0" class="no-data">Aucune variable.</div>
             <div class="data-field" *ngFor="let v of p.variables">
               <span class="data-key">
-                <input class="form-input-mono" style="width:120px" [(ngModel)]="v.key" [disabled]="stage()!=='review'"/>
+                <input class="form-input-mono" style="width:120px" [(ngModel)]="v.key" [disabled]="stage()!=='review'" aria-label="Nom de la variable"/>
               </span>
               <span class="data-val">
-                <input [(ngModel)]="v.value" [type]="v.isSecret ? 'password' : 'text'" [disabled]="stage()!=='review'"/>
+                <input [(ngModel)]="v.value" [type]="v.isSecret ? 'password' : 'text'" [disabled]="stage()!=='review'" [attr.aria-label]="'Valeur pour ' + v.key"/>
               </span>
               <button class="btn btn-ghost btn-xs" (click)="removeVariable(p, v)" *ngIf="stage()==='review'"><i class="fa-solid fa-xmark"></i></button>
             </div>
@@ -128,7 +128,7 @@
           <div *ngIf="stage()==='scripts_ready' || stage()==='saving'">
             <div class="data-header" style="margin-top:14px"><span><i class="fa-solid fa-brain"></i> SCRIPT PLAYWRIGHT GÉNÉRÉ PAR L'IA</span></div>
             <textarea class="form-input script-edit-textarea" rows="10" [(ngModel)]="p.scriptTemplate"
-                      [disabled]="stage()==='saving'"></textarea>
+                      [disabled]="stage()==='saving'" aria-label="Script Playwright éditable"></textarea>
           </div>
         </div>
       </div>

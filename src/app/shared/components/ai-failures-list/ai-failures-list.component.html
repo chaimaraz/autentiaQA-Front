@@ -1,0 +1,21 @@
+<div class="ai-row"><div class="ai-num"><i class="fa-solid fa-clipboard-list"></i></div><div>{{ summary }}</div></div>
+
+<div class="regression-warning" *ngIf="failures.length">
+  <i class="fa-solid fa-triangle-exclamation"></i>
+  Corriger uniquement la cause identifiée pour chaque étape ci-dessous, sans modifier ni impacter d'autres modules de l'application.
+</div>
+
+<div *ngFor="let f of failures" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,58,237,.15)">
+  <div class="ai-row">
+    <div class="ai-num"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <div>
+      <strong *ngIf="showStepIndex">Étape {{ (f.stepIndex ?? 0) + 1 }} — {{ f.action }}</strong>
+      <strong *ngIf="!showStepIndex">{{ f.action }}</strong>
+      <span class="cause-badge" [ngClass]="f.causeCategory.toLowerCase()">
+        <i class="fa-solid" [ngClass]="causeIconFr(f.causeCategory)"></i> {{ causeLabelFr(f.causeCategory) }}
+      </span>
+    </div>
+  </div>
+  <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-comment"></i></div><div>{{ f.explanation }}</div></div>
+  <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-lightbulb"></i></div><div><strong>Recommandation :</strong> {{ f.recommendation }}</div></div>
+</div>

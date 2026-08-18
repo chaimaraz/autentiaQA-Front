@@ -2,12 +2,12 @@
 <div class="settings-section-sub">Configurez comment l'équipe est alertée des résultats de tests.</div>
 
 <div class="form-group">
-  <label class="form-label">Email(s) de notification</label>
-  <input class="form-input" [(ngModel)]="form.emails" placeholder="qa@company.com, lead@company.com" />
+  <label class="form-label" for="notif-emails">Email(s) de notification</label>
+  <input id="notif-emails" class="form-input" [(ngModel)]="form.emails" placeholder="qa@company.com, lead@company.com" />
 </div>
 <div class="form-group">
-  <label class="form-label">Webhook Slack</label>
-  <input class="form-input" [(ngModel)]="form.slackWebhook" placeholder="https://hooks.slack.com/services/xxx" />
+  <label class="form-label" for="notif-slack-webhook">Webhook Slack</label>
+  <input id="notif-slack-webhook" class="form-input" [(ngModel)]="form.slackWebhook" placeholder="https://hooks.slack.com/services/xxx" />
 </div>
 
 <div class="notif-conditions">
@@ -17,7 +17,7 @@
       <div class="switch-label">{{ opt.label }}</div>
       <div class="switch-sub" *ngIf="opt.sub">{{ opt.sub }}</div>
     </div>
-    <div class="toggle-switch" [class.on]="opt.enabled" (click)="opt.enabled = !opt.enabled"></div>
+    <div class="toggle-switch" [class.on]="opt.enabled" (click)="opt.enabled = !opt.enabled" (keydown.enter)="opt.enabled = !opt.enabled" tabindex="0"></div>
   </div>
 </div>
 

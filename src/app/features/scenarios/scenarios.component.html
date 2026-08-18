@@ -43,6 +43,7 @@
       placeholder="Rechercher un scénario..."
       [value]="searchQuery"
       (input)="onSearch($any($event.target).value)"
+      aria-label="Rechercher un scénario"
     />
     <button *ngIf="searchQuery" class="search-clear" (click)="clearSearch()" title="Effacer"><i class="fa-solid fa-xmark"></i></button>
   </div>
@@ -55,7 +56,7 @@
 
   <div class="page-size-selector">
     <span class="page-size-label">Afficher</span>
-    <select [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)">
+    <select [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)" aria-label="Nombre de résultats par page">
       <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
     </select>
     <span class="page-size-label">/ page</span>
@@ -94,9 +95,9 @@
     <div class="filter-group">
       <label class="filter-label">Date de création</label>
       <div class="filter-dates">
-        <input type="date" class="date-input" [(ngModel)]="filterDateFrom" (change)="applyFilters()" />
+        <input type="date" class="date-input" [(ngModel)]="filterDateFrom" (change)="applyFilters()" aria-label="Date de création — à partir de" />
         <span class="date-sep"><i class="fa-solid fa-arrow-right"></i></span>
-        <input type="date" class="date-input" [(ngModel)]="filterDateTo" (change)="applyFilters()" />
+        <input type="date" class="date-input" [(ngModel)]="filterDateTo" (change)="applyFilters()" aria-label="Date de création — jusqu'à" />
       </div>
     </div>
 
@@ -118,19 +119,19 @@
 
 <!-- ==================== TABS ==================== -->
 <div class="tabs">
-  <div class="tab" [ngClass]="{ active: activeTab() === 'all' }"  (click)="setTab('all')">
+  <div class="tab" [ngClass]="{ active: activeTab() === 'all' }"  (click)="setTab('all')" (keydown.enter)="setTab('all')" tabindex="0">
     Tous{{ activeTab() === 'all' ? ' (' + total + ')' : '' }}
   </div>
-  <div class="tab" [ngClass]="{ active: activeTab() === 'pos' }"  (click)="setTab('pos')">
+  <div class="tab" [ngClass]="{ active: activeTab() === 'pos' }"  (click)="setTab('pos')" (keydown.enter)="setTab('pos')" tabindex="0">
     Positifs{{ activeTab() === 'pos' ? ' (' + total + ')' : '' }}
   </div>
-  <div class="tab" [ngClass]="{ active: activeTab() === 'neg' }"  (click)="setTab('neg')">
+  <div class="tab" [ngClass]="{ active: activeTab() === 'neg' }"  (click)="setTab('neg')" (keydown.enter)="setTab('neg')" tabindex="0">
     Négatifs{{ activeTab() === 'neg' ? ' (' + total + ')' : '' }}
   </div>
-  <div class="tab" [ngClass]="{ active: activeTab() === 'sec' }"  (click)="setTab('sec')">
+  <div class="tab" [ngClass]="{ active: activeTab() === 'sec' }"  (click)="setTab('sec')" (keydown.enter)="setTab('sec')" tabindex="0">
     Sécurité{{ activeTab() === 'sec' ? ' (' + total + ')' : '' }}
   </div>
-  <div class="tab" [ngClass]="{ active: activeTab() === 'perf' }" (click)="setTab('perf')">
+  <div class="tab" [ngClass]="{ active: activeTab() === 'perf' }" (click)="setTab('perf')" (keydown.enter)="setTab('perf')" tabindex="0">
     Performance{{ activeTab() === 'perf' ? ' (' + total + ')' : '' }}
   </div>
 </div>
@@ -199,7 +200,7 @@
      <div class="data-field" *ngFor="let d of s.data">
   <span class="data-key">{{ d.k }}</span>
   <span class="data-val">
-    <input [(ngModel)]="d.v" [placeholder]="!d.v ? '(vide)' : ''" />
+    <input [(ngModel)]="d.v" [placeholder]="!d.v ? '(vide)' : ''" [attr.aria-label]="'Valeur pour ' + d.k" />
   </span>
   <label class="lock-check" title="Conserver cette donnée (ne plus régénérer)">
     <input type="checkbox" [checked]="d.locked" (change)="toggleLock(s, d)"/>

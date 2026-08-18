@@ -1,6 +1,6 @@
 <!-- src/app/shared/components/jira-ticket-modal/jira-ticket-modal.component.html -->
-<div class="modal-backdrop" *ngIf="isOpen()" (click)="onCancel()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
+<div class="modal-backdrop" *ngIf="isOpen()" (click)="onCancel()" (keydown.escape)="onCancel()" tabindex="0">
+  <div class="modal-card" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
 
     <div class="modal-header">
       <div>
@@ -27,13 +27,13 @@
         <ng-container *ngIf="!p.existingTicket">
           <div class="config-group">
             <div class="config-label">Titre</div>
-            <input class="form-input" [ngModel]="title()" (ngModelChange)="title.set($event)" />
+            <input class="form-input" [ngModel]="title()" (ngModelChange)="title.set($event)" aria-label="Titre du ticket" />
           </div>
 
           <div class="config-group">
             <div class="config-label">Description</div>
             <textarea class="form-input" rows="10" style="font-family:'Space Mono',monospace;font-size:11px"
-                      [ngModel]="description()" (ngModelChange)="description.set($event)"></textarea>
+                      [ngModel]="description()" (ngModelChange)="description.set($event)" aria-label="Description du ticket"></textarea>
           </div>
 
           <div class="config-group" *ngIf="p.aiAnalysis?.summary">

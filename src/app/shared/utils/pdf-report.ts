@@ -323,6 +323,26 @@ function _causeBadge(cursor: PdfCursor, causeLabel: string): void {
   cursor.y += 12;
 }
 
+// Extrait de _renderScenarioBlock pour rester sous le seuil de complexité
+// cognitive de Sonar — comportement inchangé, juste factorisé.
+function _renderAiAnalysis(cursor: PdfCursor, s: ScenarioReportVM): void {
+  const hasFailures = Boolean(s.aiFailures && s.aiFailures.length);
+  if (!s.aiSummary && !hasFailures) return;
+
+  cursor.y += 4;
+  cursor.paragraph('Analyse IA', { size: 9.5, bold: true });
+  if (s.aiSummary) cursor.paragraph(s.aiSummary, { size: 8.5, color: COLOR.muted });
+  if (!hasFailures) return;
+
+  cursor.warningBox(REGRESSION_NOTE);
+  for (const f of s.aiFailures!) {
+    cursor.paragraph(`Étape ${(f.stepIndex ?? 0) + 1} — ${f.action}`, { size: 8.5, bold: true });
+    _causeBadge(cursor, f.causeLabel);
+    cursor.paragraph(f.explanation, { size: 8.5 });
+    cursor.paragraph(`Recommandation : ${f.recommendation}`, { size: 8.5, color: COLOR.accent });
+  }
+}
+
 async function _renderScenarioBlock(cursor: PdfCursor, s: ScenarioReportVM, showSubTitle: boolean): Promise<void> {
   if (showSubTitle) {
     cursor.scenarioSubTitle(
@@ -341,20 +361,7 @@ async function _renderScenarioBlock(cursor: PdfCursor, s: ScenarioReportVM, show
     await cursor.image(dataUrl, "Capture d'écran de l'échec");
   }
 
-  if (s.aiSummary || (s.aiFailures && s.aiFailures.length)) {
-    cursor.y += 4;
-    cursor.paragraph('Analyse IA', { size: 9.5, bold: true });
-    if (s.aiSummary) cursor.paragraph(s.aiSummary, { size: 8.5, color: COLOR.muted });
-    if (s.aiFailures && s.aiFailures.length) {
-      cursor.warningBox(REGRESSION_NOTE);
-      for (const f of s.aiFailures) {
-        cursor.paragraph(`Étape ${(f.stepIndex ?? 0) + 1} — ${f.action}`, { size: 8.5, bold: true });
-        _causeBadge(cursor, f.causeLabel);
-        cursor.paragraph(f.explanation, { size: 8.5 });
-        cursor.paragraph(`Recommandation : ${f.recommendation}`, { size: 8.5, color: COLOR.accent });
-      }
-    }
-  }
+  _renderAiAnalysis(cursor, s);
 
   cursor.y += 10;
 }

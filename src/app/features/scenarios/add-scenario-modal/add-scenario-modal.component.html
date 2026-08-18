@@ -1,6 +1,6 @@
 <!-- BACKDROP -->
-<div class="modal-backdrop" *ngIf="isOpen()" (click)="close()">
-<div class="modal-panel" (click)="$event.stopPropagation()">
+<div class="modal-backdrop" *ngIf="isOpen()" (click)="close()" (keydown.escape)="close()" tabindex="0">
+<div class="modal-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
 
   <!-- ══ HEADER ══ -->
   <div class="modal-header">
@@ -17,22 +17,22 @@
 
     <!-- MODE TABS -->
     <div class="mode-tabs">
-      <div class="mode-tab" [ngClass]="{active:activeMode()==='nlp'}" (click)="setMode('nlp')">
+      <div class="mode-tab" [ngClass]="{active:activeMode()==='nlp'}" (click)="setMode('nlp')" (keydown.enter)="setMode('nlp')" tabindex="0">
         <span class="mode-tab-icon"><i class="fa-solid fa-comment"></i></span>
         <div class="mode-tab-title">Langage naturel</div>
         <div class="mode-tab-desc">Décrivez en français, l'IA génère les étapes et le script</div>
       </div>
-      <div class="mode-tab purple" [ngClass]="{active:activeMode()==='record'}" (click)="setMode('record')">
+      <div class="mode-tab purple" [ngClass]="{active:activeMode()==='record'}" (click)="setMode('record')" (keydown.enter)="setMode('record')" tabindex="0">
         <span class="mode-tab-icon"><i class="fa-solid fa-circle" style="color:#ef4444"></i></span>
         <div class="mode-tab-title">Enregistrement en direct</div>
         <div class="mode-tab-desc">Naviguez dans votre navigateur, Playwright capture tout</div>
       </div>
-      <div class="mode-tab cyan" [ngClass]="{active:activeMode()==='document'}" (click)="setMode('document')">
+      <div class="mode-tab cyan" [ngClass]="{active:activeMode()==='document'}" (click)="setMode('document')" (keydown.enter)="setMode('document')" tabindex="0">
         <span class="mode-tab-icon"><i class="fa-solid fa-file-lines"></i></span>
         <div class="mode-tab-title">Depuis un document</div>
         <div class="mode-tab-desc">PDF, DOCX ou TXT — l'IA génère plusieurs scénarios à valider</div>
       </div>
-      <div class="mode-tab cyan" [ngClass]="{active:activeMode()==='url'}" (click)="setMode('url')">
+      <div class="mode-tab cyan" [ngClass]="{active:activeMode()==='url'}" (click)="setMode('url')" (keydown.enter)="setMode('url')" tabindex="0">
         <span class="mode-tab-icon"><i class="fa-solid fa-globe"></i></span>
         <div class="mode-tab-title">Depuis une URL</div>
         <div class="mode-tab-desc">Crawl automatique du site, génération multi-scénarios</div>
@@ -43,8 +43,8 @@
     <div class="nlp-section" *ngIf="activeMode()==='nlp'">
       <div class="field-row">
         <div class="form-group" style="flex:1">
-          <label class="form-label">Nom du scénario</label>
-          <input class="form-input" [(ngModel)]="nlpName" placeholder="Ex: Connexion avec 2FA activée"/>
+          <label class="form-label" for="nlp-name">Nom du scénario</label>
+          <input id="nlp-name" class="form-input" [(ngModel)]="nlpName" placeholder="Ex: Connexion avec 2FA activée"/>
         </div>
 
         <div class="form-group" style="flex:0 0 auto">
@@ -53,7 +53,9 @@
             <div class="type-btn"
               *ngFor="let t of [{val:'pos',label:'Positif',cls:'pos'},{val:'neg',label:'Négatif',cls:'neg'},{val:'sec',label:'Sécurité',cls:'sec'},{val:'perf',label:'Perf',cls:'perf'}]"
               [ngClass]="[t.cls, selectedType()===t.val?'selected':'']"
-              (click)="setType($any(t.val))">
+              (click)="setType($any(t.val))"
+              (keydown.enter)="setType($any(t.val))"
+              tabindex="0">
               <span class="type-check"><i class="fa-solid fa-check" *ngIf="selectedType()===t.val"></i></span>{{ t.label }}
             </div>
           </div>
@@ -61,8 +63,8 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Décrivez le scénario en langage naturel</label>
-        <textarea class="nlp-textarea" [(ngModel)]="nlpText"
+        <label class="form-label" for="nlp-text">Décrivez le scénario en langage naturel</label>
+        <textarea id="nlp-text" class="nlp-textarea" [(ngModel)]="nlpText"
           placeholder="Ex: L'utilisateur va sur la page de login, entre son email et mot de passe, clique sur Se connecter, puis vérifie qu'il est redirigé vers le dashboard.">
         </textarea>
         <div class="nlp-footer-row">
@@ -92,7 +94,7 @@
           <div class="data-field-row" *ngFor="let d of parsedData()">
             <span class="data-key">{{ d.k }}<span class="secret-badge" *ngIf="d.isSecret"><i class="fa-solid fa-lock"></i></span></span>
             <span class="data-val">
-              <input [(ngModel)]="d.v" [type]="d.isSecret?'password':'text'" [placeholder]="!d.v?'(vide)':''"/>
+              <input [(ngModel)]="d.v" [type]="d.isSecret?'password':'text'" [placeholder]="!d.v?'(vide)':''" [attr.aria-label]="'Valeur pour ' + d.k"/>
             </span>
           </div>
         </div>
@@ -135,8 +137,8 @@
 
         <div class="agent-token-row">
           <div class="form-group" style="flex:1;margin:0">
-            <label class="form-label">Token agent</label>
-            <input class="form-input form-input-mono"
+            <label class="form-label" for="rec-agent-token">Token agent</label>
+            <input id="rec-agent-token" class="form-input form-input-mono"
               [(ngModel)]="recAgentToken"
               placeholder="ex: autentia_abc123xyz"
               [disabled]="agentConnected() || recStatus()==='checking'"/>
@@ -161,8 +163,8 @@
 
         <div class="field-row" style="gap:12px">
           <div class="form-group" style="flex:1">
-            <label class="form-label">Nom du scénario <span class="required">*</span></label>
-            <input class="form-input" [(ngModel)]="recName"
+            <label class="form-label" for="rec-name">Nom du scénario <span class="required">*</span></label>
+            <input id="rec-name" class="form-input" [(ngModel)]="recName"
               placeholder="Ex: Test ajout produit panier"
               [disabled]="!agentConnected() || recStatus()==='recording'"/>
           </div>
@@ -182,8 +184,8 @@
 
         <div class="field-row" style="gap:12px">
           <div class="form-group" style="flex:1">
-            <label class="form-label">URL de départ <span class="required">*</span></label>
-            <input class="form-input form-input-mono"
+            <label class="form-label" for="rec-start-url">URL de départ <span class="required">*</span></label>
+            <input id="rec-start-url" class="form-input form-input-mono"
               [(ngModel)]="recStartUrl"
               placeholder="https://mon-app.com/login"
               [disabled]="!agentConnected() || recStatus()==='recording'"/>
@@ -196,6 +198,8 @@
                 *ngFor="let b of browserOptions"
                 [ngClass]="{selected:recBrowser()===b}"
                 (click)="setBrowser(b)"
+                (keydown.enter)="setBrowser(b)"
+                tabindex="0"
                 [class.disabled]="!agentConnected() || recStatus()==='recording'">
                 <i [ngClass]="browserIcons[b]"></i> {{ browserLabels[b] }}
               </div>
@@ -335,17 +339,17 @@
       <div class="rec-setup-card">
         <div class="rec-setup-title"><span class="rec-step-badge">1</span> Uploader le document de spécification</div>
 
-      <input #docFileInput type="file" style="display:none"
+      <input #docFileInput type="file" style="display:none" aria-label="Choisir un document de spécification"
   accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   (change)="onDocFileSelected($event)" />
 
-<div *ngIf="!docFile()" class="drop-zone-empty" (click)="docFileInput.click()">
+<div *ngIf="!docFile()" class="drop-zone-empty" (click)="docFileInput.click()" (keydown.enter)="docFileInput.click()" tabindex="0">
   <span class="drop-icon"><i class="fa-solid fa-file-lines"></i></span>
   <div class="drop-title">Cliquez pour choisir un fichier</div>
   <div class="drop-hint">PDF, DOCX, TXT, CSV ou Excel — max 20 MB</div>
 </div>
 
-          <div *ngIf="docFile()" class="file-item" (click)="$event.stopPropagation()">
+          <div *ngIf="docFile()" class="file-item" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
             <span class="file-icon"><i class="fa-solid fa-file-lines"></i></span>
             <div class="file-info">
               <div class="file-name">{{ docFile()!.name }}</div>
@@ -383,11 +387,11 @@
 
         <div class="ai-proposal-item" *ngFor="let p of docProposals()">
           <div class="ai-proposal-row">
-            <input type="checkbox" [checked]="p.selected" (change)="toggleDocSelection(p)" class="ai-proposal-checkbox"/>
+            <input type="checkbox" [checked]="p.selected" (change)="toggleDocSelection(p)" class="ai-proposal-checkbox" [attr.aria-label]="'Sélectionner ' + p.name"/>
             <span class="scenario-type" [ngClass]="typeShort(p)==='pos' ? 'positive' : typeShort(p)==='neg' ? 'negative' : typeShort(p)==='sec' ? 'security' : 'perf'">
               {{ p.type }}
             </span>
-            <input class="form-input ai-proposal-name" [(ngModel)]="p.name" />
+            <input class="form-input ai-proposal-name" [(ngModel)]="p.name" aria-label="Nom du scénario proposé"/>
             <button class="btn btn-ghost btn-xs" (click)="toggleDocExpanded(p)">
               <i class="fa-solid" [ngClass]="docExpandedId() === p.tempId ? 'fa-chevron-up' : 'fa-chevron-down'"></i> Détails
             </button>
@@ -396,7 +400,7 @@
 
           <div class="scenario-data-panel open" *ngIf="docExpandedId() === p.tempId">
             <div class="data-header"><span>RÉSULTAT ATTENDU</span></div>
-            <textarea class="form-input" rows="2" [(ngModel)]="p.expectedResult"></textarea>
+            <textarea class="form-input" rows="2" [(ngModel)]="p.expectedResult" aria-label="Résultat attendu"></textarea>
 
             <div class="data-header" style="margin-top:10px"><span>DONNÉES DE TEST</span></div>
             <div class="data-fields">
@@ -404,14 +408,14 @@
               <div class="data-field" *ngFor="let v of p.variables">
                 <span class="data-key">{{ v.key }}<span class="secret-badge" *ngIf="v.isSecret"><i class="fa-solid fa-lock"></i></span></span>
                 <span class="data-val">
-                  <input [(ngModel)]="v.value" [type]="v.isSecret ? 'password' : 'text'" />
+                  <input [(ngModel)]="v.value" [type]="v.isSecret ? 'password' : 'text'" [attr.aria-label]="'Valeur pour ' + v.key" />
                 </span>
               </div>
             </div>
 
             <div class="preview-script-box" style="margin-top:10px">
               <div class="preview-script-header"><span>SCRIPT PLAYWRIGHT (éditable)</span></div>
-              <textarea class="form-input script-edit-textarea" rows="8" [(ngModel)]="p.scriptTemplate"></textarea>
+              <textarea class="form-input script-edit-textarea" rows="8" [(ngModel)]="p.scriptTemplate" aria-label="Script Playwright éditable"></textarea>
             </div>
           </div>
         </div>
@@ -443,17 +447,17 @@
 
         <div class="field-row" style="gap:12px">
           <div class="form-group" style="flex:1">
-            <label class="form-label">URL de départ <span class="required">*</span></label>
-            <input class="form-input form-input-mono" [(ngModel)]="urlValue"
+            <label class="form-label" for="url-value">URL de départ <span class="required">*</span></label>
+            <input id="url-value" class="form-input form-input-mono" [(ngModel)]="urlValue"
               placeholder="https://mon-app.com" [disabled]="urlCrawling()"/>
           </div>
           <div class="form-group" style="flex:0 0 120px">
-            <label class="form-label">Pages max</label>
-            <input class="form-input" type="number" min="1" max="50" [(ngModel)]="urlMaxPages" [disabled]="urlCrawling()"/>
+            <label class="form-label" for="url-max-pages">Pages max</label>
+            <input id="url-max-pages" class="form-input" type="number" min="1" max="50" [(ngModel)]="urlMaxPages" [disabled]="urlCrawling()"/>
           </div>
           <div class="form-group" style="flex:0 0 120px">
-            <label class="form-label">Profondeur</label>
-            <input class="form-input" type="number" min="1" max="5" [(ngModel)]="urlMaxDepth" [disabled]="urlCrawling()"/>
+            <label class="form-label" for="url-max-depth">Profondeur</label>
+            <input id="url-max-depth" class="form-input" type="number" min="1" max="5" [(ngModel)]="urlMaxDepth" [disabled]="urlCrawling()"/>
           </div>
         </div>
 
@@ -485,11 +489,11 @@
 
         <div class="ai-proposal-item" *ngFor="let p of urlProposals()">
           <div class="ai-proposal-row">
-            <input type="checkbox" [checked]="p.selected" (change)="toggleUrlSelection(p)" class="ai-proposal-checkbox"/>
+            <input type="checkbox" [checked]="p.selected" (change)="toggleUrlSelection(p)" class="ai-proposal-checkbox" [attr.aria-label]="'Sélectionner ' + p.name"/>
             <span class="scenario-type" [ngClass]="typeShort(p)==='pos' ? 'positive' : typeShort(p)==='neg' ? 'negative' : typeShort(p)==='sec' ? 'security' : 'perf'">
               {{ p.type }}
             </span>
-            <input class="form-input ai-proposal-name" [(ngModel)]="p.name" />
+            <input class="form-input ai-proposal-name" [(ngModel)]="p.name" aria-label="Nom du scénario proposé"/>
             <button class="btn btn-ghost btn-xs" (click)="toggleUrlExpanded(p)">
               <i class="fa-solid" [ngClass]="urlExpandedId() === p.tempId ? 'fa-chevron-up' : 'fa-chevron-down'"></i> Détails
             </button>
@@ -498,7 +502,7 @@
 
           <div class="scenario-data-panel open" *ngIf="urlExpandedId() === p.tempId">
             <div class="data-header"><span>RÉSULTAT ATTENDU</span></div>
-            <textarea class="form-input" rows="2" [(ngModel)]="p.expectedResult"></textarea>
+            <textarea class="form-input" rows="2" [(ngModel)]="p.expectedResult" aria-label="Résultat attendu"></textarea>
 
             <div class="data-header" style="margin-top:10px"><span>DONNÉES DE TEST</span></div>
             <div class="data-fields">
@@ -506,14 +510,14 @@
               <div class="data-field" *ngFor="let v of p.variables">
                 <span class="data-key">{{ v.key }}<span class="secret-badge" *ngIf="v.isSecret"><i class="fa-solid fa-lock"></i></span></span>
                 <span class="data-val">
-                  <input [(ngModel)]="v.value" [type]="v.isSecret ? 'password' : 'text'" />
+                  <input [(ngModel)]="v.value" [type]="v.isSecret ? 'password' : 'text'" [attr.aria-label]="'Valeur pour ' + v.key" />
                 </span>
               </div>
             </div>
 
             <div class="preview-script-box" style="margin-top:10px">
               <div class="preview-script-header"><span>SCRIPT PLAYWRIGHT (éditable)</span></div>
-              <textarea class="form-input script-edit-textarea" rows="8" [(ngModel)]="p.scriptTemplate"></textarea>
+              <textarea class="form-input script-edit-textarea" rows="8" [(ngModel)]="p.scriptTemplate" aria-label="Script Playwright éditable"></textarea>
             </div>
           </div>
         </div>

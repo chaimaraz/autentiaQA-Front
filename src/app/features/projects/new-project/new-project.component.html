@@ -21,6 +21,8 @@
             active: getStepState(step.num) === 'active'
           }"
           (click)="goToStep(step.num)"
+          (keydown.enter)="goToStep(step.num)"
+          tabindex="0"
           style="cursor:pointer"
         >
           <i class="fa-solid fa-check" *ngIf="getStepState(step.num) === 'done'"></i>
@@ -43,18 +45,18 @@
       <div class="card-body">
         <div class="grid-2">
           <div class="form-group">
-            <label class="form-label">Nom du projet *</label>
-            <input class="form-input" [(ngModel)]="projectName" placeholder="Mon projet QA" />
+            <label class="form-label" for="np-name">Nom du projet *</label>
+            <input id="np-name" class="form-input" [(ngModel)]="projectName" placeholder="Mon projet QA" />
           </div>
           <div class="form-group">
-            <label class="form-label">URL cible *</label>
-            <input class="form-input" [(ngModel)]="projectUrl" placeholder="https://monapp.io" />
+            <label class="form-label" for="np-url">URL cible *</label>
+            <input id="np-url" class="form-input" [(ngModel)]="projectUrl" placeholder="https://monapp.io" />
             <div class="form-hint"><i class="fa-solid fa-bolt"></i> L'IA effectuera un crawl automatique depuis cette URL</div>
           </div>
         </div>
         <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">Description *</label>
-          <textarea class="form-input" [(ngModel)]="projectDescription" rows="3"
+          <label class="form-label" for="np-description">Description *</label>
+          <textarea id="np-description" class="form-input" [(ngModel)]="projectDescription" rows="3"
             placeholder="Décrivez le contexte et les objectifs des tests..."></textarea>
         </div>
       </div>
@@ -84,6 +86,8 @@
             *ngFor="let mode of generationModes"
             [ngClass]="[mode.colorClass, mode.selected ? 'selected' : '']"
             (click)="selectMode(mode)"
+            (keydown.enter)="selectMode(mode)"
+            tabindex="0"
           >
             <span class="mode-badge" *ngIf="mode.key === 'SPEC_DOCUMENT'">IA</span>
             <span class="mode-icon"><i class="fa-solid" [ngClass]="mode.icon"></i></span>
@@ -94,7 +98,7 @@
 
         <!-- ===== UPLOAD ZONE — visible uniquement si SPEC_DOCUMENT ===== -->
         <div *ngIf="isSpecMode" class="upload-section">
-          <label class="form-label">Documents de spécification * <span class="form-hint-inline">(PDF, DOCX, TXT, CSV, Excel — max 20 MB / fichier)</span></label>
+          <label class="form-label" for="np-file-input">Documents de spécification * <span class="form-hint-inline">(PDF, DOCX, TXT, CSV, Excel — max 20 MB / fichier)</span></label>
 
           <!-- Drop zone -->
           <div
@@ -104,8 +108,11 @@
             (dragleave)="onDragLeave()"
             (drop)="onDrop($event)"
             (click)="fileInput.click()"
+            (keydown.enter)="fileInput.click()"
+            tabindex="0"
           >
             <input
+  id="np-file-input"
   #fileInput
   type="file"
   multiple
@@ -118,7 +125,7 @@
               <div class="drop-title">Glissez vos fichiers ici</div>
               <div class="drop-sub">ou <span class="drop-link">cliquez pour parcourir</span></div>
 <div class="drop-hint">PDF, DOCX, TXT, CSV, Excel — jusqu'à 10 fichiers, 20 MB chacun</div>            </div>
-            <div *ngIf="uploadedFiles.length > 0" class="drop-zone-has-files" (click)="$event.stopPropagation()">
+            <div *ngIf="uploadedFiles.length > 0" class="drop-zone-has-files" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
               <div class="file-list">
                 <div class="file-item" *ngFor="let item of uploadedFiles; let i = index">
                   <span class="file-icon"><i class="fa-solid" [ngClass]="item.mimeType === 'application/pdf' ? 'fa-file-pdf' : 'fa-file-lines'"></i></span>
@@ -162,6 +169,8 @@
             *ngFor="let type of testTypes"
             [ngClass]="{ selected: type.selected }"
             (click)="toggleTestType(type)"
+            (keydown.enter)="toggleTestType(type)"
+            tabindex="0"
           >
             <div class="toggle-check"><i class="fa-solid fa-check" *ngIf="type.selected"></i></div>
             <span>{{ type.label }}</span>
@@ -183,6 +192,8 @@
             [ngClass]="{ 'cyan selected': fw.selected }"
             style="padding:14px"
             (click)="selectFramework(fw)"
+            (keydown.enter)="selectFramework(fw)"
+            tabindex="0"
           >
             <div class="mode-title" style="font-size:13px">{{ fw.name }}</div>
             <div class="mode-desc">{{ fw.desc }}</div>
@@ -222,13 +233,13 @@
 
           <div class="grid-2">
             <div class="form-group">
-              <label class="form-label">Nom du dépôt</label>
-              <input class="form-input" [(ngModel)]="repo.name" [name]="'repoName' + i"
+              <label class="form-label" [attr.for]="'repoName' + i">Nom du dépôt</label>
+              <input [id]="'repoName' + i" class="form-input" [(ngModel)]="repo.name" [name]="'repoName' + i"
                 placeholder="ex: Backend Auth Service" />
             </div>
             <div class="form-group">
-              <label class="form-label">Type</label>
-              <select class="form-input" [(ngModel)]="repo.role" [name]="'repoRole' + i">
+              <label class="form-label" [attr.for]="'repoRole' + i">Type</label>
+              <select [id]="'repoRole' + i" class="form-input" [(ngModel)]="repo.role" [name]="'repoRole' + i">
                 <option *ngFor="let r of repoRoleOptions" [value]="r.key">{{ r.label }}</option>
               </select>
             </div>
@@ -236,30 +247,30 @@
 
           <div class="grid-2">
             <div class="form-group">
-              <label class="form-label">URL du dépôt</label>
-              <input class="form-input" [(ngModel)]="repo.repoUrl" [name]="'repoUrl' + i"
+              <label class="form-label" [attr.for]="'repoUrl' + i">URL du dépôt</label>
+              <input [id]="'repoUrl' + i" class="form-input" [(ngModel)]="repo.repoUrl" [name]="'repoUrl' + i"
                 placeholder="https://github.com/company/repo"
                 style="font-family:'Space Mono',monospace;font-size:12px" />
             </div>
             <div class="form-group">
-              <label class="form-label">Branche surveillée</label>
-              <input class="form-input" [(ngModel)]="repo.branch" [name]="'repoBranch' + i" />
+              <label class="form-label" [attr.for]="'repoBranch' + i">Branche surveillée</label>
+              <input [id]="'repoBranch' + i" class="form-input" [(ngModel)]="repo.branch" [name]="'repoBranch' + i" />
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Événements déclencheurs</label>
             <div class="git-events-grid">
-              <div class="git-event-toggle" [ngClass]="{ selected: repo.onPush }" (click)="repo.onPush = !repo.onPush">
+              <div class="git-event-toggle" [ngClass]="{ selected: repo.onPush }" (click)="repo.onPush = !repo.onPush" (keydown.enter)="repo.onPush = !repo.onPush" tabindex="0">
                 <i class="fa-solid" [ngClass]="repo.onPush ? 'fa-circle-check' : 'fa-circle'"></i> Push
               </div>
-              <div class="git-event-toggle" [ngClass]="{ selected: repo.onPr }" (click)="repo.onPr = !repo.onPr">
+              <div class="git-event-toggle" [ngClass]="{ selected: repo.onPr }" (click)="repo.onPr = !repo.onPr" (keydown.enter)="repo.onPr = !repo.onPr" tabindex="0">
                 <i class="fa-solid" [ngClass]="repo.onPr ? 'fa-circle-check' : 'fa-circle'"></i> Pull Request
               </div>
-              <div class="git-event-toggle" [ngClass]="{ selected: repo.onTag }" (click)="repo.onTag = !repo.onTag">
+              <div class="git-event-toggle" [ngClass]="{ selected: repo.onTag }" (click)="repo.onTag = !repo.onTag" (keydown.enter)="repo.onTag = !repo.onTag" tabindex="0">
                 <i class="fa-solid" [ngClass]="repo.onTag ? 'fa-circle-check' : 'fa-circle'"></i> Nouveau tag
               </div>
-              <div class="git-event-toggle" [ngClass]="{ selected: repo.onSchedule }" (click)="repo.onSchedule = !repo.onSchedule">
+              <div class="git-event-toggle" [ngClass]="{ selected: repo.onSchedule }" (click)="repo.onSchedule = !repo.onSchedule" (keydown.enter)="repo.onSchedule = !repo.onSchedule" tabindex="0">
                 <i class="fa-solid" [ngClass]="repo.onSchedule ? 'fa-circle-check' : 'fa-circle'"></i> Planifié (cron)
               </div>
             </div>
@@ -268,11 +279,11 @@
           <div class="grid-2">
             <div class="form-group">
               <label class="form-label">Bloquer le merge si tests échouent</label>
-              <div class="toggle-switch" [ngClass]="{ on: repo.blockMerge }" (click)="repo.blockMerge = !repo.blockMerge"></div>
+              <div class="toggle-switch" [ngClass]="{ on: repo.blockMerge }" (click)="repo.blockMerge = !repo.blockMerge" (keydown.enter)="repo.blockMerge = !repo.blockMerge" tabindex="0"></div>
             </div>
             <div class="form-group">
-              <label class="form-label">Emails de notification (rapport de merge)</label>
-              <input class="form-input" [(ngModel)]="repo.notifyEmails" [name]="'repoEmails' + i"
+              <label class="form-label" [attr.for]="'repoEmails' + i">Emails de notification (rapport de merge)</label>
+              <input [id]="'repoEmails' + i" class="form-input" [(ngModel)]="repo.notifyEmails" [name]="'repoEmails' + i"
                 placeholder="ex: lead@company.com, qa@company.com" />
             </div>
           </div>
@@ -290,28 +301,28 @@
             <div class="switch-label">Email en cas d'échec</div>
             <div class="switch-sub">qa company.com</div>
           </div>
-          <div class="toggle-switch" [ngClass]="{ on: notifyEmail }" (click)="notifyEmail = !notifyEmail"></div>
+          <div class="toggle-switch" [ngClass]="{ on: notifyEmail }" (click)="notifyEmail = !notifyEmail" (keydown.enter)="notifyEmail = !notifyEmail" tabindex="0"></div>
         </div>
         <div class="switch-row">
           <div>
             <div class="switch-label">Slack — canal #tests-ci</div>
             <div class="switch-sub">Message avec lien vers rapport</div>
           </div>
-          <div class="toggle-switch" [ngClass]="{ on: notifySlack }" (click)="notifySlack = !notifySlack"></div>
+          <div class="toggle-switch" [ngClass]="{ on: notifySlack }" (click)="notifySlack = !notifySlack" (keydown.enter)="notifySlack = !notifySlack" tabindex="0"></div>
         </div>
         <div class="switch-row">
           <div>
             <div class="switch-label">Créer bug Jira si test échoue</div>
             <div class="switch-sub">PROJ — priorité Auto</div>
           </div>
-          <div class="toggle-switch" [ngClass]="{ on: createJiraBug }" (click)="createJiraBug = !createJiraBug"></div>
+          <div class="toggle-switch" [ngClass]="{ on: createJiraBug }" (click)="createJiraBug = !createJiraBug" (keydown.enter)="createJiraBug = !createJiraBug" tabindex="0"></div>
         </div>
         <div class="switch-row">
           <div>
             <div class="switch-label">Bloquer le merge si tests échouent (défaut nouveaux dépôts)</div>
             <div class="switch-sub">Required status check GitHub</div>
           </div>
-          <div class="toggle-switch" [ngClass]="{ on: blockMerge }" (click)="blockMerge = !blockMerge"></div>
+          <div class="toggle-switch" [ngClass]="{ on: blockMerge }" (click)="blockMerge = !blockMerge" (keydown.enter)="blockMerge = !blockMerge" tabindex="0"></div>
         </div>
       </div>
     </div>

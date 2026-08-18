@@ -56,6 +56,7 @@
             class="form-input"
             [(ngModel)]="v.value"
             [type]="(v.isSecret && !isSecretVisible(v.id)) ? 'password' : 'text'"
+            [attr.aria-label]="'Valeur pour ' + v.key"
           />
           <button *ngIf="v.isSecret" class="btn btn-ghost btn-xs" (click)="toggleSecretVisibility(v.id)" style="margin-left:4px">
             <i class="fa-solid" [ngClass]="isSecretVisible(v.id) ? 'fa-eye-slash' : 'fa-eye'"></i>
@@ -66,7 +67,7 @@
           <span class="type-badge"><i class="fa-solid" [ngClass]="generatorIcon(v.generator)"></i> {{ generatorLabel(v.generator) }}</span>
         </td>
         <td class="cell-toggle">
-  <input type="checkbox" [checked]="v.locked" (change)="toggleLock(v)" title="Conserver cette donnée (ne plus régénérer)"/>
+  <input type="checkbox" [checked]="v.locked" (change)="toggleLock(v)" title="Conserver cette donnée (ne plus régénérer)" [attr.aria-label]="'Verrouiller ' + v.key"/>
 </td>
         <td class="cell-toggle">
           <button

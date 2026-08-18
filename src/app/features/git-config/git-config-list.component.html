@@ -12,8 +12,8 @@
 <div class="gcl-project-bar">
   <div class="gcl-project-bar-icon"><i class="fa-solid fa-folder-open"></i></div>
   <div class="gcl-project-bar-field">
-    <label class="gcl-project-bar-label">Projet actif</label>
-    <select class="form-input" [ngModel]="projectId()" (ngModelChange)="onProjectChange($event)" *ngIf="!loadingProjects(); else loadingProj">
+    <label class="gcl-project-bar-label" for="gcl-project-select">Projet actif</label>
+    <select id="gcl-project-select" class="form-input" [ngModel]="projectId()" (ngModelChange)="onProjectChange($event)" *ngIf="!loadingProjects(); else loadingProj">
       <option *ngFor="let p of projects()" [value]="p.id">{{ p.name }}</option>
     </select>
     <ng-template #loadingProj><div class="form-hint">Chargement des projets...</div></ng-template>

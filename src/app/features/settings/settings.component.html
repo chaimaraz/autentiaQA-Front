@@ -3,8 +3,8 @@
 
 <!-- Sélecteur de projet — la gestion des membres / config est scopée à un projet -->
 <div class="form-group settings-project-picker" *ngIf="adminProjects().length > 1">
-  <label class="form-label">Projet</label>
-  <select class="form-input" [ngModel]="selectedProjectId()" (ngModelChange)="onProjectChange($event)">
+  <label class="form-label" for="settings-project-select">Projet</label>
+  <select id="settings-project-select" class="form-input" [ngModel]="selectedProjectId()" (ngModelChange)="onProjectChange($event)">
     <option *ngFor="let p of adminProjects()" [value]="p.projectId">{{ p.projectName }}</option>
   </select>
 </div>
@@ -15,10 +15,10 @@
 
 <div class="settings-layout" *ngIf="adminProjects().length > 0">
   <div class="settings-sidebar">
-    <div class="settings-nav-item" [class.active]="activeTab() === 'general'" (click)="setTab('general')">
+    <div class="settings-nav-item" [class.active]="activeTab() === 'general'" (click)="setTab('general')" (keydown.enter)="setTab('general')" tabindex="0">
       <span class="settings-nav-icon"><i class="fa-solid fa-gear"></i></span> Général
     </div>
-    <div class="settings-nav-item" [class.active]="activeTab() === 'users'" (click)="setTab('users')">
+    <div class="settings-nav-item" [class.active]="activeTab() === 'users'" (click)="setTab('users')" (keydown.enter)="setTab('users')" tabindex="0">
       <span class="settings-nav-icon"><i class="fa-solid fa-users"></i></span> Utilisateurs
     </div>
     <div
@@ -26,13 +26,15 @@
       *ngIf="canManageAccessControl()"
       [class.active]="activeTab() === 'access-control'"
       (click)="setTab('access-control')"
+      (keydown.enter)="setTab('access-control')"
+      tabindex="0"
     >
       <span class="settings-nav-icon"><i class="fa-solid fa-lock"></i></span> Contrôle d'accès
     </div>
-    <div class="settings-nav-item" [class.active]="activeTab() === 'jira'" (click)="setTab('jira')">
+    <div class="settings-nav-item" [class.active]="activeTab() === 'jira'" (click)="setTab('jira')" (keydown.enter)="setTab('jira')" tabindex="0">
       <span class="settings-nav-icon"><i class="fa-solid fa-bug"></i></span> Intégration Jira
     </div>
-    <div class="settings-nav-item" [class.active]="activeTab() === 'notifications'" (click)="setTab('notifications')">
+    <div class="settings-nav-item" [class.active]="activeTab() === 'notifications'" (click)="setTab('notifications')" (keydown.enter)="setTab('notifications')" tabindex="0">
       <span class="settings-nav-icon"><i class="fa-solid fa-bell"></i></span> Notifications
     </div>
     <div
@@ -40,6 +42,8 @@
       *ngIf="isSuperAdmin()"
       [class.active]="activeTab() === 'platform-admins'"
       (click)="setTab('platform-admins')"
+      (keydown.enter)="setTab('platform-admins')"
+      tabindex="0"
     >
       <span class="settings-nav-icon"><i class="fa-solid fa-shield-halved"></i></span> Comptes plateforme
     </div>
@@ -48,6 +52,8 @@
       *ngIf="isSuperAdmin()"
       [class.active]="activeTab() === 'ai-provider'"
       (click)="setTab('ai-provider')"
+      (keydown.enter)="setTab('ai-provider')"
+      tabindex="0"
     >
       <span class="settings-nav-icon"><i class="fa-solid fa-robot"></i></span> Fournisseur IA
     </div>

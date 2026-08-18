@@ -22,12 +22,12 @@
     <div class="card-header"><div class="card-title">Informations générales</div></div>
     <div class="card-body">
       <div class="form-group">
-        <label class="form-label">Nom du scénario</label>
-        <input class="form-input" [(ngModel)]="name"/>
+        <label class="form-label" for="edit-scenario-name">Nom du scénario</label>
+        <input id="edit-scenario-name" class="form-input" [(ngModel)]="name"/>
       </div>
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Description <span class="form-hint-inline">(optionnel)</span></label>
-        <textarea class="form-input" rows="2" [(ngModel)]="description"></textarea>
+        <label class="form-label" for="edit-scenario-description">Description <span class="form-hint-inline">(optionnel)</span></label>
+        <textarea id="edit-scenario-description" class="form-input" rows="2" [(ngModel)]="description"></textarea>
       </div>
     </div>
   </div>
@@ -36,7 +36,7 @@
   <div class="card mb-16">
     <div class="card-header"><div class="card-title">Résultat attendu</div></div>
     <div class="card-body">
-      <textarea class="form-input" rows="2" [(ngModel)]="expectedResult"></textarea>
+      <textarea class="form-input" rows="2" [(ngModel)]="expectedResult" aria-label="Résultat attendu"></textarea>
     </div>
   </div>
 
@@ -50,8 +50,8 @@
       <div *ngIf="steps().length === 0" class="no-data">Aucune étape définie.</div>
       <div class="ai-step-row" *ngFor="let step of steps(); let i = index" style="margin-bottom:8px">
         <span class="ai-step-num">{{ i + 1 }}</span>
-        <input class="form-input" style="flex:2" [(ngModel)]="step.description" placeholder="Étape métier (ex: Saisir l'email)"/>
-        <input class="form-input form-input-mono" style="flex:1" [(ngModel)]="step.selector" placeholder="Sélecteur (optionnel)"/>
+        <input class="form-input" style="flex:2" [(ngModel)]="step.description" placeholder="Étape métier (ex: Saisir l'email)" aria-label="Description de l'étape"/>
+        <input class="form-input form-input-mono" style="flex:1" [(ngModel)]="step.selector" placeholder="Sélecteur (optionnel)" aria-label="Sélecteur"/>
         <button class="btn btn-ghost btn-xs" (click)="removeStep(step)"><i class="fa-solid fa-xmark"></i></button>
       </div>
     </div>
@@ -71,7 +71,7 @@
         Vous pouvez éditer le script directement — cette édition n'est jamais écrasée par "Enregistrer".
         Seul "Régénérer le script" recalcule le script depuis la description/étapes ci-dessus.
       </div>
-      <textarea class="form-input script-edit-textarea" rows="16" [ngModel]="scriptTemplate()" (ngModelChange)="scriptTemplate.set($event)"></textarea>
+      <textarea class="form-input script-edit-textarea" rows="16" [ngModel]="scriptTemplate()" (ngModelChange)="scriptTemplate.set($event)" aria-label="Script Playwright"></textarea>
     </div>
   </div>
 

@@ -44,10 +44,10 @@
   <div class="search-wrap">
     <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
     <input class="filter-search" placeholder="Rechercher par nom de scénario..."
-           [(ngModel)]="filterSearch" (input)="applyFilters()">
+           [(ngModel)]="filterSearch" (input)="applyFilters()" aria-label="Rechercher par nom de scénario">
     <button *ngIf="filterSearch" class="clear-btn" (click)="filterSearch=''; applyFilters()"><i class="fa-solid fa-xmark"></i></button>
   </div>
-  <select class="filter-select" [(ngModel)]="filterStatus" (change)="applyFilters()">
+  <select class="filter-select" [(ngModel)]="filterStatus" (change)="applyFilters()" aria-label="Filtrer par statut">
     <option value="">Tous les statuts</option>
     <option value="PASS">Passé</option>
     <option value="FAIL">Échoué</option>
@@ -55,9 +55,9 @@
     <option value="RUNNING">En cours</option>
   </select>
   <div class="date-range">
-    <input class="filter-select" type="date" [(ngModel)]="filterDateFrom" (change)="applyFilters()" title="Depuis">
+    <input class="filter-select" type="date" [(ngModel)]="filterDateFrom" (change)="applyFilters()" title="Depuis" aria-label="Depuis">
     <span class="date-sep"><i class="fa-solid fa-arrow-right"></i></span>
-    <input class="filter-select" type="date" [(ngModel)]="filterDateTo" (change)="applyFilters()" title="Jusqu'au">
+    <input class="filter-select" type="date" [(ngModel)]="filterDateTo" (change)="applyFilters()" title="Jusqu'au" aria-label="Jusqu'au">
   </div>
   <button class="btn btn-ghost btn-xs" (click)="resetFilters()"><i class="fa-solid fa-xmark"></i> Réinitialiser</button>
 </div>
@@ -102,7 +102,7 @@
 
           <!-- Ligne principale -->
           <tr class="run-row" [ngClass]="{ 'row-expanded': expandedRun() === run.id }"
-              (click)="toggleRun(run.id)">
+              (click)="toggleRun(run.id)" (keydown.enter)="toggleRun(run.id)" tabindex="0">
             <td class="cell-scenario">
               <div class="scenario-name">{{ run.scenario.name }}</div>
               <div class="run-id">{{ run.id | slice:0:8 }}…</div>
@@ -227,7 +227,7 @@
                       <div class="step-item"
                            *ngFor="let step of run.steps; let i = index"
                            [ngClass]="{ 'step-fail': step.result === 'FAIL', 'step-pass': step.result === 'PASS' }"
-                           (click)="toggleStep(i)">
+                           (click)="toggleStep(i)" (keydown.enter)="toggleStep(i)" tabindex="0">
 
                         <div class="step-row">
                           <div class="step-num">{{ i + 1 }}</div>
@@ -275,7 +275,7 @@
                         <span class="scr-label">Capture automatique</span>
                         <a [href]="shotUrl" target="_blank" class="btn btn-ghost btn-xs" style="margin-left:auto"><i class="fa-solid fa-download"></i></a>
                       </div>
-                      <img [src]="shotUrl" alt="Screenshot" class="scr-img" (click)="openImage(shotUrl)">
+                      <img [src]="shotUrl" alt="Screenshot" class="scr-img" (click)="openImage(shotUrl)" (keydown.enter)="openImage(shotUrl)" tabindex="0" role="button">
                       <div class="scr-status" [ngClass]="run.result === 'PASS' ? 'scr-ok' : 'scr-fail'">
                         <i class="fa-solid" [ngClass]="run.result === 'PASS' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
                         {{ run.result === 'PASS' ? 'Tests passés' : 'Échec — voir les étapes' }}
@@ -301,24 +301,7 @@
                       </div>
 
                       <ng-container *ngIf="run.aiAnalysis as analysis; else noAiAnalysis">
-                        <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-clipboard-list"></i></div><div>{{ analysis.summary }}</div></div>
-                        <div class="regression-warning" *ngIf="analysis.failures.length">
-                          <i class="fa-solid fa-triangle-exclamation"></i>
-                          Corriger uniquement la cause identifiée pour chaque étape ci-dessous, sans modifier ni impacter d'autres modules de l'application.
-                        </div>
-                        <div *ngFor="let f of analysis.failures" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,58,237,.15)">
-                          <div class="ai-row">
-                            <div class="ai-num"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                            <div>
-                              <strong>{{ f.action }}</strong>
-                              <span class="cause-badge" [ngClass]="f.causeCategory.toLowerCase()">
-                                <i class="fa-solid" [ngClass]="causeIconFr(f.causeCategory)"></i> {{ causeLabelFr(f.causeCategory) }}
-                              </span>
-                            </div>
-                          </div>
-                          <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-comment"></i></div><div>{{ f.explanation }}</div></div>
-                          <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-lightbulb"></i></div><div><strong>Recommandation :</strong> {{ f.recommendation }}</div></div>
-                        </div>
+                        <app-ai-failures-list [summary]="analysis.summary" [failures]="analysis.failures"></app-ai-failures-list>
                       </ng-container>
 
                       <ng-template #noAiAnalysis>
