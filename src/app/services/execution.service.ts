@@ -100,6 +100,7 @@ export interface BatchScenarioExecution {
 export interface BatchDetail {
   id: string;
   projectId: string;
+  project: { name: string };
   status: 'RUNNING' | 'DONE';
   totalCount: number;
   passCount: number;

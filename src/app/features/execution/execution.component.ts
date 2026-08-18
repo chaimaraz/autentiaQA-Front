@@ -20,7 +20,7 @@ import {
   BatchScenarioExecution,
 } from '../../services/execution.service';
 import { JiraTicketModalComponent } from '../../shared/components/jira-ticket-modal/jira-ticket-modal.component';
-import { exportElementAsPdf } from '../../shared/utils/export-pdf';
+import { generateSingleReportPdf, generateBatchReportPdf, ReportStepVM, ScenarioReportVM } from '../../shared/utils/pdf-report';
 
 export interface ExecStats {
   pass: number; fail: number; running: number; skipped: number; total: number;
@@ -64,8 +64,6 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   @ViewChild('logContainer') logContainer!: ElementRef;
   @ViewChild(JiraTicketModalComponent) jiraModal!: JiraTicketModalComponent;
-  @ViewChild('singleReportEl') singleReportEl?: ElementRef<HTMLElement>;
-  @ViewChild('batchReportEl') batchReportEl?: ElementRef<HTMLElement>;
 
   jiraTicketKey = signal<string | null>(null);
   jiraTicketUrl = signal<string | null>(null);
@@ -109,6 +107,9 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   showReport   = signal(false);
   expandedStep = signal<number | null>(null);
+
+  // ── Métadonnées d'en-tête pour le rapport détaillé exporté (projet, dates).
+  reportMeta = signal<{ projectName: string; startedAt: string; finishedAt: string | null } | null>(null);
 
   batchProgress     = signal<BatchProgress | null>(null);
   batchDone         = signal(false);
@@ -281,6 +282,7 @@ export class ExecutionComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.socket?.disconnect();
 
       if (this.stepsMap.size === 0 && data.executionId) this._loadSteps(data.executionId);
+      this._loadReportMeta(data.executionId);
       this.analyzeWithAi();
     });
 
@@ -308,6 +310,19 @@ analyzeWithAi(): void {
   });
 }
 
+  private _loadReportMeta(executionId: string): void {
+    this.execSvc.getExecutionDetail(executionId).subscribe({
+      next: (detail) => {
+        this.reportMeta.set({
+          projectName: detail.scenario?.project?.name || '',
+          startedAt: detail.startedAt,
+          finishedAt: detail.finishedAt,
+        });
+      },
+      error: () => undefined,
+    });
+  }
+
   private _loadBatchDetail(batchId: string): void {
     const projId = this.projectId();
     if (!projId) return;
@@ -331,12 +346,75 @@ analyzeWithAi(): void {
     return (exec.steps || []).filter(s => s.result === 'FAIL');
   }
 
+  private _toStepVM(steps: ExecutionStep[]): ReportStepVM[] {
+    return steps.map((s, i) => ({
+      index: i + 1,
+      label: s.action,
+      result: s.result,
+      durationMs: s.durationMs ?? null,
+      errorMessage: s.errorMessage ?? null,
+    }));
+  }
+
+  private _toAiFailuresVM(analysis: AiAnalysis | null | undefined) {
+    return (analysis?.failures || []).map(f => ({
+      stepIndex: f.stepIndex,
+      action: f.action,
+      causeLabel: this.causeLabelFr(f.causeCategory),
+      explanation: f.explanation,
+      recommendation: f.recommendation,
+    }));
+  }
+
   async exportSingleReport(): Promise<void> {
-    if (this.singleReportEl) await exportElementAsPdf(this.singleReportEl.nativeElement, `rapport-${this.scenarioName()}.pdf`);
+    const meta = this.reportMeta();
+    const s = this.stats();
+    const scenario: ScenarioReportVM = {
+      scenarioName: this.scenarioName(),
+      result: this.result(),
+      durationMs: this.durationMs(),
+      passCount: s.pass,
+      failCount: s.fail,
+      totalCount: s.total,
+      errorMessage: this.errorMessage(),
+      steps: this._toStepVM(this.steps()),
+      screenshotUrl: this.screenshotUrl(),
+      aiSummary: this.aiAnalysis()?.summary ?? null,
+      aiFailures: this._toAiFailuresVM(this.aiAnalysis()),
+    };
+    await generateSingleReportPdf({
+      projectName: meta?.projectName || '',
+      executedAt: meta?.finishedAt || meta?.startedAt || null,
+      scenario,
+    });
   }
 
   async exportBatchReport(): Promise<void> {
-    if (this.batchReportEl) await exportElementAsPdf(this.batchReportEl.nativeElement, `rapport-batch-${this.batchId()}.pdf`);
+    const bd = this.batchDetail();
+    const bp = this.batchProgress();
+    if (!bd) return;
+    const scenarios: ScenarioReportVM[] = bd.executions.map(exec => ({
+      scenarioName: exec.scenario.name,
+      result: exec.result,
+      durationMs: exec.durationMs,
+      passCount: exec.passCount,
+      failCount: exec.failCount,
+      totalCount: exec.totalCount,
+      errorMessage: exec.errorMessage,
+      steps: this._toStepVM(exec.steps || []),
+      screenshotUrl: this.getExecScreenshotUrl(exec),
+      aiSummary: exec.aiAnalysis?.summary ?? null,
+      aiFailures: this._toAiFailuresVM(exec.aiAnalysis),
+    }));
+    await generateBatchReportPdf({
+      projectName: bd.project?.name || '',
+      executedAt: bd.finishedAt || bd.startedAt || null,
+      totalCount: bd.totalCount,
+      passCount: bd.passCount,
+      failCount: bd.failCount,
+      durationMs: bd.durationMs ?? bp?.durationMs ?? null,
+      scenarios,
+    });
   }
 
   private _loadSteps(executionId: string): void {

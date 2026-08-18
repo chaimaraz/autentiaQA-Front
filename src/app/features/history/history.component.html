@@ -157,10 +157,14 @@
           <!-- Détail expansible -->
           <tr *ngIf="expandedRun() === run.id" class="detail-row">
             <td colspan="10" class="detail-cell">
-              <div class="detail-body" #detailBodyEl>
+              <div class="detail-body">
 
                 <!-- Résumé du run -->
                 <div class="run-summary-bar">
+                  <div class="run-summary-stat">
+                    <span class="rs-label">Projet</span>
+                    <span class="rs-val">{{ run.scenario.project.name }}</span>
+                  </div>
                   <div class="run-summary-stat">
                     <span class="rs-label">Scénario</span>
                     <span class="rs-val">{{ run.scenario.name }}</span>
@@ -298,6 +302,10 @@
 
                       <ng-container *ngIf="run.aiAnalysis as analysis; else noAiAnalysis">
                         <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-clipboard-list"></i></div><div>{{ analysis.summary }}</div></div>
+                        <div class="regression-warning" *ngIf="analysis.failures.length">
+                          <i class="fa-solid fa-triangle-exclamation"></i>
+                          Corriger uniquement la cause identifiée pour chaque étape ci-dessous, sans modifier ni impacter d'autres modules de l'application.
+                        </div>
                         <div *ngFor="let f of analysis.failures" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,58,237,.15)">
                           <div class="ai-row">
                             <div class="ai-num"><i class="fa-solid fa-triangle-exclamation"></i></div>
@@ -328,7 +336,7 @@
                   <button class="btn btn-ghost btn-xs" *ngIf="hasTrace(run)" (click)="openTrace(run); $event.stopPropagation()">
                     <i class="fa-solid fa-compass"></i> Trace Viewer
                   </button>
-                  <button class="btn btn-ghost btn-xs" (click)="exportRunReport(detailBodyEl, run); $event.stopPropagation()"><i class="fa-solid fa-download"></i> Exporter PDF</button>
+                  <button class="btn btn-ghost btn-xs" (click)="exportRunReport(run); $event.stopPropagation()"><i class="fa-solid fa-download"></i> Exporter PDF</button>
                   <ng-container *ngIf="run.result === 'FAIL' || run.result === 'ERROR'">
                     <a *ngIf="run.jiraTicketUrl as url" [href]="url" target="_blank"
                        class="btn btn-ghost btn-xs" style="color:var(--success)" (click)="$event.stopPropagation()">

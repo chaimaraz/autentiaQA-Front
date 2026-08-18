@@ -39,18 +39,18 @@ export class GitConfigFormComponent implements OnInit {
     private router: Router,
   ) {}
 
-  roleOptions: { key: RepoRoleKey; label: string; icon: string }[] = [
-    { key: 'FRONTEND', label: 'Frontend', icon: 'fa-solid fa-desktop' },
-    { key: 'BACKEND',  label: 'Backend / Microservice', icon: 'fa-solid fa-gear' },
-    { key: 'MOBILE',   label: 'Mobile', icon: 'fa-solid fa-mobile-screen' },
-    { key: 'INFRA',    label: 'Infra', icon: 'fa-solid fa-toolbox' },
-    { key: 'OTHER',    label: 'Autre', icon: 'fa-solid fa-box' },
+  roleOptions: { key: RepoRoleKey; label: string; icon: string; color: string; bg: string }[] = [
+    { key: 'FRONTEND', label: 'Frontend', icon: 'fa-solid fa-desktop', color: '#38bdf8', bg: 'rgba(56,189,248,0.12)' },
+    { key: 'BACKEND',  label: 'Backend / Microservice', icon: 'fa-solid fa-gear', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
+    { key: 'MOBILE',   label: 'Mobile', icon: 'fa-solid fa-mobile-screen', color: '#f472b6', bg: 'rgba(244,114,182,0.12)' },
+    { key: 'INFRA',    label: 'Infra', icon: 'fa-solid fa-toolbox', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+    { key: 'OTHER',    label: 'Autre', icon: 'fa-solid fa-box', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
   ];
-  providerOptions: { key: ProviderKey; label: string; icon: string }[] = [
-    { key: 'GITHUB',    label: 'GitHub', icon: 'fa-brands fa-github' },
-    { key: 'GITLAB',    label: 'GitLab', icon: 'fa-brands fa-gitlab' },
-    { key: 'BITBUCKET', label: 'Bitbucket', icon: 'fa-brands fa-bitbucket' },
-    { key: 'OTHER',     label: 'Autre', icon: 'fa-solid fa-code-branch' },
+  providerOptions: { key: ProviderKey; label: string; icon: string; color: string; bg: string }[] = [
+    { key: 'GITHUB',    label: 'GitHub', icon: 'fa-brands fa-github', color: '#e6edf3', bg: 'rgba(230,237,243,0.10)' },
+    { key: 'GITLAB',    label: 'GitLab', icon: 'fa-brands fa-gitlab', color: '#fc6d26', bg: 'rgba(252,109,38,0.12)' },
+    { key: 'BITBUCKET', label: 'Bitbucket', icon: 'fa-brands fa-bitbucket', color: '#2684ff', bg: 'rgba(38,132,255,0.12)' },
+    { key: 'OTHER',     label: 'Autre', icon: 'fa-solid fa-code-branch', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
   ];
 
   // ── Sélecteur de projet (utilisé uniquement si projectId n'est pas déjà connu) ──

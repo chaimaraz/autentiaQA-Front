@@ -107,12 +107,13 @@
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: #24292f;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   flex-shrink: 0;
+  // couleur/fond posés dynamiquement en inline-style selon le fournisseur
+  // (providerColor()/providerBg() dans git-config-list.component.ts)
 }
 .gcl-repo-info { flex: 1; min-width: 200px; }
 .gcl-repo-name {
@@ -145,13 +146,106 @@
 
 .gcl-edit-wrap { margin-top: 16px; }
 
-// ── Bloc webhook (esprit code-block) ───────────────────────────────────
+// ── Sous-sections avec en-tête coloré (Webhook / Fichier CI / Déclencheurs /
+// Historique) — chacune a sa propre couleur d'accent pour que l'oeil
+// distingue immédiatement "ceci est du code YAML" de "ceci est un webhook"
+// ou "ceci est l'historique", plutôt que 4 blocs visuellement identiques. ──
+.gcl-subsection { margin-top: 18px; }
+
+.gcl-subsection-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.gcl-subsection-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.gcl-subsection-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gcl-subsection-sub {
+  font-size: 10.5px;
+  color: var(--text3);
+  margin-top: 1px;
+}
+.gcl-yaml-tag {
+  font-size: 9px;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(167, 139, 250, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  color: #a78bfa;
+}
+
+.gcl-accent-cyan .gcl-subsection-icon { background: rgba(0, 229, 255, 0.1); color: var(--accent); border: 1px solid rgba(0, 229, 255, 0.25); }
+.gcl-accent-cyan .gcl-webhook-box {
+  background: linear-gradient(180deg, rgba(0, 229, 255, 0.07), rgba(0, 229, 255, 0.02) 60%), var(--code-bg, #080a0e);
+  border-color: rgba(0, 229, 255, 0.25);
+  border-left-color: var(--accent);
+}
+
+.gcl-accent-violet .gcl-subsection-icon { background: rgba(167, 139, 250, 0.12); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.3); }
+.gcl-accent-violet .gcl-webhook-box { border-color: rgba(167, 139, 250, 0.25); }
+
+.gcl-accent-green .gcl-subsection-icon { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.25); }
+
+.gcl-accent-amber .gcl-subsection-icon { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.25); }
+
+// ── Bloc webhook / fichier CI (esprit code-block) ──────────────────────
 .gcl-webhook-box {
   background: var(--code-bg, #080a0e);
   border: 1px solid var(--border);
+  border-left-width: 3px;
   border-radius: 8px;
   padding: 14px 16px;
-  margin-top: 14px;
+}
+// Carte YAML nettement démarquée : fond teinté violet (pas juste la webhook-box
+// standard avec une bordure) + onglet fichier façon éditeur de code, pour que
+// l'oeil distingue "ceci est un fichier YAML" au premier coup d'oeil.
+.gcl-ci-box {
+  background: linear-gradient(180deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.03) 60%), var(--code-bg, #080a0e);
+  border-color: rgba(167, 139, 250, 0.35);
+  border-left-color: #a78bfa;
+}
+.gcl-ci-filebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  color: #c4b5fd;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed rgba(167, 139, 250, 0.25);
+}
+
+// Lisibilité du bloc de code YAML : police un peu plus grande, aérée, avec
+// un léger fond distinct de celui du bloc webhook (::ng-deep nécessaire ici
+// car .code-block vit dans le template du composant enfant app-code-block).
+.gcl-ci-box ::ng-deep .code-block {
+  background: rgba(124, 58, 237, 0.05);
+  border-color: rgba(167, 139, 250, 0.2);
+}
+.gcl-ci-box ::ng-deep .code-block code {
+  font-size: 12.5px;
+  line-height: 1.85;
+  letter-spacing: 0.1px;
 }
 .gcl-webhook-label {
   font-size: 10px;
@@ -159,6 +253,12 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 6px;
+}
+.gcl-webhook-note {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 10px;
+  line-height: 1.5;
 }
 .gcl-webhook-row {
   display: flex;
@@ -169,17 +269,6 @@
     flex: 1;
     min-width: 0;
   }
-}
-.gcl-code {
-  flex: 1;
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  color: var(--text2);
-  word-break: break-all;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
 }
 
 // ── Chips méta ─────────────────────────────────────────────────────────
@@ -203,15 +292,10 @@
 
 // ── Historique (réutilise .ci-run) ─────────────────────────────────────
 .gcl-history {
-  margin-top: 16px;
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
-}
-.gcl-history-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text2);
-  margin-bottom: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 14px;
 }
 
 .ci-run {

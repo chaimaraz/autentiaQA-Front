@@ -7,7 +7,7 @@ import {
   ExecutionService, HistoryRun, GlobalStats, ExecutionStep, JiraTicketResult,
 } from '../../services/execution.service';
 import { JiraTicketModalComponent } from '../../shared/components/jira-ticket-modal/jira-ticket-modal.component';
-import { exportElementAsPdf } from '../../shared/utils/export-pdf';
+import { generateSingleReportPdf } from '../../shared/utils/pdf-report';
 
 @Component({
   selector: 'app-history',
@@ -179,8 +179,36 @@ export class HistoryComponent implements OnInit {
     return icons[cat] || 'fa-circle-question';
   }
 
-  async exportRunReport(el: HTMLElement, run: HistoryRun): Promise<void> {
-    await exportElementAsPdf(el, `rapport-${run.scenario.name}-${run.id}.pdf`);
+  async exportRunReport(run: HistoryRun): Promise<void> {
+    await generateSingleReportPdf({
+      projectName: run.scenario.project.name,
+      executedAt: run.finishedAt || run.startedAt,
+      scenario: {
+        scenarioName: run.scenario.name,
+        result: run.result,
+        durationMs: run.durationMs,
+        passCount: run.passCount,
+        failCount: run.failCount,
+        totalCount: run.totalCount,
+        errorMessage: run.errorMessage,
+        steps: (run.steps || []).map((s, i) => ({
+          index: i + 1,
+          label: s.action,
+          result: s.result,
+          durationMs: s.durationMs ?? null,
+          errorMessage: s.errorMessage ?? null,
+        })),
+        screenshotUrl: this.getScreenshotUrl(run),
+        aiSummary: run.aiAnalysis?.summary ?? null,
+        aiFailures: (run.aiAnalysis?.failures || []).map(f => ({
+          stepIndex: f.stepIndex,
+          action: f.action,
+          causeLabel: this.causeLabelFr(f.causeCategory),
+          explanation: f.explanation,
+          recommendation: f.recommendation,
+        })),
+      },
+    });
   }
 
   get pages(): (number | '...')[] {

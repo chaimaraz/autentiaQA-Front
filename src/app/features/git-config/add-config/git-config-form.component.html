@@ -44,7 +44,10 @@
     <div class="form-group">
       <label class="form-label">Type de dépôt</label>
       <div class="gcf-chip-grid">
-        <div class="gcf-chip" *ngFor="let r of roleOptions" [ngClass]="{ selected: form.role === r.key }" (click)="form.role = r.key">
+        <div class="gcf-chip" *ngFor="let r of roleOptions"
+          [ngClass]="{ selected: form.role === r.key }"
+          [style.--chip-color]="r.color" [style.--chip-bg]="r.bg"
+          (click)="form.role = r.key">
           <span class="gcf-chip-icon"><i [ngClass]="r.icon"></i></span>
           <span>{{ r.label }}</span>
         </div>
@@ -53,8 +56,11 @@
 
     <div class="form-group">
       <label class="form-label">Fournisseur Git</label>
-      <div class="gcf-chip-grid gcf-chip-grid-4">
-        <div class="gcf-chip" *ngFor="let p of providerOptions" [ngClass]="{ selected: form.provider === p.key }" (click)="form.provider = p.key">
+      <div class="gcf-chip-grid">
+        <div class="gcf-chip" *ngFor="let p of providerOptions"
+          [ngClass]="{ selected: form.provider === p.key }"
+          [style.--chip-color]="p.color" [style.--chip-bg]="p.bg"
+          (click)="form.provider = p.key">
           <span class="gcf-chip-icon"><i [ngClass]="p.icon"></i></span>
           <span>{{ p.label }}</span>
         </div>

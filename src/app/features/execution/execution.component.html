@@ -131,8 +131,9 @@
     </div>
   </div>
 
-  <!-- ═══ ÉTAPES EN TEMPS RÉEL ═══ -->
-  <div class="card mb-16" *ngIf="steps().length > 0">
+  <!-- ═══ ÉTAPES EN TEMPS RÉEL — masqué une fois le rapport final affiché
+       (le détail complet des étapes réapparaît alors dans le rapport ci-dessous) ═══ -->
+  <div class="card mb-16" *ngIf="steps().length > 0 && !showReport()">
     <div class="card-header">
       <div class="card-title"><i class="fa-solid fa-magnifying-glass"></i> Étapes en cours d'exécution</div>
       <div style="display:flex;gap:8px;align-items:center">
@@ -202,7 +203,7 @@
      RAPPORT FINAL — MODE SINGLE
      ═══════════════════════════════════════════════════════════ -->
 <ng-container *ngIf="showReport() && mode() === 'single'">
-<div #singleReportEl>
+<div>
 
   <div class="rapport-card mb-16">
     <div class="rapport-header">
@@ -215,6 +216,22 @@
         <i class="fa-solid" [ngClass]="result() === 'PASS' ? 'fa-check' : 'fa-xmark'"></i>
         {{ result() === 'PASS' ? 'SUCCÈS' : 'ÉCHEC' }}
       </span>
+    </div>
+
+    <!-- ═══ EN-TÊTE : projet · scénario · date d'exécution ═══ -->
+    <div class="report-meta-bar" *ngIf="reportMeta() as meta">
+      <div class="report-meta-item" *ngIf="meta.projectName">
+        <span class="rm-label">Projet</span>
+        <span class="rm-val">{{ meta.projectName }}</span>
+      </div>
+      <div class="report-meta-item">
+        <span class="rm-label">Scénario</span>
+        <span class="rm-val">{{ scenarioName() }}</span>
+      </div>
+      <div class="report-meta-item">
+        <span class="rm-label">Date d'exécution</span>
+        <span class="rm-val">{{ (meta.finishedAt || meta.startedAt) | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
     </div>
 
     <div class="rapport-stats">
@@ -252,6 +269,36 @@
       </div>
     </div>
 
+    <!-- ═══ DÉTAIL DES ÉTAPES — toutes les étapes, passées ET échouées ═══ -->
+    <div class="steps-list" style="margin:16px 20px" *ngIf="steps().length > 0">
+      <div class="step-item"
+           *ngFor="let step of steps(); let i = index"
+           [ngClass]="{ 'step-fail': step.result === 'FAIL', 'step-pass': step.result === 'PASS', 'step-running': step.result === 'RUNNING' }"
+           (click)="toggleStep(i)">
+        <div class="step-row">
+          <div class="step-index">{{ i + 1 }}</div>
+          <div class="step-indicator" [ngClass]="step.result.toLowerCase()">
+            <i class="fa-solid fa-arrows-rotate spin" *ngIf="step.result === 'RUNNING'"></i>
+            <i class="fa-solid fa-check" *ngIf="step.result === 'PASS'"></i>
+            <i class="fa-solid fa-xmark" *ngIf="step.result === 'FAIL'"></i>
+            <i class="fa-solid fa-minus" *ngIf="step.result === 'SKIP'"></i>
+          </div>
+          <div class="step-content">
+            <div class="step-action">{{ step.action }}</div>
+          </div>
+          <div class="step-dur" *ngIf="step.durationMs">{{ step.durationMs }}ms</div>
+          <span class="step-result-badge" [ngClass]="step.result.toLowerCase()">{{ step.result }}</span>
+          <i class="fa-solid step-toggle" *ngIf="step.errorMessage" [ngClass]="expandedStep() === i ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+        </div>
+        <div class="step-detail" *ngIf="expandedStep() === i && step.errorMessage">
+          <div class="step-error-block">
+            <div class="step-error-label"><i class="fa-solid fa-triangle-exclamation"></i> Message d'erreur</div>
+            <pre class="step-error-msg">{{ step.errorMessage }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div *ngIf="errorMessage()" class="rapport-error">
       <div class="rapport-error-title"><i class="fa-solid fa-triangle-exclamation"></i> Détail de l'erreur</div>
       <pre class="rapport-error-log">{{ errorMessage() }}</pre>
@@ -272,6 +319,11 @@
 
   <div *ngIf="!analyzingAi() && aiAnalysis() as analysis">
     <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-clipboard-list"></i></div><div>{{ analysis.summary }}</div></div>
+
+    <div class="regression-warning" *ngIf="analysis.failures.length">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      Corriger uniquement la cause identifiée pour chaque étape ci-dessous, sans modifier ni impacter d'autres modules de l'application.
+    </div>
 
     <div *ngFor="let f of analysis.failures" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,58,237,.15)">
       <div class="ai-row">
@@ -381,7 +433,7 @@
      RAPPORT FINAL — MODE BATCH
      ═══════════════════════════════════════════════════════════ -->
 <ng-container *ngIf="showReport() && mode() === 'batch'">
-<div #batchReportEl>
+<div>
 
   <div class="rapport-card mb-16" *ngIf="batchProgress() as bp">
     <div class="rapport-header">
@@ -394,6 +446,22 @@
         <i class="fa-solid" [ngClass]="bp.fail > 0 ? 'fa-xmark' : 'fa-check'"></i>
         {{ bp.fail > 0 ? bp.fail + ' ÉCHEC(S)' : 'TOUS RÉUSSIS' }}
       </span>
+    </div>
+
+    <!-- ═══ EN-TÊTE : projet · exécution groupée · date d'exécution ═══ -->
+    <div class="report-meta-bar" *ngIf="batchDetail() as bd">
+      <div class="report-meta-item" *ngIf="bd.project?.name">
+        <span class="rm-label">Projet</span>
+        <span class="rm-val">{{ bd.project.name }}</span>
+      </div>
+      <div class="report-meta-item">
+        <span class="rm-label">Type</span>
+        <span class="rm-val">Exécution groupée</span>
+      </div>
+      <div class="report-meta-item">
+        <span class="rm-label">Date d'exécution</span>
+        <span class="rm-val">{{ (bd.finishedAt || bd.startedAt) | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
     </div>
 
     <div class="rapport-stats">
@@ -457,6 +525,8 @@
             </div>
             <div class="step-dur" *ngIf="exec.durationMs">{{ formatDuration(exec.durationMs) }}</div>
             <span class="step-result-badge" [ngClass]="exec.result.toLowerCase()">{{ exec.result }}</span>
+            <span class="step-summary-badge pass" style="margin-left:4px"><i class="fa-solid fa-check"></i> {{ exec.passCount }}</span>
+            <span class="step-summary-badge fail" *ngIf="exec.failCount > 0"><i class="fa-solid fa-xmark"></i> {{ exec.failCount }}</span>
             <i class="fa-solid step-toggle" [ngClass]="expandedScenario() === exec.id ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
           </div>
 
@@ -467,18 +537,40 @@
               <img [src]="shotUrl" alt="Capture" style="max-width:100%;border-radius:8px;border:1px solid var(--border)">
             </div>
 
-            <!-- Étapes en échec -->
-            <ng-container *ngFor="let s of getFailedSteps(exec)">
-              <div class="step-error-block" style="margin-top:8px">
-                <div class="step-error-label"><i class="fa-solid fa-triangle-exclamation"></i> {{ s.action }}</div>
-                <pre class="step-error-msg" *ngIf="s.errorMessage">{{ s.errorMessage }}</pre>
+            <!-- Toutes les étapes — passées ET échouées -->
+            <div class="steps-list" style="margin-top:8px" *ngIf="exec.steps.length > 0">
+              <div class="step-item"
+                   *ngFor="let s of exec.steps; let i = index"
+                   [ngClass]="{ 'step-fail': s.result === 'FAIL', 'step-pass': s.result === 'PASS' }">
+                <div class="step-row">
+                  <div class="step-index">{{ i + 1 }}</div>
+                  <div class="step-indicator" [ngClass]="s.result.toLowerCase()">
+                    <i class="fa-solid fa-check" *ngIf="s.result === 'PASS'"></i>
+                    <i class="fa-solid fa-xmark" *ngIf="s.result === 'FAIL'"></i>
+                    <i class="fa-solid fa-minus" *ngIf="s.result === 'SKIP'"></i>
+                  </div>
+                  <div class="step-content">
+                    <div class="step-action">{{ s.action }}</div>
+                  </div>
+                  <span class="step-result-badge" [ngClass]="s.result.toLowerCase()">{{ s.result }}</span>
+                </div>
+                <div class="step-detail" *ngIf="s.errorMessage">
+                  <div class="step-error-block">
+                    <div class="step-error-label"><i class="fa-solid fa-triangle-exclamation"></i> {{ s.action }}</div>
+                    <pre class="step-error-msg">{{ s.errorMessage }}</pre>
+                  </div>
+                </div>
               </div>
-            </ng-container>
+            </div>
 
             <!-- Analyse IA -->
             <div class="ai-block" *ngIf="exec.aiAnalysis as analysis" style="margin-top:12px">
               <div class="ai-title"><div class="ai-dot"></div>Analyse IA</div>
               <div class="ai-row"><div class="ai-num"><i class="fa-solid fa-clipboard-list"></i></div><div>{{ analysis.summary }}</div></div>
+              <div class="regression-warning" *ngIf="analysis.failures.length">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Corriger uniquement la cause identifiée pour chaque étape ci-dessous, sans modifier ni impacter d'autres modules de l'application.
+              </div>
               <div *ngFor="let f of analysis.failures" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,58,237,.15)">
                 <div class="ai-row">
                   <div class="ai-num"><i class="fa-solid fa-triangle-exclamation"></i></div>

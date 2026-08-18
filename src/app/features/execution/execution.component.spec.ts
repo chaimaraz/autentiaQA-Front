@@ -9,7 +9,7 @@ import {
   ExecutionStep, BatchScenarioExecution,
 } from '../../services/execution.service';
 import { __setSocketFactoryForTests, __resetSocketFactory } from '../../shared/utils/socket-factory';
-import { __setExportElementAsPdfForTests, __resetExportElementAsPdf } from '../../shared/utils/export-pdf';
+import { __setPdfReportForTests, __resetPdfReport } from '../../shared/utils/pdf-report';
 
 describe('ExecutionComponent', () => {
   let component: ExecutionComponent;
@@ -20,7 +20,7 @@ describe('ExecutionComponent', () => {
   let ioSpy: jasmine.Spy;
 
   const baseBatchDetail: BatchDetail = {
-    id: 'batch1', projectId: 'p1', status: 'RUNNING', totalCount: 2, passCount: 0, failCount: 0,
+    id: 'batch1', projectId: 'p1', project: { name: 'Projet P1' }, status: 'RUNNING', totalCount: 2, passCount: 0, failCount: 0,
     durationMs: null, startedAt: '2024-01-01T00:00:00.000Z', finishedAt: null, executions: [],
   };
 
@@ -34,12 +34,18 @@ describe('ExecutionComponent', () => {
   function configure(queryParams: Record<string, string>) {
     execSvc = jasmine.createSpyObj<ExecutionService>('ExecutionService', [
       'analyzeExecution', 'getBatchDetail', 'findArtifact', 'getArtifactUrl',
-      'getSteps', 'getTraceViewerUrl', 'formatDuration',
+      'getSteps', 'getTraceViewerUrl', 'formatDuration', 'getExecutionDetail',
     ]);
     execSvc.formatDuration.and.callFake((ms: number | null | undefined) =>
       !ms ? '—' : ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`);
     execSvc.getBatchDetail.and.returnValue(of(baseBatchDetail));
     execSvc.getSteps.and.returnValue(of([]));
+    execSvc.getExecutionDetail.and.returnValue(of({
+      id: 'exec1', result: 'PASS', durationMs: null, passCount: 0, failCount: 0, totalCount: 0,
+      errorMessage: null, startedAt: '2024-01-01T00:00:00.000Z', finishedAt: null,
+      scenario: { id: 's1', name: 'Login test', type: 'POSITIVE', projectId: 'p1', project: { name: 'Projet P1' } },
+      steps: [], artifacts: [],
+    } as any));
     execSvc.analyzeExecution.and.returnValue(of(baseAiAnalysis));
     execSvc.getTraceViewerUrl.and.callFake((p: string) => `https://trace.playwright.dev/?trace=${p}`);
     execSvc.findArtifact.and.returnValue(undefined);
@@ -70,7 +76,7 @@ describe('ExecutionComponent', () => {
 
   afterEach(() => {
     __resetSocketFactory();
-    __resetExportElementAsPdf();
+    __resetPdfReport();
   });
 
   // ── ngOnInit / socket bootstrap ──────────────────────────────────────────
@@ -583,30 +589,39 @@ describe('ExecutionComponent', () => {
   describe('exportSingleReport / exportBatchReport', () => {
     beforeEach(() => { configure({ executionId: 'exec1', batchId: 'batch1', projectId: 'p1' }); fixture.detectChanges(); });
 
-    it('exportSingleReport exports the single report element with a scenario-based filename', async () => {
-      const exportSpy = jasmine.createSpy('exportElementAsPdf').and.returnValue(Promise.resolve());
-      __setExportElementAsPdfForTests(exportSpy);
-      const el = document.createElement('div');
-      (component as any).singleReportEl = { nativeElement: el };
+    it('exportSingleReport builds a report VM from the current signals and delegates to generateSingleReportPdf', async () => {
+      const singleSpy = jasmine.createSpy('generateSingleReportPdf').and.returnValue(Promise.resolve());
+      __setPdfReportForTests({ single: singleSpy });
+
+      component.scenarioName.set('Login test');
+      component.result.set('PASS');
+      component.stats.set({ pass: 2, fail: 0, running: 0, skipped: 0, total: 2 });
+
       await component.exportSingleReport();
-      expect(exportSpy).toHaveBeenCalledWith(el, `rapport-${component.scenarioName()}.pdf`);
+
+      expect(singleSpy).toHaveBeenCalledWith(jasmine.objectContaining({
+        scenario: jasmine.objectContaining({ scenarioName: 'Login test', result: 'PASS', passCount: 2, totalCount: 2 }),
+      }));
     });
 
-    it('exportSingleReport does nothing when the report element is not present', async () => {
-      const exportSpy = jasmine.createSpy('exportElementAsPdf').and.returnValue(Promise.resolve());
-      __setExportElementAsPdfForTests(exportSpy);
-      (component as any).singleReportEl = undefined;
-      await component.exportSingleReport();
-      expect(exportSpy).not.toHaveBeenCalled();
-    });
-
-    it('exportBatchReport exports the batch report element with a batchId-based filename', async () => {
-      const exportSpy = jasmine.createSpy('exportElementAsPdf').and.returnValue(Promise.resolve());
-      __setExportElementAsPdfForTests(exportSpy);
-      const el = document.createElement('div');
-      (component as any).batchReportEl = { nativeElement: el };
+    it('exportBatchReport does nothing when no batch detail has been loaded', async () => {
+      const batchSpy = jasmine.createSpy('generateBatchReportPdf').and.returnValue(Promise.resolve());
+      __setPdfReportForTests({ batch: batchSpy });
+      component.batchDetail.set(null);
       await component.exportBatchReport();
-      expect(exportSpy).toHaveBeenCalledWith(el, `rapport-batch-${component.batchId()}.pdf`);
+      expect(batchSpy).not.toHaveBeenCalled();
+    });
+
+    it('exportBatchReport builds a report VM from batchDetail() and delegates to generateBatchReportPdf', async () => {
+      const batchSpy = jasmine.createSpy('generateBatchReportPdf').and.returnValue(Promise.resolve());
+      __setPdfReportForTests({ batch: batchSpy });
+      component.batchDetail.set({ ...baseBatchDetail, status: 'DONE', totalCount: 1, passCount: 1, failCount: 0 });
+
+      await component.exportBatchReport();
+
+      expect(batchSpy).toHaveBeenCalledWith(jasmine.objectContaining({
+        projectName: 'Projet P1', totalCount: 1, passCount: 1, failCount: 0, scenarios: [],
+      }));
     });
   });
 });

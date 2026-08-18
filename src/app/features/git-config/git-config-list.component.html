@@ -41,7 +41,9 @@
 
     <!-- Ligne résumé façon repo-link-card -->
     <div class="gcl-repo-head">
-      <div class="gcl-repo-icon"><i [ngClass]="providerIcon(repo.provider)"></i></div>
+      <div class="gcl-repo-icon" [style.background]="providerBg(repo.provider)" [style.color]="providerColor(repo.provider)">
+        <i [ngClass]="providerIcon(repo.provider)"></i>
+      </div>
       <div class="gcl-repo-info">
         <div class="gcl-repo-name">
           {{ repo.name }}
@@ -77,66 +79,96 @@
     <ng-container *ngIf="editingRepo()?.id !== repo.id">
 
       <!-- Webhook : URL + secret, façon code-block -->
-      <div class="gcl-webhook-box">
-        <div class="gcl-webhook-label">URL de webhook — à coller côté {{ repo.provider }}</div>
-        <div class="gcl-webhook-row">
-          <app-code-block [code]="webhookUrl(repo)" language="text"></app-code-block>
-          <button class="btn btn-ghost btn-xs" (click)="copyToClipboard(webhookUrl(repo))"><i class="fa-solid fa-copy"></i> Copier</button>
+      <div class="gcl-subsection gcl-accent-cyan">
+        <div class="gcl-subsection-head">
+          <div class="gcl-subsection-icon"><i class="fa-solid fa-link"></i></div>
+          <div>
+            <div class="gcl-subsection-title">Webhook</div>
+            <div class="gcl-subsection-sub">URL + secret à coller côté {{ repo.provider }}</div>
+          </div>
         </div>
-        <div class="gcl-webhook-label" style="margin-top:10px">Secret de signature</div>
-        <div class="gcl-webhook-row">
-          <app-code-block [code]="repo.webhookSecret" language="text"></app-code-block>
-          <button class="btn btn-ghost btn-xs" (click)="regenerateSecret(repo)"><i class="fa-solid fa-rotate"></i> Régénérer</button>
-        </div>
-        <div class="gcl-webhook-label" style="margin-top:10px;text-transform:none;letter-spacing:normal">
-          <i class="fa-solid fa-triangle-exclamation"></i> Cette URL doit être joignable publiquement depuis internet pour que GitHub/GitLab/Bitbucket (ou le fichier CI ci-dessous) puisse la contacter — remplacez "localhost" par l'URL réelle de votre backend déployé.
+        <div class="gcl-webhook-box">
+          <div class="gcl-webhook-label">URL</div>
+          <div class="gcl-webhook-row">
+            <app-code-block [code]="webhookUrl(repo)" language="text"></app-code-block>
+            <button class="btn btn-ghost btn-xs" (click)="copyToClipboard(webhookUrl(repo))"><i class="fa-solid fa-copy"></i> Copier</button>
+          </div>
+          <div class="gcl-webhook-label" style="margin-top:10px">Secret de signature</div>
+          <div class="gcl-webhook-row">
+            <app-code-block [code]="repo.webhookSecret" language="text"></app-code-block>
+            <button class="btn btn-ghost btn-xs" (click)="regenerateSecret(repo)"><i class="fa-solid fa-rotate"></i> Régénérer</button>
+          </div>
+          <div class="gcl-webhook-note">
+            <i class="fa-solid fa-triangle-exclamation"></i> Cette URL doit être joignable publiquement depuis internet pour que GitHub/GitLab/Bitbucket (ou le fichier CI ci-dessous) puisse la contacter — remplacez "localhost" par l'URL réelle de votre backend déployé.
+          </div>
         </div>
       </div>
 
       <!-- Fichier CI : alternative au webhook, même déclencheur côté backend -->
-      <div class="gcl-webhook-box" style="margin-top:14px">
-        <div class="gcl-webhook-label">
-          Fichier CI — {{ repo.provider === 'GITLAB' || repo.provider === 'BITBUCKET' ? 'extrait à fusionner dans votre config existante' : 'alternative au webhook, prête à committer' }}
+      <div class="gcl-subsection gcl-accent-violet">
+        <div class="gcl-subsection-head">
+          <div class="gcl-subsection-icon"><i class="fa-solid fa-file-code"></i></div>
+          <div>
+            <div class="gcl-subsection-title">Fichier CI <span class="gcl-yaml-tag">YAML</span></div>
+            <div class="gcl-subsection-sub">{{ repo.provider === 'GITLAB' || repo.provider === 'BITBUCKET' ? 'Extrait à fusionner dans votre config existante' : 'Alternative au webhook, prête à committer' }}</div>
+          </div>
         </div>
-        <app-code-block [code]="ciFileContent(repo)" language="bash"></app-code-block>
-        <div class="gcl-webhook-row" style="margin-top:8px">
-          <button class="btn btn-ghost btn-xs" (click)="copyToClipboard(ciFileContent(repo))"><i class="fa-solid fa-copy"></i> Copier</button>
-          <button class="btn btn-ghost btn-xs" (click)="downloadCiFile(repo)"><i class="fa-solid fa-download"></i> Télécharger ({{ ciFileName(repo) }})</button>
+        <div class="gcl-webhook-box gcl-ci-box">
+          <div class="gcl-ci-filebar">
+            <i class="fa-solid fa-file-code"></i>
+            <span>{{ ciFileName(repo) }}</span>
+          </div>
+          <app-code-block [code]="ciFileContent(repo)" language="yaml"></app-code-block>
+          <div class="gcl-webhook-row" style="margin-top:10px">
+            <button class="btn btn-ghost btn-xs" (click)="copyToClipboard(ciFileContent(repo))"><i class="fa-solid fa-copy"></i> Copier</button>
+            <button class="btn btn-ghost btn-xs" (click)="downloadCiFile(repo)"><i class="fa-solid fa-download"></i> Télécharger ({{ ciFileName(repo) }})</button>
+          </div>
         </div>
       </div>
 
       <!-- Chips méta -->
-      <div class="gcl-meta-row">
-        <span class="gcl-meta-chip"><i class="fa-solid fa-code-branch"></i> {{ repo.branch || 'toutes branches' }}</span>
-        <span class="gcl-meta-chip" [ngClass]="{ off: !repo.onPush }"><i class="fa-solid fa-arrow-up"></i> Push {{ repo.onPush ? 'actif' : 'inactif' }}</span>
-        <span class="gcl-meta-chip" [ngClass]="{ off: !repo.onPr }"><i class="fa-solid fa-arrow-down"></i> PR {{ repo.onPr ? 'actif' : 'inactif' }}</span>
-        <span class="gcl-meta-chip" [ngClass]="{ warn: repo.blockMerge }">
-          <i class="fa-solid" [ngClass]="repo.blockMerge ? 'fa-ban' : 'fa-circle-check'"></i>
-          {{ repo.blockMerge ? 'Merge bloqué si échec' : 'Merge non bloquant' }}
-        </span>
-        <span class="gcl-meta-chip" *ngIf="repo.notifyEmail"><i class="fa-solid fa-envelope"></i> {{ repo.notifyEmails || 'aucun destinataire' }}</span>
-        <span class="gcl-meta-chip" *ngIf="repo.lastEventAt"><i class="fa-solid fa-clock"></i> Dernier event : {{ repo.lastEventAt | date:'short' }}</span>
+      <div class="gcl-subsection gcl-accent-green">
+        <div class="gcl-subsection-head">
+          <div class="gcl-subsection-icon"><i class="fa-solid fa-sliders"></i></div>
+          <div class="gcl-subsection-title">Déclencheurs &amp; état</div>
+        </div>
+        <div class="gcl-meta-row">
+          <span class="gcl-meta-chip"><i class="fa-solid fa-code-branch"></i> {{ repo.branch || 'toutes branches' }}</span>
+          <span class="gcl-meta-chip" [ngClass]="{ off: !repo.onPush }"><i class="fa-solid fa-arrow-up"></i> Push {{ repo.onPush ? 'actif' : 'inactif' }}</span>
+          <span class="gcl-meta-chip" [ngClass]="{ off: !repo.onPr }"><i class="fa-solid fa-arrow-down"></i> PR {{ repo.onPr ? 'actif' : 'inactif' }}</span>
+          <span class="gcl-meta-chip" [ngClass]="{ warn: repo.blockMerge }">
+            <i class="fa-solid" [ngClass]="repo.blockMerge ? 'fa-ban' : 'fa-circle-check'"></i>
+            {{ repo.blockMerge ? 'Merge bloqué si échec' : 'Merge non bloquant' }}
+          </span>
+          <span class="gcl-meta-chip" *ngIf="repo.notifyEmail"><i class="fa-solid fa-envelope"></i> {{ repo.notifyEmails || 'aucun destinataire' }}</span>
+          <span class="gcl-meta-chip" *ngIf="repo.lastEventAt"><i class="fa-solid fa-clock"></i> Dernier event : {{ repo.lastEventAt | date:'short' }}</span>
+        </div>
       </div>
 
       <!-- Historique -->
-      <div *ngIf="expandedRepoId() === repo.id" class="gcl-history">
-        <div class="gcl-history-title">Historique des events</div>
-        <div *ngIf="!events().length" class="form-hint">Aucun event reçu pour l'instant.</div>
+      <div *ngIf="expandedRepoId() === repo.id" class="gcl-subsection gcl-accent-amber">
+        <div class="gcl-subsection-head">
+          <div class="gcl-subsection-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+          <div class="gcl-subsection-title">Historique des events</div>
+        </div>
+        <div class="gcl-history">
+          <div *ngIf="!events().length" class="form-hint">Aucun event reçu pour l'instant.</div>
 
-        <div class="ci-run" *ngFor="let ev of events()">
-          <div class="ci-run-icon" [ngClass]="ev.decision === 'REJECTED' ? 'fail' : 'pass'">
-            <i class="fa-solid" [ngClass]="decisionIcon(ev.decision)"></i>
-          </div>
-          <div class="ci-run-info">
-            <div class="ci-run-title">{{ ev.eventType }} — {{ ev.branch || '—' }} · {{ ev.commitSha ? ev.commitSha.slice(0,8) : '—' }}</div>
-            <div class="ci-run-meta">{{ ev.commitMessage }} — {{ ev.authorName }} · {{ ev.createdAt | date:'short' }}</div>
-            <div class="ci-run-flux" *ngIf="ev.batchExecution">
-              <span class="tag green">{{ ev.batchExecution.passCount }}/{{ ev.batchExecution.totalCount }} scénarios réussis</span>
+          <div class="ci-run" *ngFor="let ev of events()">
+            <div class="ci-run-icon" [ngClass]="ev.decision === 'REJECTED' ? 'fail' : 'pass'">
+              <i class="fa-solid" [ngClass]="decisionIcon(ev.decision)"></i>
             </div>
+            <div class="ci-run-info">
+              <div class="ci-run-title">{{ ev.eventType }} — {{ ev.branch || '—' }} · {{ ev.commitSha ? ev.commitSha.slice(0,8) : '—' }}</div>
+              <div class="ci-run-meta">{{ ev.commitMessage }} — {{ ev.authorName }} · {{ ev.createdAt | date:'short' }}</div>
+              <div class="ci-run-flux" *ngIf="ev.batchExecution">
+                <span class="tag green">{{ ev.batchExecution.passCount }}/{{ ev.batchExecution.totalCount }} scénarios réussis</span>
+              </div>
+            </div>
+            <span class="status-badge" [ngClass]="decisionClass(ev.decision)">
+              <i class="fa-solid" [ngClass]="decisionIcon(ev.decision)"></i> {{ decisionLabel(ev.decision) }}
+            </span>
           </div>
-          <span class="status-badge" [ngClass]="decisionClass(ev.decision)">
-            <i class="fa-solid" [ngClass]="decisionIcon(ev.decision)"></i> {{ decisionLabel(ev.decision) }}
-          </span>
         </div>
       </div>
     </ng-container>

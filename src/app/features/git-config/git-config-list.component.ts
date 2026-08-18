@@ -187,4 +187,22 @@ export class GitConfigListComponent implements OnInit {
   roleIcon(role: string): string {
     return { FRONTEND: 'fa-solid fa-desktop', BACKEND: 'fa-solid fa-gear', MOBILE: 'fa-solid fa-mobile-screen', INFRA: 'fa-solid fa-toolbox' }[role] || 'fa-solid fa-box';
   }
+
+  /** Couleur d'icône par fournisseur — même palette que les chips du formulaire d'ajout (git-config-form.component.ts) */
+  providerColor(provider?: string): string {
+    return {
+      GITHUB: '#e6edf3',
+      GITLAB: '#fc6d26',
+      BITBUCKET: '#2684ff',
+    }[provider ?? ''] || '#94a3b8';
+  }
+
+  /** Fond teinté associé à providerColor() */
+  providerBg(provider?: string): string {
+    return {
+      GITHUB: 'rgba(230,237,243,0.12)',
+      GITLAB: 'rgba(252,109,38,0.14)',
+      BITBUCKET: 'rgba(38,132,255,0.14)',
+    }[provider ?? ''] || 'rgba(148,163,184,0.14)';
+  }
 }

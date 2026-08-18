@@ -28,7 +28,10 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: border-color 0.2s;
 }
+.gcf-card:hover { border-color: var(--border2); }
 
 .gcf-card-head {
   padding: 16px 20px;
@@ -76,40 +79,59 @@
 }
 
 // ── Sélecteurs visuels (rôle / fournisseur) sous forme de chips ────────────
+// flex-wrap plutôt qu'une grille à colonnes fixes : les chips gardent une
+// taille raisonnable et ne s'étirent plus pour remplir une rangée incomplète
+// (ex: 5 items sur 3 colonnes → dernière rangée à 2 chips géants).
 .gcf-chip-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-}
-.gcf-chip-grid-4 {
-  grid-template-columns: repeat(4, 1fr);
 }
 
 .gcf-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 12px 8px;
+  gap: 7px;
+  flex: 1 1 92px;
+  max-width: 128px;
+  padding: 11px 8px;
   background: var(--surface2);
   border: 1.5px solid var(--border);
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
   font-size: 11px;
   font-weight: 500;
   text-align: center;
   color: var(--text2);
 }
-.gcf-chip:hover { border-color: var(--border2); }
+.gcf-chip:hover {
+  border-color: var(--chip-color, var(--border2));
+  transform: translateY(-1px);
+}
 .gcf-chip.selected {
-  border-color: var(--accent);
-  background: rgba(0, 229, 255, 0.06);
-  color: var(--accent);
+  border-color: var(--chip-color, var(--accent));
+  background: var(--chip-bg, rgba(0, 229, 255, 0.06));
+  color: var(--chip-color, var(--accent));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chip-color, var(--accent)) 14%, transparent);
 }
 
 .gcf-chip-icon {
-  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  background: var(--chip-bg, rgba(255, 255, 255, 0.06));
+  color: var(--chip-color, var(--text3));
+  transition: all 0.15s;
+}
+.gcf-chip.selected .gcf-chip-icon {
+  background: var(--chip-color, var(--accent));
+  color: #071019;
 }
 
 // ── Champs techniques (URL, branche) en monospace, cohérent avec le reste de l'app ──
@@ -267,5 +289,6 @@
 .btn-ghost:hover { color: var(--text); border-color: var(--border2); background: var(--surface2); }
 
 @media (max-width: 640px) {
-  .grid-2, .gcf-chip-grid, .gcf-chip-grid-4 { grid-template-columns: 1fr 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .gcf-chip { flex-basis: calc(50% - 4px); max-width: none; }
 }

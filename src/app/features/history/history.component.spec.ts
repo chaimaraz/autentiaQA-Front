@@ -4,7 +4,7 @@ import { of, throwError } from 'rxjs';
 
 import { HistoryComponent } from './history.component';
 import { ExecutionService, HistoryRun, HistoryResponse, ExecutionArtifact, ExecutionStep, GlobalStats } from '../../services/execution.service';
-import { __setExportElementAsPdfForTests, __resetExportElementAsPdf } from '../../shared/utils/export-pdf';
+import { __setPdfReportForTests, __resetPdfReport } from '../../shared/utils/pdf-report';
 
 describe('HistoryComponent', () => {
   let component: HistoryComponent;
@@ -69,7 +69,7 @@ describe('HistoryComponent', () => {
   }
 
   afterEach(() => {
-    __resetExportElementAsPdf();
+    __resetPdfReport();
   });
 
   describe('ngOnInit / loadHistory', () => {
@@ -269,13 +269,20 @@ describe('HistoryComponent', () => {
   describe('exportRunReport', () => {
     beforeEach(() => { configure(); fixture.detectChanges(); });
 
-    it('delegates to exportElementAsPdf with a filename built from the scenario name and run id', async () => {
-      const exportSpy = jasmine.createSpy('exportElementAsPdf').and.returnValue(Promise.resolve());
-      __setExportElementAsPdfForTests(exportSpy);
-      const el = document.createElement('div');
+    it('builds a report VM from the run and delegates to generateSingleReportPdf', async () => {
+      const singleSpy = jasmine.createSpy('generateSingleReportPdf').and.returnValue(Promise.resolve());
+      __setPdfReportForTests({ single: singleSpy });
       const run = makeRun();
-      await component.exportRunReport(el, run);
-      expect(exportSpy).toHaveBeenCalledWith(el, `rapport-${run.scenario.name}-${run.id}.pdf`);
+
+      await component.exportRunReport(run);
+
+      expect(singleSpy).toHaveBeenCalledWith(jasmine.objectContaining({
+        projectName: 'Shop',
+        executedAt: run.finishedAt,
+        scenario: jasmine.objectContaining({
+          scenarioName: 'Login', result: 'PASS', passCount: 3, failCount: 0, totalCount: 3,
+        }),
+      }));
     });
   });
 

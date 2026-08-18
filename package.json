@@ -23,7 +23,6 @@
     "@fortawesome/fontawesome-free": "^7.3.1",
     "chart.js": "^4.5.1",
     "highlight.js": "^11.11.1",
-    "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "ng2-charts": "^8.0.0",
     "rxjs": "~7.8.0",
